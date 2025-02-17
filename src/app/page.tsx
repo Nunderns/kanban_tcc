@@ -1,62 +1,66 @@
 "use client";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
 
-export default function LoginPage() {
+import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+
+export default function HomePage() {
   const router = useRouter();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 50);
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   return (
-    <div className="flex h-screen">
-      <div className="w-1/2 flex flex-col items-center justify-center bg-white p-10">
-        <h1 className="text-4xl font-semibold mb-6 text-black">TaskFlow</h1>
-        <div className="w-80">
-          <label className="block mb-2 text-black font-medium">Email</label>
-          <input 
-            type="email" 
-            className="w-full p-2 border border-gray-300 rounded-md text-black"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-          
-          <label className="block mt-4 mb-2 text-black font-medium">Senha</label>
-          <input 
-            type="password" 
-            className="w-full p-2 border border-gray-300 rounded-md text-black"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-
-          <p className="text-sm text-blue-600 mt-2 cursor-pointer font-semibold">Esqueci a senha</p>
-          <button className="w-full py-2 mt-4 bg-blue-500 text-white rounded-md">Entrar</button>
-          
-          <div className="flex items-center my-6">
-            <hr className="flex-grow border-gray-300"/>
-            <span className="mx-4 text-gray-500">ou</span>
-            <hr className="flex-grow border-gray-300"/>
+    <div className="flex flex-col items-center min-h-screen w-full">
+      <header className={`fixed top-0 w-full flex justify-between p-5 transition-all duration-300 z-50 ${isScrolled ? "bg-white shadow-md" : "bg-transparent"}`}>
+        <h1 className="text-3xl font-bold text-blue-600">TaskFlow</h1>
+        <nav>
+          <ul className="flex space-x-6 font-medium">
+            <li><a href="#funcionalidades" className="hover:text-blue-500">Funcionalidades</a></li>
+            <li><a href="#planos" className="hover:text-blue-500">Planos</a></li>
+            <li><a href="#blog" className="hover:text-blue-500">Blog</a></li>
+            <li><a href="#cases" className="hover:text-blue-500">Cases</a></li>
+            <li><a href="/login" className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600">Experimente</a></li>
+          </ul>
+        </nav>
+      </header>
+      
+      <section className="text-center py-32 bg-gradient-to-r from-blue-700 to-blue-500 text-white w-full flex flex-col items-center justify-center">
+        <h2 className="text-5xl font-bold max-w-4xl">Software para gestão de agências: centralize tudo em um só lugar</h2>
+        <p className="mt-6 max-w-2xl text-lg">
+          Chega de várias plataformas para gerenciar sua agência! O TaskFlow integra projetos, clientes, financeiro e equipe em uma única plataforma. Controle processos, reduza retrabalho e aumente sua produtividade, tudo em um só lugar.
+        </p>
+        <button onClick={() => router.push("/login")} className="mt-8 px-6 py-3 bg-white text-blue-600 font-bold rounded-md shadow-md hover:bg-gray-200">Agende uma demonstração</button>
+      </section>
+      
+      <section id="funcionalidades" className="py-16 bg-white text-black w-full text-center">
+        <h2 className="text-4xl font-semibold">Funcionalidades</h2>
+        <p className="mt-4 text-lg">A solução ideal para os desafios diários da sua agência.</p>
+        <div className="mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 px-10">
+          <div className="p-6 shadow-lg rounded-md border border-gray-200">
+            <h3 className="text-xl font-semibold">Conheça seus clientes mais rentáveis</h3>
+            <p className="mt-2 text-gray-600">Mensure a lucratividade de cada cliente e otimize sua gestão financeira.</p>
           </div>
-
-          <button className="w-full py-2 bg-white text-black border border-gray-300 rounded-md">Entrar com Google</button>
+          <div className="p-6 shadow-lg rounded-md border border-gray-200">
+            <h3 className="text-xl font-semibold">Agilize a aprovação dos jobs</h3>
+            <p className="mt-2 text-gray-600">Comunique-se de forma clara e eficiente para otimizar fluxos de trabalho.</p>
+          </div>
+          <div className="p-6 shadow-lg rounded-md border border-gray-200">
+            <h3 className="text-xl font-semibold">Controle seus projetos</h3>
+            <p className="mt-2 text-gray-600">Centralize todas as informações dos jobs da sua agência em um só lugar.</p>
+          </div>
+          <div className="p-6 shadow-lg rounded-md border border-gray-200">
+            <h3 className="text-xl font-semibold">Dashboard de tráfego</h3>
+            <p className="mt-2 text-gray-600">Visualize a carga de trabalho e distribua tarefas com eficiência.</p>
+          </div>
         </div>
-      </div>
-
-      <div className="w-1/2 bg-gray-200 p-8">
-        <h2 className="text-lg font-semibold">Últimas atualizações</h2>
-        <div className="bg-gray-400 text-white p-2 mt-4 rounded-md">
-          <p className="font-medium">Título da atualização</p>
-        </div>
-        <div className="flex justify-between text-sm text-gray-600 mt-2">
-          <p>🔘 Postado por [Nome da equipe do site]</p>
-          <p>📅 Data: 00/00/0000 00:00</p>
-        </div>
-        <div className="bg-white p-10 mt-4 rounded-md shadow-md h-48 flex items-center justify-center">
-          <p className="text-xl font-medium">Corpo do texto</p>
-        </div>
-        <button className="w-full mt-6 bg-gray-300 py-2 rounded-md text-gray-700 font-medium">
-          Ver outras postagens
-        </button>
-      </div>
+      </section>
     </div>
   );
 }
+
