@@ -1,13 +1,40 @@
 "use client";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { toast } from "react-hot-toast";
 
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [errors, setErrors] = useState({ email: "", password: "" });
+
+  const validateFields = () => {
+    let newErrors = { email: "", password: "" };
+    let valid = true;
+    
+    if (!email) {
+      newErrors.email = "O email é obrigatório.";
+      valid = false;
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      newErrors.email = "Insira um email válido.";
+      valid = false;
+    }
+    if (!password) {
+      newErrors.password = "A senha é obrigatória.";
+      valid = false;
+    }
+    
+    setErrors(newErrors);
+    return valid;
+  };
 
   const handleLogin = async () => {
+    if (!validateFields()) {
+      toast.error("Os campos não podem ficar em branco.");
+      return;
+    }
+    
     const res = await fetch("/api/auth/login", {
       method: "POST",
       body: JSON.stringify({ email, password }),
@@ -16,10 +43,13 @@ export default function LoginPage() {
 
     const data = await res.json();
     if (res.ok) {
-      alert("Login bem-sucedido!");
+      toast.success("Login bem-sucedido!");
       router.push("/dashboard");
     } else {
-      alert(data.error);
+      if (data.error === "Usuário não encontrado") {
+        setErrors({ email: "Usuário não encontrado", password: "Usuário não encontrado" });
+      }
+      toast.error(data.error || "Erro ao fazer login");
     }
   };
 
@@ -31,18 +61,20 @@ export default function LoginPage() {
           <label className="block mb-2 text-black font-medium">Email</label>
           <input 
             type="email" 
-            className="w-full p-2 border border-gray-300 rounded-md text-black"
+            className={`w-full p-2 border ${errors.email ? "border-red-500" : "border-gray-300"} rounded-md text-black`}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />
+          {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
           
           <label className="block mt-4 mb-2 text-black font-medium">Senha</label>
           <input 
             type="password" 
-            className="w-full p-2 border border-gray-300 rounded-md text-black"
+            className={`w-full p-2 border ${errors.password ? "border-red-500" : "border-gray-300"} rounded-md text-black`}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
+          {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password}</p>}
 
           <button className="w-full py-2 mt-4 bg-blue-500 text-white rounded-md" onClick={handleLogin}>
             Entrar
@@ -73,3 +105,4 @@ export default function LoginPage() {
     </div>
   );
 }
+
