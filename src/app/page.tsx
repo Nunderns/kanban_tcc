@@ -6,23 +6,37 @@ export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  
+
   return (
     <div className="flex h-screen">
       <div className="w-1/2 flex flex-col items-center justify-center bg-white p-10">
         <h1 className="text-4xl font-semibold mb-6 text-black">TaskFlow</h1>
         <div className="w-80">
           <label className="block mb-2 text-black font-medium">Email</label>
-          <input type="email"className="w-full p-2 border border-gray-300 rounded-md" value={email}/>
-          <label className="block mb-2 text-black font-medium">Senha</label>
-          <input type="password"className="w-full p-2 border border-gray-300 rounded-md" value={password}/>
+          <input 
+            type="email" 
+            className="w-full p-2 border border-gray-300 rounded-md text-black"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+          
+          <label className="block mt-4 mb-2 text-black font-medium">Senha</label>
+          <input 
+            type="password" 
+            className="w-full p-2 border border-gray-300 rounded-md text-black"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+
           <p className="text-sm text-blue-600 mt-2 cursor-pointer font-semibold">Esqueci a senha</p>
-          <button className="w-full py-2 bg-blue-500 text-white rounded-md">Entrar</button>
+          <button className="w-full py-2 mt-4 bg-blue-500 text-white rounded-md">Entrar</button>
+          
           <div className="flex items-center my-6">
             <hr className="flex-grow border-gray-300"/>
             <span className="mx-4 text-gray-500">ou</span>
             <hr className="flex-grow border-gray-300"/>
           </div>
+
           <button className="w-full py-2 bg-white text-black border border-gray-300 rounded-md">Entrar com Google</button>
         </div>
       </div>
@@ -44,6 +58,5 @@ export default function LoginPage() {
         </button>
       </div>
     </div>
-    
   );
 }
