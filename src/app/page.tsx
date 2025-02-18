@@ -17,19 +17,6 @@ export default function HomePage() {
 
   return (
     <div className="flex flex-col items-center min-h-screen w-full">
-      <header className={`fixed top-0 w-full flex justify-between p-5 transition-all duration-300 z-50 ${isScrolled ? "bg-white shadow-md" : "bg-transparent"}`}>
-        <h1 className="text-3xl font-bold text-blue-600">TaskFlow</h1>
-        <nav>
-          <ul className="flex space-x-6 font-medium">
-            <li><a href="#funcionalidades" className="hover:text-blue-500">Funcionalidades</a></li>
-            <li><a href="#planos" className="hover:text-blue-500">Planos</a></li>
-            <li><a href="#blog" className="hover:text-blue-500">Blog</a></li>
-            <li><a href="#cases" className="hover:text-blue-500">Cases</a></li>
-            <li><a href="/login" className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600">Experimente</a></li>
-          </ul>
-        </nav>
-      </header>
-      
       <section className="text-center py-32 bg-gradient-to-r from-blue-700 to-blue-500 text-white w-full flex flex-col items-center justify-center">
         <h2 className="text-5xl font-bold max-w-4xl">Software para gestão de agências: centralize tudo em um só lugar</h2>
         <p className="mt-6 max-w-2xl text-lg">
@@ -37,7 +24,7 @@ export default function HomePage() {
         </p>
         <button onClick={() => router.push("/login")} className="mt-8 px-6 py-3 bg-white text-blue-600 font-bold rounded-md shadow-md hover:bg-gray-200">Agende uma demonstração</button>
       </section>
-      
+
       <section id="funcionalidades" className="py-16 bg-white text-black w-full text-center">
         <h2 className="text-4xl font-semibold">Funcionalidades</h2>
         <p className="mt-4 text-lg">A solução ideal para os desafios diários da sua agência.</p>
