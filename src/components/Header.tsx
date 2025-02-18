@@ -2,9 +2,17 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 export default function Header() {
     const [isScrolled, setIsScrolled] = useState(false);
+    const pathname = usePathname();
+
+    const pagesWithHeader = ["/funcionalidades", "/planos", "/blog", "/cases"];
+
+    if (!pagesWithHeader.includes(pathname)) {
+        return null;
+    }
 
     useEffect(() => {
         const handleScroll = () => {
@@ -77,7 +85,6 @@ export default function Header() {
                         </Link>
                     </li>
                 </ul>
-
             </nav>
         </header>
     );
