@@ -21,10 +21,10 @@ export default function HomePage() {
         <h1 className="text-3xl font-bold text-blue-600">TaskFlow</h1>
         <nav>
           <ul className="flex space-x-6 font-medium">
-            <li><a href="#funcionalidades" className="hover:text-blue-500">Funcionalidades</a></li>
-            <li><a href="#planos" className="hover:text-blue-500">Planos</a></li>
-            <li><a href="#blog" className="hover:text-blue-500">Blog</a></li>
-            <li><a href="#cases" className="hover:text-blue-500">Cases</a></li>
+            <li><a href="/funcionalidades" className="hover:text-blue-500">Funcionalidades</a></li>
+            <li><a href="/planos" className="hover:text-blue-500">Planos</a></li>
+            <li><a href="/blog" className="hover:text-blue-500">Blog</a></li>
+            <li><a href="/cases" className="hover:text-blue-500">Cases</a></li>
             <li><a href="/login" className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600">Experimente</a></li>
           </ul>
         </nav>
