@@ -8,7 +8,7 @@ export default function Header() {
     const [isScrolled, setIsScrolled] = useState(false);
     const pathname = usePathname();
 
-    const pagesWithHeader = ["/funcionalidades", "/planos", "/blog", "/cases"];
+    const pagesWithHeader = ["/funcionalidades", "/planos", "/blog", "/cases", "/"];
 
     if (!pagesWithHeader.includes(pathname)) {
         return null;
