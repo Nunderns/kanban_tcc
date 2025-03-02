@@ -29,7 +29,9 @@ export default function LoginPage() {
     return valid;
   };
 
-  const handleLogin = async () => {
+  const handleLogin = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+
     if (!validateFields()) {
       toast.error("Os campos não podem ficar em branco.");
       return;
@@ -57,7 +59,7 @@ export default function LoginPage() {
     <div className="flex h-screen">
       <div className="w-1/2 flex flex-col items-center justify-center bg-white p-10">
         <h1 className="text-4xl font-semibold mb-6 text-black">TaskFlow</h1>
-        <div className="w-80">
+        <form className="w-80" onSubmit={handleLogin}>
           <label className="block mb-2 text-black font-medium">Email</label>
           <input 
             type="email" 
@@ -76,14 +78,17 @@ export default function LoginPage() {
           />
           {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password}</p>}
 
-          <button className="w-full py-2 mt-4 bg-blue-500 text-white rounded-md" onClick={handleLogin}>
+          <button 
+            type="submit"
+            className="w-full py-2 mt-4 bg-blue-500 text-white rounded-md"
+          >
             Entrar
           </button>
+        </form>
 
-          <p className="mt-4 text-black">
-            Não tem uma conta? <a href="/register" className="text-blue-500">Criar conta</a>
-          </p>
-        </div>
+        <p className="mt-4 text-black">
+          Não tem uma conta? <a href="/register" className="text-blue-500">Criar conta</a>
+        </p>
       </div>
 
       <div className="w-1/2 bg-gray-200 p-8">
@@ -105,4 +110,3 @@ export default function LoginPage() {
     </div>
   );
 }
-
