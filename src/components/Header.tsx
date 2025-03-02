@@ -10,9 +10,8 @@ export default function Header() {
 
     const pagesWithHeader = ["/funcionalidades", "/planos", "/blog", "/cases", "/"];
 
-    if (!pagesWithHeader.includes(pathname)) {
-        return null;
-    }
+    // A lógica para verificar se a página deve renderizar o header
+    const shouldRenderHeader = pagesWithHeader.includes(pathname);
 
     useEffect(() => {
         const handleScroll = () => {
@@ -22,6 +21,10 @@ export default function Header() {
         window.addEventListener("scroll", handleScroll);
         return () => window.removeEventListener("scroll", handleScroll);
     }, []);
+
+    if (!shouldRenderHeader) {
+        return null;
+    }
 
     return (
         <header
