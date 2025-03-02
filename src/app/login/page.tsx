@@ -1,18 +1,27 @@
 "use client";
-import { useState } from "react";
+
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useSession, signIn } from "next-auth/react";
 import { toast } from "react-hot-toast";
 
 export default function LoginPage() {
   const router = useRouter();
+  const { data: session, status } = useSession();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState({ email: "", password: "" });
 
+  useEffect(() => {
+    if (status === "authenticated") {
+      router.push("/dashboard");
+    }
+  }, [status, router]);
+
   const validateFields = () => {
     let newErrors = { email: "", password: "" };
     let valid = true;
-    
+
     if (!email) {
       newErrors.email = "O email é obrigatório.";
       valid = false;
@@ -24,36 +33,36 @@ export default function LoginPage() {
       newErrors.password = "A senha é obrigatória.";
       valid = false;
     }
-    
+
     setErrors(newErrors);
     return valid;
   };
 
-  const handleLogin = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
 
     if (!validateFields()) {
       toast.error("Os campos não podem ficar em branco.");
       return;
     }
-    
-    const res = await fetch("/api/auth/login", {
-      method: "POST",
-      body: JSON.stringify({ email, password }),
-      headers: { "Content-Type": "application/json" },
+
+    const res = await signIn("credentials", {
+      redirect: false,
+      email,
+      password,
     });
 
-    const data = await res.json();
-    if (res.ok) {
+    if (res?.error) {
+      toast.error(res.error || "Erro ao fazer login");
+    } else {
       toast.success("Login bem-sucedido!");
       router.push("/dashboard");
-    } else {
-      if (data.error === "Usuário não encontrado") {
-        setErrors({ email: "Usuário não encontrado", password: "Usuário não encontrado" });
-      }
-      toast.error(data.error || "Erro ao fazer login");
     }
   };
+
+  if (status === "loading") {
+    return <p className="p-10 text-lg">Carregando...</p>;
+  }
 
   return (
     <div className="flex h-screen">
