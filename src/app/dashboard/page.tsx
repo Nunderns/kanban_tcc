@@ -19,7 +19,7 @@ export default function DashboardPage() {
 
   // Exibe a mensagem de loading enquanto verifica a sessão
   if (status === "loading") {
-    return <p className="p-10 text-lg">Carregando...</p>;
+    return <p className="p-10 text-lg">Carregando...</p>; // Exibe um loading enquanto verifica a sessão
   }
 
   return (

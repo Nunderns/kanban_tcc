@@ -3,7 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "react-hot-toast";
 import Header from "@/components/Header";
 import "./globals.css";
-import SessionWrapper from "@/components/SessionWrapper";
+import SessionWrapper from "@/components/SessionWrapper"; // Importando o SessionWrapper sem conflito
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
