@@ -1,6 +1,7 @@
 "use client";
 
 import Sidebar from "@/components/Sidebar";
+import { Navbar }from "@/components/Navbar";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
@@ -14,12 +15,12 @@ const DashBoardLayout = ({ children }: DashboardLayoutProps) => {
   const router = useRouter();
   const { data: session, status } = useSession();
 
-  useEffect(() => {
-    if (status === "unauthenticated") {
-      toast.error("Você não está logado. Faça login para acessar o Dashboard.");
-      router.push("/login");
-    }
-  }, [status, router]);
+  // useEffect(() => {
+  //   if (status === "unauthenticated") {
+  //     toast.error("Você não está logado. Faça login para acessar o Dashboard.");
+  //     router.push("/login");
+  //   }
+  // }, [status, router]);
 
   if (status === "loading") {
     return <p className="p-10 text-lg">Carregando...</p>;
@@ -31,8 +32,9 @@ const DashBoardLayout = ({ children }: DashboardLayoutProps) => {
         <div className="fixed left-0 top-0 hidden lg:block lg:w-[264px] h-full overflow-y-auto">
           <Sidebar/>
         </div>
-        <div className="lg:pl-[264px]">
+        <div className="lg:pl-[264px] w-full">
           <div className="mx-auto max-w-screen-2xl h-full">
+            <Navbar/>
             <main>
               {children}
             </main>

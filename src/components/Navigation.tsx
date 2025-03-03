@@ -5,25 +5,25 @@ import { cn } from "@/lib/utils";
 
 const routes = [
     {
-        label: "Home",
-        href: "/",
+        label: "Inicio",
+        href: "/dashboard",
         icon: GoHome,
         activeIcon: GoHomeFill,
     },
     {
-        label: "My Tasks",
+        label: "Minhas Tarefas",
         href: "/tasks",
         icon: GoCheckCircle,
         activeIcon: GoCheckCircleFill,
     },
     {
-        label: "Settings",
+        label: "Configurações",
         href: "/settings",
         icon: SettingsIcon,
         activeIcon: SettingsIcon,
     },
     {
-        label: "Members",
+        label: "Membros",
         href: "/members",
         icon: UsersIcon,
         activeIcon: UsersIcon,
