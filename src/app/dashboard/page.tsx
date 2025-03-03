@@ -1,44 +1,46 @@
 "use client";
 
+import Sidebar from "@/components/Sidebar";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import { toast } from "react-hot-toast";
 
-export default function DashboardPage() {
+interface DashboardLayoutProps{
+  children: React.ReactNode;
+};
+
+const DashBoardLayout = ({ children }: DashboardLayoutProps) => {
   const router = useRouter();
   const { data: session, status } = useSession();
 
-  // Verifica o status da sessão para redirecionar para o login se o usuário não estiver autenticado
   useEffect(() => {
     if (status === "unauthenticated") {
       toast.error("Você não está logado. Faça login para acessar o Dashboard.");
-      router.push("/login"); // Redireciona para o login caso o usuário não esteja autenticado
+      router.push("/login");
     }
   }, [status, router]);
 
-  // Exibe a mensagem de loading enquanto verifica a sessão
   if (status === "loading") {
-    return <p className="p-10 text-lg">Carregando...</p>; // Exibe um loading enquanto verifica a sessão
+    return <p className="p-10 text-lg">Carregando...</p>;
   }
 
   return (
-    <div className="p-10">
-      <h1 className="text-3xl font-bold">
-        Bem-vindo ao Dashboard, {session?.user?.name}!
-      </h1>
-      <p className="mt-4">Aqui estão seus dados e informações importantes.</p>
-
-      {/* Botão de logout */}
-      <button
-        onClick={() => {
-          signOut({ callbackUrl: "/login" }); // Redireciona para a página de login após o logout
-          toast.success("Você saiu da conta!");
-        }}
-        className="mt-4 bg-red-500 text-white px-4 py-2 rounded"
-      >
-        Sair
-      </button>
+    <div className="min-h-screen">
+      <div className="flex w-full h-full">
+        <div className="fixed left-0 top-0 hidden lg:block lg:w-[264px] h-full overflow-y-auto">
+          <Sidebar/>
+        </div>
+        <div className="lg:pl-[264px]">
+          <div className="mx-auto max-w-screen-2xl h-full">
+            <main>
+              {children}
+            </main>
+          </div>
+        </div>
+      </div>
     </div>
   );
-}
+};
+
+export default DashBoardLayout;
