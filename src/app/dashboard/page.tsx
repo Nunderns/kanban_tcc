@@ -1,48 +1,45 @@
-"use client";
+import { Card, CardContent } from "@/components/ui/card";
+import { Sidebar } from "@/components/Sidebar";
 
-import Sidebar from "@/components/Sidebar";
-import { Navbar }from "@/components/Navbar";
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { useSession, signOut } from "next-auth/react";
-import { toast } from "react-hot-toast";
-
-interface DashboardLayoutProps{
-  children: React.ReactNode;
-};
-
-const DashBoardLayout = ({ children }: DashboardLayoutProps) => {
-  const router = useRouter();
-  const { data: session, status } = useSession();
-
-  // useEffect(() => {
-  //   if (status === "unauthenticated") {
-  //     toast.error("Você não está logado. Faça login para acessar o Dashboard.");
-  //     router.push("/login");
-  //   }
-  // }, [status, router]);
-
-  if (status === "loading") {
-    return <p className="p-10 text-lg">Carregando...</p>;
-  }
-
+export default function Dashboard() {
   return (
-    <div className="min-h-screen">
-      <div className="flex w-full h-full">
-        <div className="fixed left-0 top-0 hidden lg:block lg:w-[264px] h-full overflow-y-auto">
-          <Sidebar/>
+    <div className="flex h-screen">
+      {/* Sidebar fixa */}
+      <Sidebar />
+      
+      {/* Conteúdo principal expandido corretamente */}
+      <div className="flex-1 p-6 bg-gray-100 overflow-auto">
+        <h1 className="text-2xl font-semibold">Início</h1>
+        <p className="text-gray-600 mb-6">Monitore todos os seus projetos e tarefas aqui</p>
+        
+        {/* Cards de Status - Ajustando a largura */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+          {["Total de Projetos", "Total de Tarefas", "Tarefas encarregadas", "Tarefas finalizadas", "Tarefas finalizadas"].map((title, index) => (
+            <Card key={index} className="flex flex-col items-center justify-center p-4">
+              <CardContent>
+                <p className="text-gray-600 text-center">{title}</p>
+                <p className="text-3xl font-bold">2</p>
+              </CardContent>
+            </Card>
+          ))}
         </div>
-        <div className="lg:pl-[264px] w-full">
-          <div className="mx-auto max-w-screen-2xl h-full">
-            <Navbar/>
-            <main>
-              {children}
-            </main>
+
+        {/* Lista de Tarefas - Expandindo corretamente */}
+        <div className="bg-white p-4 rounded-lg shadow mt-6 max-w-3xl">
+          <div className="flex justify-between items-center">
+            <h2 className="text-xl font-semibold">Tarefas encarregadas (3)</h2>
+            <button className="text-gray-500 hover:text-gray-700">+</button>
+          </div>
+          <div className="mt-4 space-y-3">
+            {[1, 2, 3].map((task) => (
+              <div key={task} className="bg-gray-100 p-3 rounded">
+                <p className="font-semibold">Nome da tarefa {task}</p>
+                <p className="text-sm text-gray-500">Descrição da Tarefa • 14 Dias Restantes</p>
+              </div>
+            ))}
           </div>
         </div>
       </div>
     </div>
   );
-};
-
-export default DashBoardLayout;
+}
