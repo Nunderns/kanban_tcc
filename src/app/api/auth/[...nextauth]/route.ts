@@ -1,11 +1,11 @@
-import NextAuth from "next-auth";
+import NextAuth, { AuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
 
-export const authOptions = {
+export const authOptions: AuthOptions = {
   providers: [
     CredentialsProvider({
       name: "Credentials",
@@ -14,7 +14,6 @@ export const authOptions = {
         password: { label: "Senha", type: "password" },
       },
       async authorize(credentials) {
-        // Verifica as credenciais no banco de dados
         if (credentials?.email && credentials?.password) {
           const user = await prisma.user.findUnique({
             where: {
@@ -26,31 +25,28 @@ export const authOptions = {
             throw new Error("Usuário não encontrado");
           }
 
-          // Verifica a senha usando bcrypt
           const isValidPassword = await bcrypt.compare(credentials.password, user.password);
 
           if (!isValidPassword) {
             throw new Error("Senha inválida");
           }
 
-          return { id: user.id, email: user.email, name: user.name };
+          return { id: String(user.id), email: user.email, name: user.name };
         }
-
-        // Caso as credenciais não sejam válidas
         return null;
       },
     }),
   ],
   pages: {
-    signIn: "/login", // Página de login personalizada
+    signIn: "/login",
   },
   session: {
-    strategy: "jwt", // Usa JWT para a autenticação
-    maxAge: 30 * 24 * 60 * 60, // Tempo máximo de expiração do token (30 dias)
-    updateAge: 24 * 60 * 60, // Renovação do token a cada 24 horas
+    strategy: "jwt",
+    maxAge: 30 * 24 * 60 * 60,
+    updateAge: 24 * 60 * 60,
   },
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user }: { token: any; user?: any }) {
       if (user) {
         token.id = user.id;
         token.email = user.email;
@@ -58,7 +54,7 @@ export const authOptions = {
       }
       return token;
     },
-    async session({ session, token }) {
+    async session({ session, token }: { session: any; token: any }) {
       session.user.id = token.id;
       session.user.email = token.email;
       session.user.name = token.name;
@@ -69,10 +65,10 @@ export const authOptions = {
     sessionToken: {
       name: `next-auth.session-token`,
       options: {
-        httpOnly: true, // O cookie não é acessível via JavaScript
-        secure: process.env.NODE_ENV === "production", // Só envia cookies em conexões seguras (https)
-        sameSite: "lax", // Garante que o cookie seja enviado em todas as requisições cruzadas
-        path: "/", // O cookie será enviado para toda a aplicação
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        path: "/",
       },
     },
   },
