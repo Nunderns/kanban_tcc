@@ -22,19 +22,20 @@ model User {
   sessions      Session[]
 }
 
-// Tabela de Projetos
+// 🔹 Tabela de Projetos
 model Project {
   id          Int      @id @default(autoincrement())
   name        String
+  image       String?  @db.Text // 🔹 Permite armazenar URLs longas
   description String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   ownerId     Int
-  owner       User     @relation(fields: [ownerId], references: [id])
+  owner       User     @relation(fields: [ownerId], references: [id], onDelete: Cascade) // 🔹 Se um usuário for excluído, os projetos também serão excluídos
   tasks       Task[]
 }
 
-// Tabela de Tarefas
+// 🔹 Tabela de Tarefas
 model Task {
   id          Int      @id @default(autoincrement())
   title       String
@@ -43,37 +44,39 @@ model Task {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   userId      Int
-  user        User     @relation(fields: [userId], references: [id])
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade) // 🔹 Se um usuário for excluído, as tarefas também serão excluídas
   projectId   Int?
-  project     Project? @relation(fields: [projectId], references: [id])
+  project     Project? @relation(fields: [projectId], references: [id], onDelete: Cascade) // 🔹 Se um projeto for excluído, as tarefas associadas também são excluídas
 }
 
+// 🔹 Enum de Status de Tarefas
 enum Status {
   TODO
   IN_PROGRESS
   DONE
 }
 
-// Tabela de Notificações
+// 🔹 Tabela de Notificações
 model Notification {
   id        Int      @id @default(autoincrement())
   message   String
   userId    Int
-  user      User     @relation(fields: [userId], references: [id])
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
 }
 
-// Tabela de Configurações do Usuário
+// 🔹 Tabela de Configurações do Usuário
 model Settings {
   id                   Int      @id @default(autoincrement())
   userId               Int      @unique
-  user                 User     @relation(fields: [userId], references: [id])
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   darkMode             Boolean  @default(false)
   notificationsEnabled Boolean  @default(true)
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
 }
 
+// 🔹 Tabela de Sessões
 model Session {
   id        Int      @id @default(autoincrement())
   token     String   @unique
