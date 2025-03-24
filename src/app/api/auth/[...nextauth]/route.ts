@@ -2,12 +2,10 @@ import NextAuth, { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
-import { JWT } from "next-auth/jwt";
-import { Session } from "next-auth";
 
 const prisma = new PrismaClient();
 
-export const authOptions: NextAuthOptions = {
+const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
       name: "Credentials",
@@ -34,7 +32,7 @@ export const authOptions: NextAuthOptions = {
           }
 
           return {
-            id: String(user.id), // Garante que `id` seja string
+            id: String(user.id),
             email: user.email ?? "",
             name: user.name ?? "",
           };
@@ -85,6 +83,6 @@ export const authOptions: NextAuthOptions = {
   },
 };
 
+// Definir apenas um handler e exportá-lo corretamente
 const handler = NextAuth(authOptions);
-
 export { handler as GET, handler as POST };

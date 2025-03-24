@@ -1,9 +1,11 @@
+import Image from "next/image";
+
 export default function Footer() {
     return (
       <footer className="bg-white text-gray-700 py-10 border-t">
         <div className="container mx-auto px-6 flex flex-col md:flex-row justify-between items-center">
           <div className="text-center md:text-left mb-6 md:mb-0">
-            <img src="/logo.png" alt="TaskFlow Logo" className="h-10 mb-2 mx-auto md:mx-0" />
+          <Image src="/logo.png" alt="Logo" width={100} height={50} />
             <p className="text-sm">info@taskflow.com.br</p>
             <p className="text-sm mt-2">Copyright © 2025 TaskFlow</p>
             <p className="text-sm">Powered by TaskFlow</p>
