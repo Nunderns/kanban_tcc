@@ -20,7 +20,7 @@ export default function LoginPage() {
   }, [status, router]);
 
   const validateFields = () => {
-    let newErrors = { email: "", password: "" };
+    const newErrors = { email: "", password: "" };
     let valid = true;
 
     if (!email) {
