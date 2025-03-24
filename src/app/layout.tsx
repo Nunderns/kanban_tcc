@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "react-hot-toast";
 import Header from "@/components/Header";
+import LayoutWrapper from "@/components/LayoutWrapper"; // Novo componente Cliente
 import "./globals.css";
-import SessionWrapper from "@/components/SessionWrapper"; // Importando o SessionWrapper sem conflito
+import SessionWrapper from "@/components/SessionWrapper";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -27,7 +28,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <SessionWrapper>
           <Toaster position="top-right" />
           <Header />
-          {children}
+          <LayoutWrapper>
+            <main>{children}</main>
+          </LayoutWrapper>
         </SessionWrapper>
       </body>
     </html>
