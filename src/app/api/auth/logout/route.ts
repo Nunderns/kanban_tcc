@@ -2,11 +2,10 @@ import { NextResponse } from "next/server";
 import prisma from "@/app/lib/prisma";
 import { cookies } from "next/headers";
 
-export async function POST(req: Request) {
+export async function POST() {
   try {
-
-    const cookieStore = await cookies();
-    const token = cookieStore.get("auth_token")?.value;
+    const cookieStore = cookies();
+    const token = (await cookieStore).get("auth_token")?.value;
 
     if (!token) {
       return NextResponse.json({ error: "Usuário não está autenticado" }, { status: 401 });
@@ -23,7 +22,8 @@ export async function POST(req: Request) {
     await prisma.session.delete({
       where: { id: userSession.id },
     });
-    await cookieStore.set("auth_token", "", { expires: new Date(0) });
+
+    (await cookieStore).set("auth_token", "", { expires: new Date(0) });
 
     return NextResponse.json({ message: "Logout realizado com sucesso" }, { status: 200 });
   } catch (error) {

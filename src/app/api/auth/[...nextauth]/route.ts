@@ -1,11 +1,13 @@
-import NextAuth, { AuthOptions } from "next-auth";
+import NextAuth, { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { JWT } from "next-auth/jwt";
+import { Session } from "next-auth";
 
 const prisma = new PrismaClient();
 
-export const authOptions: AuthOptions = {
+export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
       name: "Credentials",
@@ -31,7 +33,11 @@ export const authOptions: AuthOptions = {
             throw new Error("Senha inválida");
           }
 
-          return { id: String(user.id), email: user.email, name: user.name };
+          return {
+            id: String(user.id), // Garante que `id` seja string
+            email: user.email ?? "",
+            name: user.name ?? "",
+          };
         }
         return null;
       },
@@ -46,19 +52,24 @@ export const authOptions: AuthOptions = {
     updateAge: 24 * 60 * 60,
   },
   callbacks: {
-    async jwt({ token, user }: { token: any; user?: any }) {
+    async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
-        token.email = user.email;
-        token.name = user.name;
+        token.email = user.email ?? "";
+        token.name = user.name ?? "";
       }
       return token;
     },
-    async session({ session, token }: { session: any; token: any }) {
-      session.user.id = token.id;
-      session.user.email = token.email;
-      session.user.name = token.name;
-      return session;
+    async session({ session, token }) {
+      return {
+        ...session,
+        user: {
+          ...session.user,
+          id: token.id,
+          email: token.email,
+          name: token.name,
+        },
+      };
     },
   },
   cookies: {
