@@ -25,12 +25,7 @@ kanban_tcc/
 │   │   ├── dashboard/   # Página principal do Kanban
 │   │   ├── auth/        # Sistema de autenticação
 │   ├── components/      # Componentes reutilizáveis
-│   ├── hooks/           # Hooks customizados
 │   ├── lib/             # Configurações gerais (Prisma, Auth, etc.)
-│   ├── styles/          # Configuração do Tailwind CSS
-│   ├── types/           # Definição de tipos TypeScript
-│   ├── utils/           # Funções auxiliares
-│
 ├── prisma/              # Configuração do banco de dados
 ├── .env                 # Variáveis de ambiente
 ├── docker-compose.yml   # Configuração do ambiente Docker
