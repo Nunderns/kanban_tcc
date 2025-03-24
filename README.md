@@ -1,36 +1,86 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🚀 Kanban TCC
 
-## Getting Started
+Um sistema de gerenciamento de tarefas estilo **Kanban**, desenvolvido com **Next.js** e um backend baseado em **MySQL** com Prisma. O projeto permite criar, editar e gerenciar tarefas e projetos de forma intuitiva e eficiente.
 
-First, run the development server:
+## 📌 Tecnologias Utilizadas
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+- **Next.js** - Framework React para SSR e SSG
+- **MySQL** - Banco de dados relacional
+- **Prisma** - ORM para manipulação do banco de dados
+- **ShadCN UI** - Biblioteca de componentes estilizados
+- **Bcrypt** - Para hash de senhas
+- **React Hook Form** - Gerenciamento de formulários
+- **Zod** - Validação de dados
+- **Tailwind CSS** - Estilização moderna e responsiva
+- **Axios** - Requisições HTTP
+- **NextAuth.js** - Autenticação e gerenciamento de usuários
+
+## 📂 Estrutura do Projeto
+
+```
+kanban_tcc/
+├── src/
+│   ├── app/
+│   │   ├── api/         # Rotas da API
+│   │   ├── dashboard/   # Página principal do Kanban
+│   │   ├── auth/        # Sistema de autenticação
+│   ├── components/      # Componentes reutilizáveis
+│   ├── hooks/           # Hooks customizados
+│   ├── lib/             # Configurações gerais (Prisma, Auth, etc.)
+│   ├── styles/          # Configuração do Tailwind CSS
+│   ├── types/           # Definição de tipos TypeScript
+│   ├── utils/           # Funções auxiliares
+│
+├── prisma/              # Configuração do banco de dados
+├── .env                 # Variáveis de ambiente
+├── docker-compose.yml   # Configuração do ambiente Docker
+├── README.md            # Documentação
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## ⚙️ Configuração e Instalação
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 1️⃣ Clone o repositório
+```sh
+git clone https://github.com/Nunderns/kanban_tcc.git
+cd kanban_tcc
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 2️⃣ Instale as dependências
+```sh
+npm install
+# ou
+yarn install
+```
 
-## Learn More
+### 3️⃣ Configure as variáveis de ambiente
+Crie um arquivo `.env` e adicione as seguintes variáveis:
+```sh
+DATABASE_URL="mysql://user:password@localhost:3306/kanban"
+NEXTAUTH_SECRET="sua_chave_secreta"
+NEXTAUTH_URL="http://localhost:3000"
+```
 
-To learn more about Next.js, take a look at the following resources:
+### 4️⃣ Configure o Banco de Dados
+```sh
+npx prisma migrate dev --name init
+npx prisma generate
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### 5️⃣ Inicie o servidor
+```sh
+npm run dev
+```
+O projeto estará rodando em **http://localhost:3000**.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 🛠 Funcionalidades
 
-## Deploy on Vercel
+✅ Autenticação com **NextAuth.js**
+✅ Criação e edição de tarefas e projetos
+✅ Organização por colunas no estilo **Kanban**
+✅ Interface moderna com **ShadCN UI** e **Tailwind CSS**
+✅ Hash de senhas com **Bcrypt**
+✅ API otimizada utilizando **Prisma ORM**
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 📜 Licença
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Este projeto está sob a licença **MIT**. Sinta-se livre para contribuir! 🎉
