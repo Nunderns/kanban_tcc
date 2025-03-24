@@ -1,21 +1,10 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
 import Image from "next/image";
 
 export default function HomePage() {
   const router = useRouter();
-  const [isScrolled, setIsScrolled] = useState(false);
-
-  useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 50);
-    };
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-
   return (
     <div className="flex flex-col items-center min-h-screen w-full">
       <section className="text-center py-32 bg-gradient-to-r from-blue-700 to-blue-500 text-white w-full flex flex-col items-center justify-center">
@@ -32,17 +21,17 @@ export default function HomePage() {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-12">
           <div className="p-6 bg-white rounded-lg shadow-md flex flex-col items-center text-center">
-            <img src="/images/RankdeCliente.png" alt="Dashboard de tráfego" className="w-50 h-32 mb-4" />
+          <Image src="/images/RankdeCliente.png" alt="Logo" width={200} height={100}/>
             <h3 className="text-2xl font-bold text-purple-700">Conheça seus clientes mais rentáveis</h3>
             <p className="mt-2 text-gray-600">Mensure a lucratividade de cada cliente e saiba exatamente o que é rentável para seu negócio.</p>
           </div>
           <div className="p-6 bg-white rounded-lg shadow-md flex flex-col items-center text-center">
-            <img src="/images/Provacao.png" alt="Aprovação de jobs" className="w-50 h-32 mb-4" />
+            <Image src="/images/Provacao.png" alt="Aprovação de jobs" width={200} height={100} />
             <h3 className="text-2xl font-bold text-purple-700">Agilize a aprovação dos jobs</h3>
             <p className="mt-2 text-gray-600">Otimize o trabalho do atendimento com uma comunicação mais transparente e centralizada.</p>
           </div>
           <div className="p-6 bg-white rounded-lg shadow-md flex flex-col items-center text-center">
-            <img src="/images/DashboardTrafego.png" alt="Dashboard de tráfego" className="w-50 h-32 mb-4" />
+            <Image src="/images/DashboardTrafego.png" alt="Dashboard de tráfego"width={200} height={100} />
             <h3 className="text-2xl font-bold text-purple-700">Controle seus projetos</h3>
             <p className="mt-2 text-gray-600">Visualize e centralize as informações de todos os jobs da agência.</p>
           </div>

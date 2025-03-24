@@ -9,6 +9,13 @@ export const Sidebar = () => {
   const [workspace, setWorkspace] = useState("Nome do espaço de trabalho");
   const projects = ["Projeto 1", "Projeto 2"];
 
+  const handleWorkspaceChange = () => {
+    const newName = prompt("Digite o novo nome do espaço de trabalho:");
+    if (newName) {
+      setWorkspace(newName);
+    }
+  };
+
   return (
     <aside className="h-screen w-64 bg-neutral-100 p-4 flex flex-col">
       {/* Logo */}
@@ -19,7 +26,7 @@ export const Sidebar = () => {
       {/* Espaço de Trabalho */}
       <div className="mt-4 flex items-center justify-between bg-gray-200 p-2 rounded-lg">
         <span className="text-sm font-medium">{workspace}</span>
-        <button className="text-gray-600 hover:text-gray-900">
+        <button className="text-gray-600 hover:text-gray-900" onClick={handleWorkspaceChange}>
           <Plus size={16} />
         </button>
       </div>
