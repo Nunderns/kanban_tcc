@@ -7,12 +7,11 @@ import { toast } from "react-hot-toast";
 
 export default function LoginPage() {
   const router = useRouter();
-  const { data: session, status } = useSession();
+  const { status } = useSession(); // Removido `session` pois não estava sendo usado
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState({ email: "", password: "" });
 
-  // Verifica se o usuário já está autenticado e redireciona para o dashboard
   useEffect(() => {
     if (status === "authenticated") {
       router.push("/dashboard");
@@ -20,7 +19,7 @@ export default function LoginPage() {
   }, [status, router]);
 
   const validateFields = () => {
-    const newErrors = { email: "", password: "" };
+    const newErrors = { email: "", password: "" }; // Usando `const`
     let valid = true;
 
     if (!email) {
@@ -39,7 +38,6 @@ export default function LoginPage() {
     return valid;
   };
 
-  // A função `handleLogin` agora não exige que `e` seja opcional
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
 
