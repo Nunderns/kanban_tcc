@@ -32,10 +32,12 @@ for file in files:
 openai.api_key = OPENAI_API_KEY
 prompt = f"Revise as seguintes mudanças de código e sugira melhorias:\n\n{code_changes}"
 
-response = openai.ChatCompletion.create(
+response = openai.chat.completions.create(
     model="gpt-4-turbo",
-    messages=[{"role": "system", "content": "Você é um revisor de código experiente."},
-              {"role": "user", "content": prompt}]
+    messages=[
+        {"role": "system", "content": "Você é um revisor de código experiente."},
+        {"role": "user", "content": prompt}
+    ]
 )
 
 review_feedback = response["choices"][0]["message"]["content"]
