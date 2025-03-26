@@ -5,11 +5,11 @@ on:
     types: [opened, synchronize]
 
 jobs:
-  analyze_pr:
+  review:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout código
-        uses: actions/checkout@v3
+      - name: Checkout do código
+        uses: actions/checkout@v4
 
       - name: Configurar Python
         uses: actions/setup-python@v4
@@ -17,14 +17,10 @@ jobs:
           python-version: '3.9'
 
       - name: Instalar dependências
-        run: pip install flake8 requests
+        run: pip install openai requests
 
-      - name: Rodar análise de código
-        run: flake8 . --exit-zero > flake8_report.txt || true
-
-      - name: Executar script de análise
+      - name: Executar análise da IA
         env:
           GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
-          REPO_OWNER: "Nunderns"
-          REPO_NAME: "kanban_tcc"
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: python .github/scripts/review_bot.py
