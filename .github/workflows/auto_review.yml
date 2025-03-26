@@ -1,0 +1,30 @@
+name: Auto Review PR
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  analyze_pr:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v3
+
+      - name: Configurar Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Instalar dependências
+        run: pip install flake8 requests
+
+      - name: Rodar análise de código
+        run: flake8 . --exit-zero > flake8_report.txt || true
+
+      - name: Executar script de análise
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO_OWNER: "Nunderns"
+          REPO_NAME: "kanban_tcc"
+        run: python .github/scripts/review_bot.py
