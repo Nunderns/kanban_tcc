@@ -24,7 +24,7 @@ jobs:
 
       - name: Executar script de análise
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
           REPO_OWNER: "Nunderns"
           REPO_NAME: "kanban_tcc"
         run: python .github/scripts/review_bot.py
