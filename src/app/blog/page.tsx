@@ -1,10 +1,8 @@
-// app/blog/page.tsx
 import Image from 'next/image';
 
 export default function BlogPage() {
   return (
     <main className="bg-[#f5f8fc] text-gray-800">
-      {/* Cabeçalho */}
       <header className="bg-white border-b shadow-sm">
         <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
           <h1 className="text-2xl font-bold text-purple-700">TaskFlow</h1>
@@ -21,30 +19,31 @@ export default function BlogPage() {
         </div>
       </header>
 
-      {/* Seção destaque */}
-      <section className="max-w-7xl mx-auto px-6 py-16 grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-        {/* Card da esquerda */}
-        <div className="bg-gradient-to-br from-blue-900 to-indigo-700 text-white p-8 rounded-2xl">
-          <h2 className="text-xl font-semibold mb-4">
-            <strong>Controle</strong> os jobs da sua agência da execução ao faturamento em um só lugar!
-          </h2>
-          <p className="text-lg font-bold mb-6">Conheça TaskFlow!</p>
-          <button className="bg-pink-500 text-white px-6 py-2 rounded font-semibold hover:bg-pink-600">
-            DEMONSTRAÇÃO GRATUITA
-          </button>
+      <section className="max-w-7xl mx-auto px-6 py-16 grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
+        <div className="bg-gradient-to-br from-blue-900 to-indigo-700 text-white p-8 rounded-2xl flex flex-col justify-between h-full">
+          <div>
+            <h2 className="text-xl font-semibold mb-4">
+              <strong>Controle</strong> os jobs da sua agência da execução ao faturamento em um só lugar!
+            </h2>
+            <p className="text-lg font-bold">Conheça TaskFlow!</p>
+          </div>
+          <div className="mt-6">
+            <button className="bg-pink-500 text-white px-6 py-2 rounded font-semibold hover:bg-pink-600">
+              DEMONSTRAÇÃO GRATUITA
+            </button>
+          </div>
         </div>
 
-        {/* Card de artigo destaque */}
-        <div className="bg-white p-6 rounded-2xl shadow-md">
-          <div className="flex justify-between items-center mb-4">
+        <div className="bg-white p-6 rounded-2xl shadow-md h-full flex flex-col">
+          <div className="mb-4 relative">
             <input
               type="text"
               placeholder="Pesquisar conteúdo"
               className="w-full border border-gray-300 rounded px-4 py-2 text-sm"
             />
-            <button className="-ml-10 mr-2 text-pink-600">🔍</button>
+            <button className="absolute top-1/2 right-3 transform -translate-y-1/2 text-pink-600 text-lg">🔍</button>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1 items-center">
             <Image
               src="/images/Blog_main_page.png"
               alt="Ilustração"
@@ -68,14 +67,12 @@ export default function BlogPage() {
         </div>
       </section>
 
-      {/* Título seção artigos */}
       <section className="max-w-7xl mx-auto px-6 pb-10">
         <h2 className="text-center text-2xl font-bold text-purple-700">
           Artigos <span className="text-pink-600">+</span> recentes
         </h2>
       </section>
 
-      {/* Lista de artigos */}
       <section className="max-w-7xl mx-auto px-6 pb-20 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10">
         {articles.map((article, idx) => (
           <div key={idx} className="bg-white rounded-xl overflow-hidden shadow hover:shadow-md transition">
