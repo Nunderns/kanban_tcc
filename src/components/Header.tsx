@@ -8,7 +8,7 @@ export default function Header() {
     const [isScrolled, setIsScrolled] = useState(false);
     const pathname = usePathname();
 
-    const pagesWithHeader = ["/funcionalidades", "/planos", "/blog", "/cases", "/"];
+    const pagesWithHeader = ["/funcionalidades", "/planos", "/cases", "/"];
 
     // A lógica para verificar se a página deve renderizar o header
     const shouldRenderHeader = pagesWithHeader.includes(pathname);
