@@ -1,11 +1,13 @@
 import Image from 'next/image';
+import Link from 'next/link';
+
 
 export default function BlogPage() {
   return (
     <main className="bg-[#f5f8fc] text-gray-800">
       <header className="bg-white border-b shadow-sm">
         <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-purple-700">TaskFlow</h1>
+        <Link href="/" className="text-2xl font-bold text-purple-700">TaskFlow</Link>
           <nav className="hidden md:flex gap-6 text-sm font-medium text-purple-600">
             {categories.map((cat, idx) => (
               <a key={idx} href="#" className="hover:text-pink-600">
