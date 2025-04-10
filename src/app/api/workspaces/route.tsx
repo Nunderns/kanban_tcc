@@ -10,7 +10,7 @@ export async function GET() {
     return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
   }
 
-  const workspaces = await prisma.Workspace.findMany({
+  const workspaces = await prisma.workspace.findMany({
     where: {
       user: {
         email: session.user.email,
