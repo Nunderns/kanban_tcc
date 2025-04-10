@@ -22,7 +22,7 @@ export const Sidebar = () => {
   };
 
   return (
-    <aside className="h-screen w-64 bg-neutral-100 p-4 flex flex-col relative">
+    <aside className="h-screen w-64 bg-neutral-100 p-4 flex flex-col relative border-r border-gray-300">
       {/* Logo */}
       <Link href="/dashboard" className="text-lg font-semibold">
         TaskPulse
