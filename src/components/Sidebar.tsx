@@ -1,37 +1,149 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
-import { Plus } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import {
+  Plus,
+  Settings,
+  UserPlus,
+  Mail,
+  LogOut,
+  Check
+} from "lucide-react";
 import { Navigation } from "@/components/Navigation";
 
 export const Sidebar = () => {
-  const [workspace, setWorkspace] = useState("Nome do espaço de trabalho");
+  const [workspace, setWorkspace] = useState("Espaço de trabalho");
+  const [showPopover, setShowPopover] = useState(false);
+  const popoverRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+
   const projects = ["Projeto 1", "Projeto 2"];
+
+  const togglePopover = () => {
+    setShowPopover((prev) => !prev);
+  };
 
   const handleWorkspaceChange = () => {
     const newName = prompt("Digite o novo nome do espaço de trabalho:");
     if (newName) {
       setWorkspace(newName);
+      const workspaceAtual = localStorage.getItem("workspaceSelecionado");
+      if (workspaceAtual) {
+        const parsed = JSON.parse(workspaceAtual);
+        parsed.nome = newName;
+        localStorage.setItem("workspaceSelecionado", JSON.stringify(parsed));
+      }
     }
   };
 
+  // Recupera workspace do localStorage ao carregar
+  useEffect(() => {
+    const saved = localStorage.getItem("workspaceSelecionado");
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed.nome) {
+          setWorkspace(parsed.nome);
+        }
+      } catch (error) {
+        console.error("Erro ao recuperar workspace:", error);
+      }
+    }
+  }, []);
+
+  // Fecha o popover ao clicar fora
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        popoverRef.current &&
+        !popoverRef.current.contains(event.target as Node) &&
+        buttonRef.current &&
+        !buttonRef.current.contains(event.target as Node)
+      ) {
+        setShowPopover(false);
+      }
+    };
+
+    if (showPopover) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showPopover]);
+
   return (
-    <aside className="h-screen w-64 bg-neutral-100 p-4 flex flex-col">
+    <aside className="h-screen w-64 bg-neutral-100 p-4 flex flex-col relative border-r border-gray-300">
       {/* Logo */}
       <Link href="/dashboard" className="text-lg font-semibold">
         TaskPulse
       </Link>
 
-      {/* Espaço de Trabalho */}
-      <div className="mt-4 flex items-center justify-between bg-gray-200 p-2 rounded-lg">
-        <span className="text-sm font-medium">{workspace}</span>
-        <button className="text-gray-600 hover:text-gray-900" onClick={handleWorkspaceChange}>
+      {/* Espaço de Trabalho com Popover */}
+      <div className="mt-4 relative">
+        <button
+          ref={buttonRef}
+          onClick={togglePopover}
+          className="w-full flex justify-between items-center bg-gray-200 px-3 py-2 rounded-lg hover:bg-gray-300 transition"
+        >
+          <span className="text-sm font-medium truncate">{workspace}</span>
           <Plus size={16} />
         </button>
+
+        {showPopover && (
+          <div
+            ref={popoverRef}
+            className="absolute top-12 left-0 z-10 w-64 bg-white border border-gray-300 rounded-lg shadow-lg p-4"
+          >
+            <p className="text-sm text-gray-600 mb-1">henri.okayama@gmail.com</p>
+            <div className="flex items-center justify-between">
+              <p className="font-semibold text-gray-800 truncate">{workspace}</p>
+              <Check size={16} className="text-green-600" />
+            </div>
+            <p className="text-xs text-gray-500 mb-3">Admin • 1 Membro</p>
+
+            <div className="space-y-2">
+              <button
+                onClick={handleWorkspaceChange}
+                className="flex items-center w-full text-sm text-gray-700 hover:bg-gray-100 px-2 py-1 rounded-md"
+              >
+                <Settings size={16} className="mr-2" />
+                Configurações
+              </button>
+
+              <Link
+                href="dashboard/settings/members"
+                className="flex items-center text-sm text-gray-700 hover:bg-gray-100 px-2 py-1 rounded-md"
+              >
+                <UserPlus size={16} className="mr-2" />
+                Convidar Membros
+              </Link>
+
+              <Link
+                href="/create-workspace"
+                className="flex items-center text-sm text-gray-700 hover:bg-gray-100 px-2 py-1 rounded-md"
+              >
+                <Plus size={16} className="mr-2" />
+                Criar Espaço
+              </Link>
+
+              <button className="flex items-center w-full text-sm text-gray-700 hover:bg-gray-100 px-2 py-1 rounded-md">
+                <Mail size={16} className="mr-2" />
+                Convites Recebidos
+              </button>
+
+              <button className="flex items-center w-full text-sm text-red-500 hover:bg-red-100 px-2 py-1 rounded-md">
+                <LogOut size={16} className="mr-2" />
+                Sair
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Navegação (Mantendo os Ícones) */}
+      {/* Navegação */}
       <div className="mt-4">
         <Navigation />
       </div>
@@ -46,7 +158,10 @@ export const Sidebar = () => {
         </div>
         <ul className="mt-2">
           {projects.map((project, index) => (
-            <li key={index} className="flex items-center bg-gray-200 p-2 rounded-md mt-1">
+            <li
+              key={index}
+              className="flex items-center bg-gray-200 p-2 rounded-md mt-1"
+            >
               <span className="text-xs font-medium">{project}</span>
             </li>
           ))}
