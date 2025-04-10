@@ -20,7 +20,7 @@ export default function TopProgressBar() {
   return (
     <div className="fixed top-0 left-0 w-full h-1 z-50">
       <div
-        className={`h-full bg-blue-500 transition-all duration-700 ease-in-out ${
+        className={`h-full bg-blue-500 transition-all duration-500 ease-in-out ${
           loading ? "w-full" : "w-0"
         }`}
       />
