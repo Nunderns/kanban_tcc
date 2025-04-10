@@ -1,17 +1,20 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Plus } from "lucide-react";
 import { Navigation } from "@/components/Navigation";
 
 export const Sidebar = () => {
   const [workspace, setWorkspace] = useState("Nome do espaço de trabalho");
   const [showPopover, setShowPopover] = useState(false);
+  const popoverRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+
   const projects = ["Projeto 1", "Projeto 2"];
 
   const togglePopover = () => {
-    setShowPopover(!showPopover);
+    setShowPopover((prev) => !prev);
   };
 
   const handleWorkspaceChange = () => {
@@ -20,6 +23,29 @@ export const Sidebar = () => {
       setWorkspace(newName);
     }
   };
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        popoverRef.current &&
+        !popoverRef.current.contains(event.target as Node) &&
+        buttonRef.current &&
+        !buttonRef.current.contains(event.target as Node)
+      ) {
+        setShowPopover(false);
+      }
+    };
+
+    if (showPopover) {
+      document.addEventListener("mousedown", handleClickOutside);
+    } else {
+      document.removeEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showPopover]);
 
   return (
     <aside className="h-screen w-64 bg-neutral-100 p-4 flex flex-col relative border-r border-gray-300">
@@ -31,6 +57,7 @@ export const Sidebar = () => {
       {/* Espaço de Trabalho com Popover */}
       <div className="mt-4 relative">
         <button
+          ref={buttonRef}
           onClick={togglePopover}
           className="w-full flex justify-between items-center bg-gray-200 px-3 py-2 rounded-lg hover:bg-gray-300 transition"
         >
@@ -39,7 +66,10 @@ export const Sidebar = () => {
         </button>
 
         {showPopover && (
-          <div className="absolute top-12 left-0 z-10 w-64 bg-white border border-gray-300 rounded-lg shadow-lg p-4">
+          <div
+            ref={popoverRef}
+            className="absolute top-12 left-0 z-10 w-64 bg-white border border-gray-300 rounded-lg shadow-lg p-4"
+          >
             <p className="text-sm text-gray-600 mb-1">henri.okayama@gmail.com</p>
             <p className="font-semibold text-gray-800">{workspace}</p>
             <p className="text-xs text-gray-500 mb-2">Admin • 1 Membro</p>
@@ -51,7 +81,10 @@ export const Sidebar = () => {
               >
                 Renomear Espaço
               </button>
-              <Link href="dashboard/settings/members" className="text-left w-full text-sm text-blue-600 hover:underline">
+              <Link
+                href="dashboard/settings/members"
+                className="text-left w-full text-sm text-blue-600 hover:underline"
+              >
                 Convidar Membros
               </Link>
               <button className="text-left w-full text-sm text-gray-600 hover:underline">
