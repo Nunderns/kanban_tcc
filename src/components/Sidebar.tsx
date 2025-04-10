@@ -99,10 +99,13 @@ export const Sidebar = () => {
                 Convidar Membros
               </Link>
 
-              <button className="flex items-center w-full text-sm text-gray-700 hover:bg-gray-100 px-2 py-1 rounded-md">
+              <Link
+                href="/create-workspace"
+                className="flex items-center text-sm text-gray-700 hover:bg-gray-100 px-2 py-1 rounded-md"
+              >
                 <Plus size={16} className="mr-2" />
                 Criar Espaço
-              </button>
+              </Link>
 
               <button className="flex items-center w-full text-sm text-gray-700 hover:bg-gray-100 px-2 py-1 rounded-md">
                 <Mail size={16} className="mr-2" />
