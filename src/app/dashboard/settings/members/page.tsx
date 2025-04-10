@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Plus } from "lucide-react";
 import { Sidebar } from "@/components/Sidebar";
 
@@ -45,23 +46,27 @@ export default function MembersPage() {
       <Sidebar />
       <div className="flex flex-1">
         {/* Sidebar de Configurações */}
-        <aside className="w-64 bg-neutral-100 p-6 border-r border-gray-300 text-gray-800">
+        <aside className="w-64 bg-neutral-100 p-6 border-r border-neutral-700 text-gray-800">
           <h2 className="text-lg font-semibold mb-4 border-b border-gray-300 pb-2">CONFIGURAÇÕES</h2>
           <ul className="space-y-2 text-sm">
-            {settingsMenu.map((item) => (
-              <li key={item}>
-                <button
-                  onClick={() => setSelected(item)}
-                  className={`w-full text-left px-3 py-2 rounded-md transition ${
-                    selected === item
-                      ? "bg-blue-100 text-blue-600 font-semibold"
-                      : "hover:bg-gray-200 text-gray-700"
-                  }`}
-                >
-                  {item}
-                </button>
-              </li>
-            ))}
+            {settingsMenu.map((item) => {
+              const path = `/dashboard/settings/${item.toLowerCase().replace(/\s+/g, "-")}`;
+              return (
+                <li key={item}>
+                  <Link
+                    href={path}
+                    className={`block w-full text-left px-3 py-2 rounded-md transition ${
+                      selected === item
+                        ? "bg-blue-100 text-blue-600 font-semibold"
+                        : "hover:bg-gray-200 text-gray-700"
+                    }`}
+                    onClick={() => setSelected(item)}
+                  >
+                    {item}
+                  </Link>
+                </li>
+              );
+            })}
           </ul>
         </aside>
 
@@ -93,11 +98,11 @@ export default function MembersPage() {
             <table className="min-w-full border border-gray-200 text-sm">
               <thead className="bg-gray-100">
                 <tr>
-                  <th className="text-left px-4 py-2">Full name</th>
-                  <th className="text-left px-4 py-2">Display name</th>
-                  <th className="text-left px-4 py-2">Email address</th>
-                  <th className="text-left px-4 py-2">Account type</th>
-                  <th className="text-left px-4 py-2">Authentication</th>
+                  <th className="text-left px-4 py-2">Nome completo</th>
+                  <th className="text-left px-4 py-2">Nome de exibição</th>
+                  <th className="text-left px-4 py-2">Endereço de Email</th>
+                  <th className="text-left px-4 py-2">Tipo de conta</th>
+                  <th className="text-left px-4 py-2">Autenticação</th>
                 </tr>
               </thead>
               <tbody>

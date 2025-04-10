@@ -2,9 +2,10 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "react-hot-toast";
 import Header from "@/components/Header";
-import LayoutWrapper from "@/components/LayoutWrapper"; // Novo componente Cliente
+import LayoutWrapper from "@/components/LayoutWrapper";
 import "./globals.css";
 import SessionWrapper from "@/components/SessionWrapper";
+import TopProgressBar from "@/components/TopProgressBar";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -26,6 +27,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="pt-br">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <SessionWrapper>
+          <TopProgressBar />
           <Toaster position="top-right" />
           <Header />
           <LayoutWrapper>
