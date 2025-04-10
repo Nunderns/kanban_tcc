@@ -2,11 +2,18 @@
 
 import Link from "next/link";
 import { useState, useRef, useEffect } from "react";
-import { Plus } from "lucide-react";
+import {
+  Plus,
+  Settings,
+  UserPlus,
+  Mail,
+  LogOut,
+  Check
+} from "lucide-react";
 import { Navigation } from "@/components/Navigation";
 
 export const Sidebar = () => {
-  const [workspace, setWorkspace] = useState("Nome do espaço de trabalho");
+  const [workspace, setWorkspace] = useState("Teste do henri");
   const [showPopover, setShowPopover] = useState(false);
   const popoverRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -38,8 +45,6 @@ export const Sidebar = () => {
 
     if (showPopover) {
       document.addEventListener("mousedown", handleClickOutside);
-    } else {
-      document.removeEventListener("mousedown", handleClickOutside);
     }
 
     return () => {
@@ -71,26 +76,41 @@ export const Sidebar = () => {
             className="absolute top-12 left-0 z-10 w-64 bg-white border border-gray-300 rounded-lg shadow-lg p-4"
           >
             <p className="text-sm text-gray-600 mb-1">henri.okayama@gmail.com</p>
-            <p className="font-semibold text-gray-800">{workspace}</p>
-            <p className="text-xs text-gray-500 mb-2">Admin • 1 Membro</p>
+            <div className="flex items-center justify-between">
+              <p className="font-semibold text-gray-800">{workspace}</p>
+              <Check size={16} className="text-green-600" />
+            </div>
+            <p className="text-xs text-gray-500 mb-3">Admin • 1 Membro</p>
 
-            <div className="space-y-1">
+            <div className="space-y-2">
               <button
                 onClick={handleWorkspaceChange}
-                className="text-left w-full text-sm text-blue-600 hover:underline"
+                className="flex items-center w-full text-sm text-gray-700 hover:bg-gray-100 px-2 py-1 rounded-md"
               >
-                Renomear Espaço
+                <Settings size={16} className="mr-2" />
+                Configurações
               </button>
+
               <Link
                 href="dashboard/settings/members"
-                className="text-left w-full text-sm text-blue-600 hover:underline"
+                className="flex items-center text-sm text-gray-700 hover:bg-gray-100 px-2 py-1 rounded-md"
               >
+                <UserPlus size={16} className="mr-2" />
                 Convidar Membros
               </Link>
-              <button className="text-left w-full text-sm text-gray-600 hover:underline">
-                Criar Novo Espaço
+
+              <button className="flex items-center w-full text-sm text-gray-700 hover:bg-gray-100 px-2 py-1 rounded-md">
+                <Plus size={16} className="mr-2" />
+                Criar Espaço
               </button>
-              <button className="text-left w-full text-sm text-red-500 hover:underline">
+
+              <button className="flex items-center w-full text-sm text-gray-700 hover:bg-gray-100 px-2 py-1 rounded-md">
+                <Mail size={16} className="mr-2" />
+                Convites Recebidos
+              </button>
+
+              <button className="flex items-center w-full text-sm text-red-500 hover:bg-red-100 px-2 py-1 rounded-md">
+                <LogOut size={16} className="mr-2" />
                 Sair
               </button>
             </div>
@@ -113,7 +133,10 @@ export const Sidebar = () => {
         </div>
         <ul className="mt-2">
           {projects.map((project, index) => (
-            <li key={index} className="flex items-center bg-gray-200 p-2 rounded-md mt-1">
+            <li
+              key={index}
+              className="flex items-center bg-gray-200 p-2 rounded-md mt-1"
+            >
               <span className="text-xs font-medium">{project}</span>
             </li>
           ))}
