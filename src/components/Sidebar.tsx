@@ -13,7 +13,7 @@ import {
 import { Navigation } from "@/components/Navigation";
 
 export const Sidebar = () => {
-  const [workspace, setWorkspace] = useState("Teste do henri");
+  const [workspace, setWorkspace] = useState("Espaço de trabalho");
   const [showPopover, setShowPopover] = useState(false);
   const popoverRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -28,9 +28,31 @@ export const Sidebar = () => {
     const newName = prompt("Digite o novo nome do espaço de trabalho:");
     if (newName) {
       setWorkspace(newName);
+      const workspaceAtual = localStorage.getItem("workspaceSelecionado");
+      if (workspaceAtual) {
+        const parsed = JSON.parse(workspaceAtual);
+        parsed.nome = newName;
+        localStorage.setItem("workspaceSelecionado", JSON.stringify(parsed));
+      }
     }
   };
 
+  // Recupera workspace do localStorage ao carregar
+  useEffect(() => {
+    const saved = localStorage.getItem("workspaceSelecionado");
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed.nome) {
+          setWorkspace(parsed.nome);
+        }
+      } catch (error) {
+        console.error("Erro ao recuperar workspace:", error);
+      }
+    }
+  }, []);
+
+  // Fecha o popover ao clicar fora
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -66,7 +88,7 @@ export const Sidebar = () => {
           onClick={togglePopover}
           className="w-full flex justify-between items-center bg-gray-200 px-3 py-2 rounded-lg hover:bg-gray-300 transition"
         >
-          <span className="text-sm font-medium">{workspace}</span>
+          <span className="text-sm font-medium truncate">{workspace}</span>
           <Plus size={16} />
         </button>
 
@@ -77,7 +99,7 @@ export const Sidebar = () => {
           >
             <p className="text-sm text-gray-600 mb-1">henri.okayama@gmail.com</p>
             <div className="flex items-center justify-between">
-              <p className="font-semibold text-gray-800">{workspace}</p>
+              <p className="font-semibold text-gray-800 truncate">{workspace}</p>
               <Check size={16} className="text-green-600" />
             </div>
             <p className="text-xs text-gray-500 mb-3">Admin • 1 Membro</p>
