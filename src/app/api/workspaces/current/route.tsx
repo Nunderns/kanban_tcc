@@ -1,9 +1,35 @@
+// /app/api/workspaces/current/route.ts
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/app/lib/prisma";
 
-// Atualizar workspace
+// GET – dados do workspace
+export async function GET() {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.email) {
+    return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
+  }
+
+  const member = await prisma.workspaceMember.findFirst({
+    where: { user: { email: session.user.email } },
+    include: { workspace: true },
+  });
+
+  if (!member) {
+    return NextResponse.json({ error: "Workspace não encontrado" }, { status: 404 });
+  }
+
+  const { workspace } = member;
+
+  return NextResponse.json({
+    nome: workspace.name,
+    tamanhoEmpresa: workspace.companySize,
+    slug: workspace.slug,
+  });
+}
+
+// PATCH – atualizar nome/tamanho
 export async function PATCH(req: Request) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.email) {
@@ -32,7 +58,7 @@ export async function PATCH(req: Request) {
   return NextResponse.json(updated);
 }
 
-// Excluir workspace
+// DELETE – excluir o workspace
 export async function DELETE() {
   const session = await getServerSession(authOptions);
   if (!session?.user?.email) {
@@ -51,5 +77,5 @@ export async function DELETE() {
     where: { id: member.workspaceId },
   });
 
-  return NextResponse.json({ message: "Workspace deletado" });
+  return NextResponse.json({ message: "Workspace deletado com sucesso!" });
 }

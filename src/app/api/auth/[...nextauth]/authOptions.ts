@@ -1,8 +1,8 @@
+// app/api/auth/[...nextauth]/authOptions.ts
 import type { NextAuthOptions, DefaultSession, Session } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
-import { getServerSession } from "next-auth";
 
 const prisma = new PrismaClient();
 
@@ -23,7 +23,7 @@ export const authOptions: NextAuthOptions = {
     CredentialsProvider({
       name: "Credentials",
       credentials: {
-        email: { label: "E-mail", type: "email", placeholder: "seu@email.com" },
+        email: { label: "E-mail", type: "email" },
         password: { label: "Senha", type: "password" },
       },
       async authorize(credentials) {
@@ -39,16 +39,16 @@ export const authOptions: NextAuthOptions = {
           throw new Error("Usuário ou senha inválidos");
         }
 
-        return { id: String(user.id), email: user.email, name: user.name ?? "" };
+        return {
+          id: String(user.id),
+          email: user.email,
+          name: user.name ?? "",
+        };
       },
     }),
   ],
-  pages: {
-    signIn: "/login",
-  },
-  session: {
-    strategy: "jwt",
-  },
+  pages: { signIn: "/login" },
+  session: { strategy: "jwt" },
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
@@ -59,15 +59,8 @@ export const authOptions: NextAuthOptions = {
       return token;
     },
     async session({ session, token }) {
-      session.user = {
-        ...session.user,
-        id: token.id,
-      } as Session["user"];
+      session.user = { ...session.user, id: token.id } as Session["user"];
       return session;
     },
   },
 };
-
-export async function getAuthSession() {
-  return await getServerSession(authOptions);
-}
