@@ -27,6 +27,7 @@ model User {
   settings      Settings?
   sessions      Session[]
   workspaces Workspace[]
+  workspaceMembers WorkspaceMember[]
 }
 
 // Tabela de Projetos
@@ -98,4 +99,19 @@ model Workspace {
   updatedAt DateTime @updatedAt
 
   user      User     @relation(fields: [userId], references: [id])
+  members   WorkspaceMember[]
+}
+
+model WorkspaceMember {
+  id          Int       @id @default(autoincrement())
+  userId      Int
+  workspaceId String
+
+  user        User      @relation(fields: [userId], references: [id])
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+
+  role        String    @default("Membro") // ou "Admin"
+  joinedAt    DateTime  @default(now())
+
+  @@unique([userId, workspaceId]) // evita duplicidade
 }

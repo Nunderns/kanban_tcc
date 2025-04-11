@@ -14,7 +14,12 @@ import { Navigation } from "@/components/Navigation";
 
 export const Sidebar = () => {
   const [workspace, setWorkspace] = useState("Espaço de trabalho");
+  const [email, setEmail] = useState("");
+  const [funcao, setFuncao] = useState("");
+  const [membros, setMembros] = useState(0);
+  const [mounted, setMounted] = useState(false);
   const [showPopover, setShowPopover] = useState(false);
+
   const popoverRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
 
@@ -37,19 +42,26 @@ export const Sidebar = () => {
     }
   };
 
-  // Recupera workspace do localStorage ao carregar
+  // Carrega dados da API ao montar
   useEffect(() => {
-    const saved = localStorage.getItem("workspaceSelecionado");
-    if (saved) {
+    async function fetchWorkspaceData() {
       try {
-        const parsed = JSON.parse(saved);
-        if (parsed.nome) {
-          setWorkspace(parsed.nome);
+        const res = await fetch("/api/workspaces/current");
+        if (res.ok) {
+          const data = await res.json();
+          setWorkspace(data.nome);
+          setEmail(data.email);
+          setFuncao(data.funcao);
+          setMembros(data.membros);
+          localStorage.setItem("workspaceSelecionado", JSON.stringify({ nome: data.nome }));
         }
-      } catch (error) {
-        console.error("Erro ao recuperar workspace:", error);
+      } catch (err) {
+        console.error("Erro ao buscar workspace:", err);
       }
     }
+
+    fetchWorkspaceData();
+    setMounted(true); // necessário para evitar erro de hydration
   }, []);
 
   // Fecha o popover ao clicar fora
@@ -78,7 +90,7 @@ export const Sidebar = () => {
     <aside className="h-screen w-64 bg-neutral-100 p-4 flex flex-col relative border-r border-gray-300">
       {/* Logo */}
       <Link href="/dashboard" className="text-lg font-semibold">
-        TaskPulse
+        TaskFlow
       </Link>
 
       {/* Espaço de Trabalho com Popover */}
@@ -88,21 +100,23 @@ export const Sidebar = () => {
           onClick={togglePopover}
           className="w-full flex justify-between items-center bg-gray-200 px-3 py-2 rounded-lg hover:bg-gray-300 transition"
         >
-          <span className="text-sm font-medium truncate">{workspace}</span>
+          <span className="text-sm font-medium truncate">
+            {mounted ? workspace : "Carregando..."}
+          </span>
           <Plus size={16} />
         </button>
 
-        {showPopover && (
+        {showPopover && mounted && (
           <div
             ref={popoverRef}
             className="absolute top-12 left-0 z-10 w-64 bg-white border border-gray-300 rounded-lg shadow-lg p-4"
           >
-            <p className="text-sm text-gray-600 mb-1">henri.okayama@gmail.com</p>
+            <p className="text-sm text-gray-600 mb-1">{email}</p>
             <div className="flex items-center justify-between">
               <p className="font-semibold text-gray-800 truncate">{workspace}</p>
               <Check size={16} className="text-green-600" />
             </div>
-            <p className="text-xs text-gray-500 mb-3">Admin • 1 Membro</p>
+            <p className="text-xs text-gray-500 mb-3">{funcao} • {membros} Membro(s)</p>
 
             <div className="space-y-2">
               <button

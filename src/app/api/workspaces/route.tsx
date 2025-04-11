@@ -10,13 +10,31 @@ export async function GET() {
     return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
   }
 
-  const workspaces = await prisma.workspace.findMany({
+  const memberRecord = await prisma.workspaceMember.findFirst({
     where: {
       user: {
         email: session.user.email,
       },
     },
+    include: {
+      workspace: {
+        include: {
+          members: true,
+        },
+      },
+    },
   });
 
-  return NextResponse.json(workspaces);
+  if (!memberRecord || !memberRecord.workspace) {
+    return NextResponse.json({ error: "Workspace não encontrado" }, { status: 404 });
+  }
+
+  const workspace = memberRecord.workspace;
+
+  return NextResponse.json({
+    email: session.user.email,
+    nome: workspace.name,
+    membros: workspace.members.length,
+    funcao: memberRecord.role,
+  });
 }
