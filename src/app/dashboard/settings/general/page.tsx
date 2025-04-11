@@ -138,14 +138,17 @@ export default function WorkspaceSettings() {
         <button
             onClick={async () => {
                 try {
-                const res = await fetch("/api/workspaces/current", {
+                  const res = await fetch("/api/workspaces/current", {
                     method: "PATCH",
-                    headers: { "Content-Type": "application/json" },
+                    headers: {
+                      "Content-Type": "application/json",
+                    },
+                    credentials: "include",
                     body: JSON.stringify({
-                    name: workspaceName,
-                    companySize: companySize,
+                      name: workspaceName,
+                      companySize: companySize,
                     }),
-                });
+                  });
 
                 const data = await res.json();
                 if (res.ok) {
