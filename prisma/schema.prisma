@@ -93,6 +93,7 @@ model Session {
 model Workspace {
   id        String   @id @default(cuid())
   name      String
+  companySize   Int
   slug      String   @unique
   userId    Int                       // <- aqui!
   createdAt DateTime @default(now())
