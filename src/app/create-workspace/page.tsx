@@ -36,7 +36,7 @@ export default function CriarEspacoTrabalho() {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     const camposInvalidos = {
@@ -46,26 +46,40 @@ export default function CriarEspacoTrabalho() {
     };
 
     setErros(camposInvalidos);
-
-    const hasErros = Object.values(camposInvalidos).some((v) => v);
+    const hasErros = Object.values(camposInvalidos).some(Boolean);
     if (hasErros) return;
 
-    // 🔧 Simular criação de workspace
-    const workspaceCriado = {
-      nome: nomeEspaco,
-      slug: urlEspaco,
-      usuarios,
-    };
+    try {
+      const res = await fetch("/api/workspaces/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nome: nomeEspaco,
+          slug: urlEspaco,
+          usuarios,
+        }),
+      });
 
-    // Armazena no localStorage como workspace selecionado
-    localStorage.setItem("workspaceSelecionado", JSON.stringify(workspaceCriado));
+      if (!res.ok) throw new Error("Erro ao criar workspace");
 
-    // Exibe toast e redireciona
-    toast.success("Espaço criado com sucesso!");
+      const data = await res.json();
 
-    setTimeout(() => {
+      localStorage.setItem(
+        "workspaceSelecionado",
+        JSON.stringify({
+          id: data.id,
+          nome: data.name,
+          slug: data.slug,
+          companySize: data.companySize,
+        })
+      );
+
+      toast.success("Espaço criado com sucesso!");
       router.push("/dashboard");
-    }, 1500);
+    } catch (error) {
+      console.error(error);
+      toast.error("Erro ao criar espaço de trabalho.");
+    }
   };
 
   return (
@@ -80,7 +94,6 @@ export default function CriarEspacoTrabalho() {
           <h2 className="text-2xl font-bold mb-6">Crie seu espaço de trabalho</h2>
 
           <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Nome */}
             <div>
               <label className="block text-sm font-medium mb-1">
                 Nome do espaço de trabalho *
@@ -102,7 +115,6 @@ export default function CriarEspacoTrabalho() {
               )}
             </div>
 
-            {/* URL */}
             <div>
               <label className="block text-sm font-medium mb-1">
                 URL do espaço de trabalho *
@@ -120,7 +132,6 @@ export default function CriarEspacoTrabalho() {
               )}
             </div>
 
-            {/* Quantidade de usuários */}
             <div>
               <label className="block text-sm font-medium mb-1">
                 Quantas pessoas usarão esse espaço? *
@@ -139,17 +150,17 @@ export default function CriarEspacoTrabalho() {
                 }`}
               >
                 <option value="">Selecione uma opção</option>
-                <option>1-5 pessoas</option>
-                <option>6-20 pessoas</option>
-                <option>21-50 pessoas</option>
-                <option>Mais de 50</option>
+                <option value="1">Just myself</option>
+                <option value="5">1-5 pessoas</option>
+                <option value="20">6-20 pessoas</option>
+                <option value="50">21-50 pessoas</option>
+                <option value="100">Mais de 50</option>
               </select>
               {erros.usuarios && (
                 <p className="text-red-500 text-sm mt-1">Este campo é obrigatório.</p>
               )}
             </div>
 
-            {/* Botões */}
             <div className="flex justify-start gap-4 mt-6">
               <button
                 type="submit"
