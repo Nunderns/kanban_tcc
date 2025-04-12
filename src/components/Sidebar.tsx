@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useState, useRef, useEffect } from "react";
 import { signOut } from "next-auth/react";
-
 import {
   Plus,
   Settings,
@@ -44,29 +43,54 @@ export const Sidebar = () => {
     }
   };
 
-  // Carrega dados da API ao montar
   useEffect(() => {
     async function fetchWorkspaceData() {
+      const stored = localStorage.getItem("workspaceSelecionado");
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          if (parsed?.nome) setWorkspace(parsed.nome);
+          if (parsed?.email) setEmail(parsed.email);
+          if (parsed?.funcao) setFuncao(parsed.funcao);
+          if (parsed?.membros) setMembros(parsed.membros);
+        } catch (error) {
+          console.error("Erro ao ler workspace do localStorage:", error);
+        }
+      }
+
       try {
         const res = await fetch("/api/workspaces/current");
         if (res.ok) {
           const data = await res.json();
+
           setWorkspace(data.nome);
           setEmail(data.email);
           setFuncao(data.funcao);
           setMembros(data.membros);
-          localStorage.setItem("workspaceSelecionado", JSON.stringify({ nome: data.nome }));
+
+          localStorage.setItem(
+            "workspaceSelecionado",
+            JSON.stringify({
+              id: data.id,
+              nome: data.nome,
+              slug: data.slug,
+              companySize: data.tamanhoEmpresa,
+              email: data.email,
+              funcao: data.funcao,
+              membros: data.membros,
+            })
+          );
         }
       } catch (err) {
         console.error("Erro ao buscar workspace:", err);
       }
+
+      setMounted(true);
     }
 
     fetchWorkspaceData();
-    setMounted(true); // necessário para evitar erro de hydration
   }, []);
 
-  // Fecha o popover ao clicar fora
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -90,12 +114,10 @@ export const Sidebar = () => {
 
   return (
     <aside className="h-screen w-64 bg-neutral-100 p-4 flex flex-col relative border-r border-gray-300">
-      {/* Logo */}
       <Link href="/dashboard" className="text-lg font-semibold">
         TaskFlow
       </Link>
 
-      {/* Espaço de Trabalho com Popover */}
       <div className="mt-4 relative">
         <button
           ref={buttonRef}
@@ -130,7 +152,7 @@ export const Sidebar = () => {
               </button>
 
               <Link
-                href="dashboard/settings/members"
+                href="/dashboard/settings/members"
                 className="flex items-center text-sm text-gray-700 hover:bg-gray-100 px-2 py-1 rounded-md"
               >
                 <UserPlus size={16} className="mr-2" />
@@ -162,12 +184,10 @@ export const Sidebar = () => {
         )}
       </div>
 
-      {/* Navegação */}
       <div className="mt-4">
         <Navigation />
       </div>
 
-      {/* Lista de Projetos */}
       <div className="mt-4">
         <div className="flex justify-between items-center">
           <span className="text-sm font-medium">Projetos</span>

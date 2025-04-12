@@ -15,20 +15,41 @@ export default function WorkspaceSettings() {
   const workspaceUrl = `localhost:3000/${slug}`;
 
   useEffect(() => {
+    const stored = localStorage.getItem("workspaceSelecionado");
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      setWorkspaceName(parsed.nome || "");
+      setSlug(parsed.slug || "");
+      setCompanySize(parsed.companySize || "");
+    }
+  
     async function fetchWorkspace() {
       try {
         const res = await fetch("/api/workspaces/current");
         const data = await res.json();
-        setWorkspaceName(data.nome);
-        setCompanySize(data.tamanhoEmpresa);
-        setSlug(data.slug);
+  
+        if (res.ok) {
+          setWorkspaceName(data.nome);
+          setCompanySize(data.tamanhoEmpresa);
+          setSlug(data.slug);
+  
+          localStorage.setItem(
+            "workspaceSelecionado",
+            JSON.stringify({
+              nome: data.nome,
+              slug: data.slug,
+              companySize: data.tamanhoEmpresa,
+            })
+          );
+        }
       } catch (err) {
         console.error("Erro ao carregar workspace:", err);
       }
     }
-
+  
     fetchWorkspace();
   }, []);
+  
 
   const links = [
     { href: "/dashboard/settings/general", label: "Geral" },
@@ -114,11 +135,12 @@ export default function WorkspaceSettings() {
               value={companySize}
               onChange={(e) => setCompanySize(e.target.value)}
             >
-              <option>Just myself</option>
-              <option>1-5 pessoas</option>
-              <option>6-20 pessoas</option>
-              <option>21-50 pessoas</option>
-              <option>Mais de 50</option>
+              <option value="">Selecione</option>
+              <option value="1">Just myself</option>
+              <option value="5">1-5 pessoas</option>
+              <option value="20">6-20 pessoas</option>
+              <option value="50">21-50 pessoas</option>
+              <option value="100">Mais de 50</option>
             </select>
           </div>
 
@@ -140,13 +162,11 @@ export default function WorkspaceSettings() {
                 try {
                   const res = await fetch("/api/workspaces/current", {
                     method: "PATCH",
-                    headers: {
-                      "Content-Type": "application/json",
-                    },
-                    credentials: "include",
+                    headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
                       name: workspaceName,
-                      companySize: companySize,
+                      companySize,
+                      slug, // 🔥 importante!
                     }),
                   });
 
