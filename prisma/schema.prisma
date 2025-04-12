@@ -14,23 +14,22 @@ datasource db {
 }
 
 model User {
-  id            Int            @id @default(autoincrement())
-  name          String
-  email         String         @unique
-  password      String
-  googleId      String?        @unique
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  tasks         Task[]
-  projects      Project[]
-  notifications Notification[]
-  settings      Settings?
-  sessions      Session[]
-  workspaces Workspace[]
+  id              Int              @id @default(autoincrement())
+  name            String
+  email           String           @unique
+  password        String
+  googleId        String?          @unique
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  tasks           Task[]
+  projects        Project[]
+  notifications   Notification[]
+  settings        Settings?
+  sessions        Session[]
+  workspaces      Workspace[]
   workspaceMembers WorkspaceMember[]
 }
 
-// Tabela de Projetos
 model Project {
   id          Int      @id @default(autoincrement())
   name        String
@@ -42,7 +41,6 @@ model Project {
   tasks       Task[]
 }
 
-// Tabela de Tarefas
 model Task {
   id          Int      @id @default(autoincrement())
   title       String
@@ -62,7 +60,6 @@ enum Status {
   DONE
 }
 
-// Tabela de Notificações
 model Notification {
   id        Int      @id @default(autoincrement())
   message   String
@@ -71,7 +68,6 @@ model Notification {
   createdAt DateTime @default(now())
 }
 
-// Tabela de Configurações do Usuário
 model Settings {
   id                   Int      @id @default(autoincrement())
   userId               Int      @unique
@@ -83,7 +79,7 @@ model Settings {
 }
 
 model Session {
-  id        String   @id @default(uuid())
+  id        Int      @id @default(autoincrement())
   token     String   @unique
   userId    Int
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -91,14 +87,13 @@ model Session {
 }
 
 model Workspace {
-  id        String   @id @default(cuid())
+  id        Int      @id @default(autoincrement())
   name      String
-  companySize   Int
+  companySize Int
   slug      String   @unique
-  userId    Int                       // <- aqui!
+  userId    Int
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
   user      User     @relation(fields: [userId], references: [id])
   members   WorkspaceMember[]
 }
@@ -106,13 +101,10 @@ model Workspace {
 model WorkspaceMember {
   id          Int       @id @default(autoincrement())
   userId      Int
-  workspaceId String
-
+  workspaceId Int
   user        User      @relation(fields: [userId], references: [id])
   workspace   Workspace @relation(fields: [workspaceId], references: [id])
-
-  role        String    @default("Membro") // ou "Admin"
+  role        String    @default("Membro")
   joinedAt    DateTime  @default(now())
-
-  @@unique([userId, workspaceId]) // evita duplicidade
+  @@unique([userId, workspaceId])
 }
