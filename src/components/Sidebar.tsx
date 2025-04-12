@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { useState, useRef, useEffect } from "react";
+import { signOut } from "next-auth/react";
+
 import {
   Plus,
   Settings,
@@ -148,7 +150,10 @@ export const Sidebar = () => {
                 Convites Recebidos
               </button>
 
-              <button className="flex items-center w-full text-sm text-red-500 hover:bg-red-100 px-2 py-1 rounded-md">
+              <button
+                onClick={() => signOut({ redirect: true, callbackUrl: "/login" })}
+                className="flex items-center w-full text-sm text-red-500 hover:bg-red-100 px-2 py-1 rounded-md"
+              >
                 <LogOut size={16} className="mr-2" />
                 Sair
               </button>
