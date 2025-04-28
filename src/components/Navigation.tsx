@@ -12,7 +12,7 @@ const routes = [
     },
     {
         label: "Minhas Tarefas",
-        href: "/tasks",
+        href: "/dashboard/my-tasks",
         icon: GoCheckCircle,
         activeIcon: GoCheckCircleFill,
     },
