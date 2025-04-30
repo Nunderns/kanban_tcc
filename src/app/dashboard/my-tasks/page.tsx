@@ -1,5 +1,6 @@
 "use client";
 
+import WorkItemSidebar from "@/components/WorkItemSidebar";
 import { useState } from "react";
 import {
   FaFilter,
@@ -17,11 +18,12 @@ import {
   FaEllipsisV
 } from "react-icons/fa";
 import { IoMdOptions } from "react-icons/io";
+import { format } from "date-fns";
 
-type Priority = "NONE" | "LOW" | "MEDIUM" | "HIGH";
-type Status = "BACKLOG" | "TODO" | "IN_PROGRESS" | "DONE";
+export type Priority = "NONE" | "LOW" | "MEDIUM" | "HIGH";
+export type Status = "BACKLOG" | "TODO" | "IN_PROGRESS" | "DONE";
 
-type WorkItem = {
+export type WorkItem = {
   id: string;
   title: string;
   status: Status;
@@ -42,7 +44,7 @@ export default function KanbanPage() {
     IN_PROGRESS: false,
     DONE: false
   });
-  
+  const [selectedItem, setSelectedItem] = useState<WorkItem | null>(null);
   const [workItems, setWorkItems] = useState<WorkItem[]>([
     {
       id: "1",
@@ -129,318 +131,112 @@ export default function KanbanPage() {
     }
   };
 
+  const renderCard = (item: WorkItem) => (
+    <div key={item.id} className="bg-gray-700 p-3 rounded hover:bg-gray-600" onClick={() => setSelectedItem(item)}>
+      <div className="flex justify-between items-start">
+        <h3 className="font-medium">{item.title}</h3>
+        <button className="text-gray-400 hover:text-white">
+          <FaEllipsisV />
+        </button>
+      </div>
+      <div className="flex items-center gap-2 mt-2 text-xs text-gray-400">
+        {getPriorityIcon(item.priority)}
+        <span>{item.module}</span>
+        <span>{item.cycle}</span>
+      </div>
+      <div className="flex justify-between items-center mt-2 text-xs">
+        <div className="flex items-center gap-1">
+          <FaCalendarAlt className="text-xs" />
+          <span>{item.startDate ? format(new Date(item.startDate), "MMM dd, yyyy") : "-"}</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <FaCalendarAlt className="text-xs" />
+          <span>{item.dueDate ? format(new Date(item.dueDate), "MMM dd, yyyy") : "-"}</span>
+        </div>
+      </div>
+      <div className="flex items-center gap-1 mt-2 text-xs">
+        <FaUser className="text-xs" />
+        <span>{item.assignees?.join(", ")}</span>
+      </div>
+      {item.labels?.length && (
+        <div className="flex items-center gap-1 mt-2 text-xs">
+          <FaTag className="text-xs" />
+          <span>{item.labels.join(", ")}</span>
+        </div>
+      )}
+    </div>
+  );
+
   return (
-    <div className="min-h-screen bg-gray-900 text-gray-100 flex flex-col">
-      {/* Top Bar */}
-      <div className="flex justify-between items-center p-4 border-b border-gray-700">
-        <h1 className="text-xl font-bold">{workspaceName} &gt; Work items</h1>
-        <div className="flex gap-2">
-          <button className="flex items-center gap-1 bg-gray-800 px-3 py-2 rounded hover:bg-gray-700 text-sm">
-            <FaFilter /> Filters
-          </button>
-          <button className="flex items-center gap-1 bg-gray-800 px-3 py-2 rounded hover:bg-gray-700 text-sm">
-            <IoMdOptions /> Display
-          </button>
-          <button className="flex items-center gap-1 bg-gray-800 px-3 py-2 rounded hover:bg-gray-700 text-sm">
-            <FaChartBar /> Analytics
-          </button>
-          <button className="flex items-center gap-1 bg-blue-600 px-3 py-2 rounded hover:bg-blue-500 text-sm">
-            <FaPlus /> Add Work Item
-          </button>
+    <div className="min-h-screen bg-gray-900 text-gray-100 flex">
+      <div className="flex-1 flex flex-col">
+        <div className="flex justify-between items-center p-4 border-b border-gray-700">
+          <h1 className="text-xl font-bold">{workspaceName} &gt; Work items</h1>
+          <div className="flex gap-2">
+            <button className="flex items-center gap-1 bg-gray-800 px-3 py-2 rounded hover:bg-gray-700 text-sm">
+              <FaFilter /> Filters
+            </button>
+            <button className="flex items-center gap-1 bg-gray-800 px-3 py-2 rounded hover:bg-gray-700 text-sm">
+              <IoMdOptions /> Display
+            </button>
+            <button className="flex items-center gap-1 bg-gray-800 px-3 py-2 rounded hover:bg-gray-700 text-sm">
+              <FaChartBar /> Analytics
+            </button>
+            <button className="flex items-center gap-1 bg-blue-600 px-3 py-2 rounded hover:bg-blue-500 text-sm">
+              <FaPlus /> Add Work Item
+            </button>
+          </div>
         </div>
-      </div>
-
-      {/* Kanban Board */}
-      <div className="flex-1 overflow-x-auto p-4">
-        <div className="flex gap-4 min-w-max">
-          {/* Backlog Column */}
-          <div className="w-72 flex-shrink-0">
-            <div 
-              className="flex justify-between items-center bg-gray-800 p-2 rounded-t cursor-pointer"
-              onClick={() => toggleColumnCollapse("BACKLOG")}
-            >
-              <div className="flex items-center gap-2">
-                {collapsedColumns.BACKLOG ? <FaChevronRight /> : <FaChevronDown />}
-                <h2 className="font-semibold">Backlog</h2>
-                <span className="text-gray-400 text-sm">{workItems.filter(i => i.status === "BACKLOG").length}</span>
-              </div>
-              <button 
-                className="text-gray-400 hover:text-white"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  addWorkItem("BACKLOG");
-                }}
-              >
-                <FaPlus />
-              </button>
-            </div>
-            
-            {!collapsedColumns.BACKLOG && (
-              <div className="bg-gray-800 rounded-b p-2 space-y-2">
-                {workItems
-                  .filter(item => item.status === "BACKLOG")
-                  .map(item => (
-                    <div key={item.id} className="bg-gray-700 p-3 rounded hover:bg-gray-600">
-                      <div className="flex justify-between items-start">
-                        <h3 className="font-medium">{item.title}</h3>
-                        <button className="text-gray-400 hover:text-white">
-                          <FaEllipsisV />
-                        </button>
-                      </div>
-                      <div className="flex items-center gap-2 mt-2 text-xs text-gray-400">
-                        {getPriorityIcon(item.priority)}
-                        <span>{item.module}</span>
-                        <span>{item.cycle}</span>
-                      </div>
-                      <div className="flex justify-between items-center mt-2 text-xs">
-                        <div className="flex items-center gap-1">
-                          <FaCalendarAlt className="text-xs" />
-                          <span>{item.startDate}</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <FaCalendarAlt className="text-xs" />
-                          <span>{item.dueDate}</span>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-1 mt-2 text-xs">
-                        <FaUser className="text-xs" />
-                        <span>{item.assignees?.join(", ")}</span>
-                      </div>
-                      {item.labels?.length && (
-                        <div className="flex items-center gap-1 mt-2 text-xs">
-                          <FaTag className="text-xs" />
-                          <span>{item.labels.join(", ")}</span>
-                        </div>
-                      )}
+        <div className="flex-1 overflow-x-auto p-4">
+          <div className="flex gap-4 min-w-max">
+            {Object.keys(collapsedColumns).map((status) => {
+              const typedStatus = status as Status;
+              return (
+                <div key={typedStatus} className="w-72 flex-shrink-0">
+                  <div className="flex justify-between items-center bg-gray-800 p-2 rounded-t cursor-pointer"
+                       onClick={() => toggleColumnCollapse(typedStatus)}>
+                    <div className="flex items-center gap-2">
+                      {collapsedColumns[typedStatus] ? <FaChevronRight /> : <FaChevronDown />}
+                      <h2 className="font-semibold">{typedStatus.replace("_", " ")}</h2>
+                      <span className="text-gray-400 text-sm">{workItems.filter(i => i.status === typedStatus).length}</span>
                     </div>
-                  ))}
-                <button 
-                  className="w-full bg-gray-700 hover:bg-gray-600 p-2 rounded text-sm flex items-center justify-center gap-1"
-                  onClick={() => addWorkItem("BACKLOG")}
-                >
-                  <FaPlus /> Add Work Item
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Todo Column */}
-          <div className="w-72 flex-shrink-0">
-            <div 
-              className="flex justify-between items-center bg-gray-800 p-2 rounded-t cursor-pointer"
-              onClick={() => toggleColumnCollapse("TODO")}
-            >
-              <div className="flex items-center gap-2">
-                {collapsedColumns.TODO ? <FaChevronRight /> : <FaChevronDown />}
-                <h2 className="font-semibold">Todo</h2>
-                <span className="text-gray-400 text-sm">{workItems.filter(i => i.status === "TODO").length}</span>
-              </div>
-              <button 
-                className="text-gray-400 hover:text-white"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  addWorkItem("TODO");
-                }}
-              >
-                <FaPlus />
-              </button>
-            </div>
-            
-            {!collapsedColumns.TODO && (
-              <div className="bg-gray-800 rounded-b p-2 space-y-2">
-                {workItems
-                  .filter(item => item.status === "TODO")
-                  .map(item => (
-                    <div key={item.id} className="bg-gray-700 p-3 rounded hover:bg-gray-600">
-                      {/* Same item structure as Backlog column */}
-                      <div className="flex justify-between items-start">
-                        <h3 className="font-medium">{item.title}</h3>
-                        <button className="text-gray-400 hover:text-white">
-                          <FaEllipsisV />
-                        </button>
-                      </div>
-                      <div className="flex items-center gap-2 mt-2 text-xs text-gray-400">
-                        {getPriorityIcon(item.priority)}
-                        <span>{item.module}</span>
-                        <span>{item.cycle}</span>
-                      </div>
-                      <div className="flex justify-between items-center mt-2 text-xs">
-                        <div className="flex items-center gap-1">
-                          <FaCalendarAlt className="text-xs" />
-                          <span>{item.startDate}</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <FaCalendarAlt className="text-xs" />
-                          <span>{item.dueDate}</span>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-1 mt-2 text-xs">
-                        <FaUser className="text-xs" />
-                        <span>{item.assignees?.join(", ")}</span>
-                      </div>
-                      {item.labels?.length && (
-                        <div className="flex items-center gap-1 mt-2 text-xs">
-                          <FaTag className="text-xs" />
-                          <span>{item.labels.join(", ")}</span>
-                        </div>
-                      )}
+                    <button
+                      className="text-gray-400 hover:text-white"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        addWorkItem(typedStatus);
+                      }}
+                    >
+                      <FaPlus />
+                    </button>
+                  </div>
+                  {!collapsedColumns[typedStatus] && (
+                    <div className="bg-gray-800 rounded-b p-2 space-y-2">
+                      {workItems.filter(item => item.status === typedStatus).map(renderCard)}
+                      <button
+                        className="w-full bg-gray-700 hover:bg-gray-600 p-2 rounded text-sm flex items-center justify-center gap-1"
+                        onClick={() => addWorkItem(typedStatus)}
+                      >
+                        <FaPlus /> Add Work Item
+                      </button>
                     </div>
-                  ))}
-                <button 
-                  className="w-full bg-gray-700 hover:bg-gray-600 p-2 rounded text-sm flex items-center justify-center gap-1"
-                  onClick={() => addWorkItem("TODO")}
-                >
-                  <FaPlus /> Add Work Item
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* In Progress Column */}
-          <div className="w-72 flex-shrink-0">
-            <div 
-              className="flex justify-between items-center bg-gray-800 p-2 rounded-t cursor-pointer"
-              onClick={() => toggleColumnCollapse("IN_PROGRESS")}
-            >
-              <div className="flex items-center gap-2">
-                {collapsedColumns.IN_PROGRESS ? <FaChevronRight /> : <FaChevronDown />}
-                <h2 className="font-semibold">In Progress</h2>
-                <span className="text-gray-400 text-sm">{workItems.filter(i => i.status === "IN_PROGRESS").length}</span>
-              </div>
-              <button 
-                className="text-gray-400 hover:text-white"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  addWorkItem("IN_PROGRESS");
-                }}
-              >
-                <FaPlus />
-              </button>
-            </div>
-            
-            {!collapsedColumns.IN_PROGRESS && (
-              <div className="bg-gray-800 rounded-b p-2 space-y-2">
-                {workItems
-                  .filter(item => item.status === "IN_PROGRESS")
-                  .map(item => (
-                    <div key={item.id} className="bg-gray-700 p-3 rounded hover:bg-gray-600">
-                      {/* Same item structure as Backlog column */}
-                      <div className="flex justify-between items-start">
-                        <h3 className="font-medium">{item.title}</h3>
-                        <button className="text-gray-400 hover:text-white">
-                          <FaEllipsisV />
-                        </button>
-                      </div>
-                      <div className="flex items-center gap-2 mt-2 text-xs text-gray-400">
-                        {getPriorityIcon(item.priority)}
-                        <span>{item.module}</span>
-                        <span>{item.cycle}</span>
-                      </div>
-                      <div className="flex justify-between items-center mt-2 text-xs">
-                        <div className="flex items-center gap-1">
-                          <FaCalendarAlt className="text-xs" />
-                          <span>{item.startDate}</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <FaCalendarAlt className="text-xs" />
-                          <span>{item.dueDate}</span>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-1 mt-2 text-xs">
-                        <FaUser className="text-xs" />
-                        <span>{item.assignees?.join(", ")}</span>
-                      </div>
-                      {item.labels?.length && (
-                        <div className="flex items-center gap-1 mt-2 text-xs">
-                          <FaTag className="text-xs" />
-                          <span>{item.labels.join(", ")}</span>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                <button 
-                  className="w-full bg-gray-700 hover:bg-gray-600 p-2 rounded text-sm flex items-center justify-center gap-1"
-                  onClick={() => addWorkItem("IN_PROGRESS")}
-                >
-                  <FaPlus /> Add Work Item
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Done Column */}
-          <div className="w-72 flex-shrink-0">
-            <div 
-              className="flex justify-between items-center bg-gray-800 p-2 rounded-t cursor-pointer"
-              onClick={() => toggleColumnCollapse("DONE")}
-            >
-              <div className="flex items-center gap-2">
-                {collapsedColumns.DONE ? <FaChevronRight /> : <FaChevronDown />}
-                <h2 className="font-semibold">Done</h2>
-                <span className="text-gray-400 text-sm">{workItems.filter(i => i.status === "DONE").length}</span>
-              </div>
-              <button 
-                className="text-gray-400 hover:text-white"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  addWorkItem("DONE");
-                }}
-              >
-                <FaPlus />
-              </button>
-            </div>
-            
-            {!collapsedColumns.DONE && (
-              <div className="bg-gray-800 rounded-b p-2 space-y-2">
-                {workItems
-                  .filter(item => item.status === "DONE")
-                  .map(item => (
-                    <div key={item.id} className="bg-gray-700 p-3 rounded hover:bg-gray-600">
-                      {/* Same item structure as Backlog column */}
-                      <div className="flex justify-between items-start">
-                        <h3 className="font-medium">{item.title}</h3>
-                        <button className="text-gray-400 hover:text-white">
-                          <FaEllipsisV />
-                        </button>
-                      </div>
-                      <div className="flex items-center gap-2 mt-2 text-xs text-gray-400">
-                        {getPriorityIcon(item.priority)}
-                        <span>{item.module}</span>
-                        <span>{item.cycle}</span>
-                      </div>
-                      <div className="flex justify-between items-center mt-2 text-xs">
-                        <div className="flex items-center gap-1">
-                          <FaCalendarAlt className="text-xs" />
-                          <span>{item.startDate}</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <FaCalendarAlt className="text-xs" />
-                          <span>{item.dueDate}</span>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-1 mt-2 text-xs">
-                        <FaUser className="text-xs" />
-                        <span>{item.assignees?.join(", ")}</span>
-                      </div>
-                      {item.labels?.length && (
-                        <div className="flex items-center gap-1 mt-2 text-xs">
-                          <FaTag className="text-xs" />
-                          <span>{item.labels.join(", ")}</span>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                <button 
-                  className="w-full bg-gray-700 hover:bg-gray-600 p-2 rounded text-sm flex items-center justify-center gap-1"
-                  onClick={() => addWorkItem("DONE")}
-                >
-                  <FaPlus /> Add Work Item
-                </button>
-              </div>
-            )}
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
+      {selectedItem && (
+        <WorkItemSidebar
+          item={selectedItem}
+          onClose={() => setSelectedItem(null)}
+          onUpdate={(updated: WorkItem) => {
+            setWorkItems(prev => prev.map(i => (i.id === updated.id ? updated : i)));
+            setSelectedItem(updated);
+          }}
+        />
+      )}
     </div>
   );
 }
