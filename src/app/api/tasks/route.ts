@@ -1,29 +1,23 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { prisma } from "@/lib/prisma";
+import { NextRequest, NextResponse } from "next/server";
 
-export async function GET() {
-  const tasks = await prisma.task.findMany({
-    orderBy: { createdAt: 'desc' },
-  });
-  return NextResponse.json(tasks);
-}
-
-export async function POST(req: NextRequest) {
-  const data = await req.json();
-  const { title, description, userId, status } = data;
+export async function POST(request: NextRequest) {
+  const body = await request.json();
+  const { title, description, status, userId, projectId } = body;
 
   if (!title || !userId) {
-    return NextResponse.json({ error: 'Campos obrigatórios ausentes' }, { status: 400 });
+    return NextResponse.json({ error: "title e userId são obrigatórios" }, { status: 400 });
   }
 
   const newTask = await prisma.task.create({
     data: {
       title,
-      description,
+      description: description ?? null,
+      status: status ?? "TODO",
       userId,
-      status: status || 'TODO',
+      projectId: projectId ?? null,
     },
   });
 
-  return NextResponse.json(newTask, { status: 201 });
+  return NextResponse.json(newTask);
 }

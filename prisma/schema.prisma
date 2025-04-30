@@ -14,19 +14,19 @@ datasource db {
 }
 
 model User {
-  id              Int              @id @default(autoincrement())
-  name            String
-  email           String           @unique
-  password        String
-  googleId        String?          @unique
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-  tasks           Task[]
-  projects        Project[]
-  notifications   Notification[]
-  settings        Settings?
-  sessions        Session[]
-  workspaces      Workspace[]
+  id               Int               @id @default(autoincrement())
+  name             String
+  email            String            @unique
+  password         String
+  googleId         String?           @unique
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  tasks            Task[]
+  projects         Project[]
+  notifications    Notification[]
+  settings         Settings?
+  sessions         Session[]
+  workspaces       Workspace[]
   workspaceMembers WorkspaceMember[]
 }
 
@@ -42,22 +42,38 @@ model Project {
 }
 
 model Task {
-  id          Int      @id @default(autoincrement())
+  id          Int            @id @default(autoincrement())
   title       String
   description String?
-  status      Status   @default(TODO)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  status      Status         @default(BACKLOG)
+  priority    Priority       @default(NONE)
+  startDate   DateTime?
+  dueDate     DateTime?
+  module      String?
+  cycle       String?
+  assignees   String[]
+  labels      String[]
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
   userId      Int
-  user        User     @relation(fields: [userId], references: [id])
+  user        User           @relation(fields: [userId], references: [id])
   projectId   Int?
-  project     Project? @relation(fields: [projectId], references: [id])
+  project     Project?       @relation(fields: [projectId], references: [id])
+  activities  TaskActivity[]
 }
 
 enum Status {
+  BACKLOG
   TODO
   IN_PROGRESS
   DONE
+}
+
+enum Priority {
+  NONE
+  LOW
+  MEDIUM
+  HIGH
 }
 
 model Notification {
@@ -87,15 +103,15 @@ model Session {
 }
 
 model Workspace {
-  id        Int      @id @default(autoincrement())
-  name      String
+  id          Int               @id @default(autoincrement())
+  name        String
   companySize Int
-  slug      String   @unique
-  userId    Int
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  user      User     @relation(fields: [userId], references: [id])
-  members   WorkspaceMember[]
+  slug        String            @unique
+  userId      Int
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  user        User              @relation(fields: [userId], references: [id])
+  members     WorkspaceMember[]
 }
 
 model WorkspaceMember {
@@ -106,5 +122,18 @@ model WorkspaceMember {
   workspace   Workspace @relation(fields: [workspaceId], references: [id])
   role        String    @default("Membro")
   joinedAt    DateTime  @default(now())
+
   @@unique([userId, workspaceId])
+}
+
+model TaskActivity {
+  id        Int      @id @default(autoincrement())
+  taskId    Int
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user      String
+  action    String
+  field     String?
+  oldValue  String?
+  newValue  String?
+  createdAt DateTime @default(now())
 }

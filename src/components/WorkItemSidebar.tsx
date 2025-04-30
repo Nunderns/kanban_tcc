@@ -15,21 +15,52 @@ interface Props {
 
 export default function WorkItemSidebar({ item, onClose, onUpdate }: Props) {
   const [localItem, setLocalItem] = useState(item);
+  const [activities, setActivities] = useState<string[]>([]);
 
   useEffect(() => {
-    setLocalItem(item);
+    const fetchActivities = async () => {
+      if (!item.id || item.id.toString().startsWith("new")) return;
+      const res = await fetch(`/api/tasks/${item.id}/activities`);
+      const data = await res.json();
+      setActivities(data);
+    };
+  
+    fetchActivities();
   }, [item]);
+
+  const fetchActivities = async () => {
+    try {
+      const res = await fetch(`/api/tasks/${item.id}/activities`);
+      const data = await res.json();
+      setActivities(data);
+    } catch (error) {
+      console.error("Erro ao buscar atividades:", error);
+    }
+  };
 
   const handleChange = (field: keyof WorkItem, value: any) => {
     const updated = { ...localItem, [field]: value };
+    const oldValue = localItem[field];
     setLocalItem(updated);
     onUpdate(updated);
-    // Simulação de persistência (substitua por API real):
+
     fetch(`/api/work-items/${item.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ [field]: value })
     });
+
+    fetch(`/api/tasks/${item.id}/activities`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        user: "henri.okayama",
+        action: "atualizou o campo",
+        field,
+        oldValue: Array.isArray(oldValue) ? oldValue.join(", ") : oldValue,
+        newValue: Array.isArray(value) ? value.join(", ") : value
+      })
+    }).then(() => fetchActivities());
   };
 
   return (
@@ -147,9 +178,13 @@ export default function WorkItemSidebar({ item, onClose, onUpdate }: Props) {
         <div>
           <p className="text-sm text-gray-400">Activity</p>
           <ul className="text-xs text-gray-400 space-y-1 mt-2">
-            <li>henri.okayama created the work item. 20 days ago</li>
-            <li>henri.okayama set the due date to {format(new Date(localItem.dueDate || Date.now()), "MMM dd, yyyy")}</li>
-            <li>henri.okayama set the start date to {format(new Date(localItem.startDate || Date.now()), "MMM dd, yyyy")}</li>
+            {activities.length === 0 ? (
+              <li>Nenhuma atividade registrada.</li>
+            ) : (
+              activities.map((activity, index) => (
+                <li key={index}>{activity}</li>
+              ))
+            )}
           </ul>
         </div>
       </div>

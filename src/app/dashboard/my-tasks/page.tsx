@@ -1,7 +1,7 @@
 "use client";
 
 import WorkItemSidebar from "@/components/WorkItemSidebar";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   FaFilter,
   FaChartBar,
@@ -9,8 +9,6 @@ import {
   FaUser,
   FaTag,
   FaCalendarAlt,
-  FaBoxes,
-  FaSyncAlt,
   FaChevronDown,
   FaChevronRight,
   FaCircle,
@@ -45,65 +43,22 @@ export default function KanbanPage() {
     DONE: false
   });
   const [selectedItem, setSelectedItem] = useState<WorkItem | null>(null);
-  const [workItems, setWorkItems] = useState<WorkItem[]>([
-    {
-      id: "1",
-      title: "Praise 3 - More problems",
-      status: "BACKLOG",
-      priority: "HIGH",
-      startDate: "2023-10-15",
-      dueDate: "2023-11-20",
-      assignees: ["user1"],
-      module: "Core",
-      cycle: "Sprint 1",
-      labels: ["bug"]
-    },
-    {
-      id: "2",
-      title: "Praise 1 - More pressing pages",
-      status: "BACKLOG",
-      priority: "MEDIUM",
-      startDate: "2023-10-10",
-      dueDate: "2023-11-15",
-      assignees: ["user2"],
-      module: "UI",
-      cycle: "Sprint 1",
-      labels: ["enhancement"]
-    },
-    {
-      id: "3",
-      title: "Trace",
-      status: "TODO",
-      priority: "LOW",
-      startDate: "2023-10-05",
-      dueDate: "2023-10-30",
-      assignees: ["user3"],
-      module: "API",
-      labels: ["documentation"]
-    },
-    {
-      id: "4",
-      title: "Debug",
-      status: "IN_PROGRESS",
-      priority: "HIGH",
-      startDate: "2023-10-01",
-      dueDate: "2023-10-25",
-      assignees: ["user1", "user2"],
-      module: "Core",
-      cycle: "Sprint 2"
-    },
-    {
-      id: "5",
-      title: "New Work Item",
-      status: "DONE",
-      priority: "NONE",
-      startDate: "2023-09-20",
-      dueDate: "2023-10-10",
-      assignees: ["user3"],
-      module: "UI",
-      cycle: "Sprint 1"
-    }
-  ]);
+  const [workItems, setWorkItems] = useState<WorkItem[]>([]);
+
+  useEffect(() => {
+    const fetchWorkItems = async () => {
+      const res = await fetch("/api/tasks");
+      const data = await res.json();
+      const parsedData: WorkItem[] = data.map((item: any) => ({
+        ...item,
+        assignees: item.assignees?.split(",").map((a: string) => a.trim()),
+        labels: item.labels?.split(",").map((l: string) => l.trim()),
+      }));
+      setWorkItems(parsedData);
+    };
+
+    fetchWorkItems();
+  }, []);
 
   const toggleColumnCollapse = (status: Status) => {
     setCollapsedColumns(prev => ({
@@ -112,15 +67,29 @@ export default function KanbanPage() {
     }));
   };
 
-  const addWorkItem = (status: Status) => {
-    const newItem: WorkItem = {
-      id: `new-${Date.now()}`,
-      title: "New Work Item",
-      status,
-      priority: "NONE"
-    };
-    setWorkItems([...workItems, newItem]);
+  const addWorkItem = async (status: Status) => {
+    const res = await fetch("/api/tasks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title: "New Work Item",
+        status,
+        priority: "NONE",
+      }),
+    });
+  
+    const newItem = await res.json();
+  
+    setWorkItems(prev => [
+      ...prev,
+      {
+        ...newItem,
+        assignees: newItem.assignees?.split(",") || [],
+        labels: newItem.labels?.split(",") || [],
+      },
+    ]);
   };
+  
 
   const getPriorityIcon = (priority: Priority) => {
     switch (priority) {
@@ -193,12 +162,16 @@ export default function KanbanPage() {
               const typedStatus = status as Status;
               return (
                 <div key={typedStatus} className="w-72 flex-shrink-0">
-                  <div className="flex justify-between items-center bg-gray-800 p-2 rounded-t cursor-pointer"
-                       onClick={() => toggleColumnCollapse(typedStatus)}>
+                  <div
+                    className="flex justify-between items-center bg-gray-800 p-2 rounded-t cursor-pointer"
+                    onClick={() => toggleColumnCollapse(typedStatus)}
+                  >
                     <div className="flex items-center gap-2">
                       {collapsedColumns[typedStatus] ? <FaChevronRight /> : <FaChevronDown />}
                       <h2 className="font-semibold">{typedStatus.replace("_", " ")}</h2>
-                      <span className="text-gray-400 text-sm">{workItems.filter(i => i.status === typedStatus).length}</span>
+                      <span className="text-gray-400 text-sm">
+                        {workItems.filter(i => i.status === typedStatus).length}
+                      </span>
                     </div>
                     <button
                       className="text-gray-400 hover:text-white"
