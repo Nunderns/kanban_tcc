@@ -51,8 +51,8 @@ model Task {
   dueDate     DateTime?
   module      String?
   cycle       String?
-  assignees   String[]
-  labels      String[]
+  assignees String[] @default([])
+  labels    String[] @default([])
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
   userId      Int
@@ -60,6 +60,9 @@ model Task {
   projectId   Int?
   project     Project?       @relation(fields: [projectId], references: [id])
   activities  TaskActivity[]
+  
+  @@index([userId])
+  @@index([projectId])
 }
 
 enum Status {
