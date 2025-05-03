@@ -1,24 +1,23 @@
 "use client";
 
 import WorkItemSidebar from "@/components/WorkItemSidebar";
-import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
+import { useCallback, useEffect, useState } from "react";
 import {
   FaFilter,
   FaChartBar,
   FaPlus,
-  FaUser,
-  FaTag,
-  FaCalendarAlt,
   FaChevronDown,
   FaChevronRight,
   FaCircle,
   FaRegCircle,
   FaEllipsisV,
-  FaTimes
+  FaTimes,
+  FaUser,
+  FaTag,
+  FaCalendarAlt
 } from "react-icons/fa";
 import { IoMdOptions } from "react-icons/io";
-import { format } from "date-fns";
 
 export type Priority = "NONE" | "LOW" | "MEDIUM" | "HIGH";
 export type Status = "BACKLOG" | "TODO" | "IN_PROGRESS" | "DONE";
@@ -36,7 +35,11 @@ export type WorkItem = {
   labels?: string[];
 };
 
-function CreateTaskModal({ isOpen, onClose, onSubmit }: {
+function CreateTaskModal({
+  isOpen,
+  onClose,
+  onSubmit,
+}: {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (task: { title: string; description: string }) => Promise<void>;
@@ -72,7 +75,6 @@ function CreateTaskModal({ isOpen, onClose, onSubmit }: {
             <FaTimes />
           </button>
         </div>
-
         <form onSubmit={handleSubmit}>
           <input
             type="text"
@@ -89,7 +91,11 @@ function CreateTaskModal({ isOpen, onClose, onSubmit }: {
             onChange={(e) => setDescription(e.target.value)}
           />
           <div className="flex justify-end">
-            <button type="submit" className="bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded text-sm">
+            <button
+              type="submit"
+              className="bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded text-sm"
+              disabled={isSubmitting}
+            >
               {isSubmitting ? "Creating..." : "Create Task"}
             </button>
           </div>
@@ -114,24 +120,20 @@ export default function KanbanPage() {
   const [workItems, setWorkItems] = useState<WorkItem[]>([]);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
-  useEffect(() => {
-    if (userId) fetchWorkItems();
-  }, [userId]);
-
-  const fetchWorkItems = async () => {
+  const fetchWorkItems = useCallback(async () => {
+    if (!userId) return;
     try {
       const res = await fetch(`/api/tasks?userId=${userId}`);
-      const data = await res.json();
-      const parsedData: WorkItem[] = data.map((item: any) => ({
-        ...item,
-        assignees: item.assignees || [],
-        labels: item.labels || []
-      }));
-      setWorkItems(parsedData);
+      const data: WorkItem[] = await res.json();
+      setWorkItems(data);
     } catch (err) {
       console.error("Failed to fetch tasks:", err);
     }
-  };
+  }, [userId]);
+
+  useEffect(() => {
+    fetchWorkItems();
+  }, [fetchWorkItems]);
 
   const handleCreateTask = async ({ title, description }: { title: string; description: string }) => {
     if (!userId) return;
@@ -143,24 +145,6 @@ export default function KanbanPage() {
         description,
         userId,
         status: "BACKLOG",
-        priority: "NONE",
-        assignees: [],
-        labels: []
-      })
-    });
-    const task = await res.json();
-    setWorkItems((prev) => [...prev, task]);
-  };
-
-  const addWorkItem = async (status: Status) => {
-    if (!userId) return;
-    const res = await fetch("/api/tasks", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        title: "New Work Item",
-        userId,
-        status,
         priority: "NONE",
         assignees: [],
         labels: []
@@ -200,11 +184,11 @@ export default function KanbanPage() {
         <div className="flex gap-1 items-center">
           <FaUser /> {item.assignees?.join(", ")}
         </div>
-        {item.labels?.length ? (
+        {item.labels && item.labels.length > 0 && (
           <div className="flex gap-1 items-center">
-            <FaTag /> {item.labels?.join(", ")}
+            <FaTag /> {item.labels.join(", ")}
           </div>
-        ) : null}
+        )}
       </div>
     </div>
   );
@@ -226,7 +210,10 @@ export default function KanbanPage() {
             <button className="flex items-center gap-1 bg-gray-800 px-3 py-2 rounded hover:bg-gray-700 text-sm">
               <FaChartBar /> Analytics
             </button>
-            <button className="flex items-center gap-1 bg-blue-600 px-3 py-2 rounded hover:bg-blue-500 text-sm" onClick={() => setIsCreateModalOpen(true)}>
+            <button
+              className="flex items-center gap-1 bg-blue-600 px-3 py-2 rounded hover:bg-blue-500 text-sm"
+              onClick={() => setIsCreateModalOpen(true)}
+            >
               <FaPlus /> Add Work Item
             </button>
           </div>
@@ -238,7 +225,10 @@ export default function KanbanPage() {
               const typedStatus = status as Status;
               return (
                 <div key={typedStatus} className="w-72 flex-shrink-0">
-                  <div className="flex justify-between items-center bg-gray-800 p-2 rounded-t cursor-pointer" onClick={() => toggleColumnCollapse(typedStatus)}>
+                  <div
+                    className="flex justify-between items-center bg-gray-800 p-2 rounded-t cursor-pointer"
+                    onClick={() => toggleColumnCollapse(typedStatus)}
+                  >
                     <div className="flex items-center gap-2">
                       {collapsedColumns[typedStatus] ? <FaChevronRight /> : <FaChevronDown />}
                       <h2 className="font-semibold">{typedStatus.replace("_", " ")}</h2>
@@ -246,19 +236,19 @@ export default function KanbanPage() {
                         {workItems.filter(i => i.status === typedStatus).length}
                       </span>
                     </div>
-                    <button className="text-gray-400 hover:text-white" onClick={(e) => {
-                      e.stopPropagation();
-                      addWorkItem(typedStatus);
-                    }}>
+                    <button
+                      className="text-gray-400 hover:text-white"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleCreateTask({ title: "New Task", description: "" });
+                      }}
+                    >
                       <FaPlus />
                     </button>
                   </div>
                   {!collapsedColumns[typedStatus] && (
                     <div className="bg-gray-800 rounded-b p-2 space-y-2">
                       {workItems.filter(item => item.status === typedStatus).map(renderCard)}
-                      <button className="w-full bg-gray-700 hover:bg-gray-600 p-2 rounded text-sm flex items-center justify-center gap-1" onClick={() => addWorkItem(typedStatus)}>
-                        <FaPlus /> Add Work Item
-                      </button>
                     </div>
                   )}
                 </div>
