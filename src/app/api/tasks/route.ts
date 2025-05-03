@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
 import { prisma } from "@/lib/prisma";
+import { Prisma, Status } from "@prisma/client";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth"; // ajuste se o caminho for diferente
+import { authOptions } from "@/lib/auth";
 
-// Helper para tratamento de erros
 const handleServerError = (error: unknown) => {
   console.error("Server error:", error);
   return NextResponse.json(
@@ -15,7 +15,6 @@ const handleServerError = (error: unknown) => {
   );
 };
 
-// GET: Listar todas as tarefas do usuário logado
 export async function GET(request: Request) {
   try {
     const session = await getServerSession(authOptions);
@@ -24,37 +23,33 @@ export async function GET(request: Request) {
     }
 
     const { searchParams } = new URL(request.url);
-    const status = searchParams.get('status');
+    const statusParam = searchParams.get("status");
 
-    const where: any = {
-      userId: session.user.id,
+    // ⚠️ Conversão segura de string para enum
+    const status = (statusParam && ["BACKLOG", "TODO", "IN_PROGRESS", "DONE"].includes(statusParam))
+      ? statusParam as Status
+      : undefined;
+
+    const where: Prisma.TaskWhereInput = {
+      userId: Number(session.user.id),
+      ...(status ? { status } : {})
     };
-
-    if (status) {
-      where.status = status;
-    }
 
     const tasks = await prisma.task.findMany({
       where,
       include: {
-        user: {
-          select: { id: true, name: true, email: true }
-        },
-        project: {
-          select: { id: true, name: true }
-        }
+        user: { select: { id: true, name: true, email: true } },
+        project: { select: { id: true, name: true } }
       },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: "desc" }
     });
 
     return NextResponse.json(tasks);
-
   } catch (error) {
     return handleServerError(error);
   }
 }
 
-// POST: Criar nova tarefa para o usuário logado
 export async function POST(request: Request) {
   try {
     const session = await getServerSession(authOptions);
@@ -84,7 +79,6 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json(newTask, { status: 201 });
-
   } catch (error) {
     return handleServerError(error);
   }
