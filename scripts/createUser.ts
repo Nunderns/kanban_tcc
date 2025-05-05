@@ -5,7 +5,7 @@ async function main() {
     data: {
       name: "Usuário Teste",
       email: "teste@example.com",
-      password: "senha123" // ou uma hash real, dependendo do seu projeto
+      password: "senha123"
     },
   });
 
