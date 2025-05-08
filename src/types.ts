@@ -12,4 +12,5 @@ export type WorkItem = {
   module?: string;
   cycle?: string;
   labels?: string[];
+  creator?: string;
 };
