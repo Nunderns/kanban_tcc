@@ -5,7 +5,7 @@ type Context = {
   params: { id: string };
 };
 
-export async function PATCH(request: NextRequest, { params }: Context) {
+export async function PATCH(request: Request, { params }: { params: { id: string } }) {
   const id = Number(params.id);
   const data = await request.json();
 

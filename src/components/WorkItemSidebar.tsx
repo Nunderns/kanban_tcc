@@ -30,7 +30,7 @@ export default function WorkItemSidebar({ item, onClose, onUpdate }: Props) {
       console.error("Erro ao buscar atividades:", error);
     }
   }, [item.id]);
-  
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     fetchActivities();
   }, [fetchActivities]);
