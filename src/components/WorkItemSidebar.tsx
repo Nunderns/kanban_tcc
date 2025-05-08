@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { FaTimes } from "react-icons/fa";
-import { format } from "date-fns";
 import ptBR from "date-fns/locale/pt-BR";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
@@ -20,7 +19,7 @@ export default function WorkItemSidebar({ item, onClose, onUpdate }: Props) {
 
   useEffect(() => {
     fetchActivities();
-  }, [item]);
+  }, [item.id]);
 
   const fetchActivities = useCallback(async () => {
     try {
@@ -36,7 +35,7 @@ export default function WorkItemSidebar({ item, onClose, onUpdate }: Props) {
     fetchActivities();
   }, [fetchActivities]);
 
-  const handleChange = (field: keyof WorkItem, value: any) => {
+  const handleChange = (field: keyof WorkItem, value: string | string[] | null | undefined) => {
     const updated = { ...localItem, [field]: value };
     const oldValue = localItem[field];
     setLocalItem(updated);
