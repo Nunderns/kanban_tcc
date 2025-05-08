@@ -17,10 +17,6 @@ export default function WorkItemSidebar({ item, onClose, onUpdate }: Props) {
   const [localItem, setLocalItem] = useState(item);
   const [activities, setActivities] = useState<string[]>([]);
 
-  useEffect(() => {
-    fetchActivities();
-  }, [item.id]);
-
   const fetchActivities = useCallback(async () => {
     try {
       const res = await fetch(`/api/tasks/${item.id}/activities`);
@@ -30,7 +26,7 @@ export default function WorkItemSidebar({ item, onClose, onUpdate }: Props) {
       console.error("Erro ao buscar atividades:", error);
     }
   }, [item.id]);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+
   useEffect(() => {
     fetchActivities();
   }, [fetchActivities]);
