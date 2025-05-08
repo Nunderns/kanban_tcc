@@ -12,7 +12,6 @@ import {
   FaChevronRight,
   FaCircle,
   FaRegCircle,
-  FaEllipsisV,
   FaTimes,
   FaUser,
   FaTag,
@@ -127,7 +126,7 @@ export default function KanbanPage() {
     if (!userId) return;
     try {
       const res = await fetch(`/api/tasks?userId=${userId}`);
-      const data: any[] = await res.json();
+      const data: WorkItem[] = await res.json();
       setWorkItems(data);
     } catch (err) {
       console.error("Failed to fetch tasks:", err);

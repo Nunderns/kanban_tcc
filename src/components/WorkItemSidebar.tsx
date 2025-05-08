@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { FaTimes } from "react-icons/fa";
 import { format } from "date-fns";
 import ptBR from "date-fns/locale/pt-BR";
@@ -22,7 +22,7 @@ export default function WorkItemSidebar({ item, onClose, onUpdate }: Props) {
     fetchActivities();
   }, [item]);
 
-  const fetchActivities = async () => {
+  const fetchActivities = useCallback(async () => {
     try {
       const res = await fetch(`/api/tasks/${item.id}/activities`);
       const data = await res.json();
@@ -30,7 +30,11 @@ export default function WorkItemSidebar({ item, onClose, onUpdate }: Props) {
     } catch (error) {
       console.error("Erro ao buscar atividades:", error);
     }
-  };
+  }, [item.id]);
+  
+  useEffect(() => {
+    fetchActivities();
+  }, [fetchActivities]);
 
   const handleChange = (field: keyof WorkItem, value: any) => {
     const updated = { ...localItem, [field]: value };
