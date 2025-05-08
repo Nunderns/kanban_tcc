@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { FaTimes } from "react-icons/fa";
-import ptBR from "date-fns/locale/pt-BR";
+import { ptBR } from "date-fns/locale";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import type { WorkItem } from "@/app/dashboard/my-tasks/page";
