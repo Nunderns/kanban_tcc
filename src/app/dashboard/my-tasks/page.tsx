@@ -240,7 +240,13 @@ export default function KanbanPage() {
   );
   
 
-  if (!session) return <div className="p-4 text-white">Carregando sessão...</div>;
+  if (status === "loading") {
+    return <div className="p-4 text-white">Carregando sessão...</div>;
+  }
+  
+  if (!session) {
+    return <div className="p-4 text-red-500">Sessão inválida</div>;
+  }
 
   return (
     <div className="min-h-screen bg-white text-gray-900 flex">
