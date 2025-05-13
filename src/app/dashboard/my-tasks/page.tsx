@@ -108,7 +108,8 @@ function CreateTaskModal({
 }
 
 export default function KanbanPage() {
-  const { data: session } = useSession();
+const { data: session, status } = useSession();
+
   const userId = session?.user?.id;
 
   const [workspaceName] = useState("Primeiro Projeto");
@@ -122,16 +123,22 @@ export default function KanbanPage() {
   const [workItems, setWorkItems] = useState<WorkItem[]>([]);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
-  const fetchWorkItems = useCallback(async () => {
-    if (!userId) return;
-    try {
-      const res = await fetch(`/api/tasks?userId=${userId}`);
-      const data: WorkItem[] = await res.json();
-      setWorkItems(data);
-    } catch (err) {
-      console.error("Failed to fetch tasks:", err);
+const fetchWorkItems = useCallback(async () => {
+  if (status !== "authenticated") return;
+
+  try {
+    const res = await fetch("/api/tasks");
+    if (!res.ok) {
+      console.error("Erro ao buscar tarefas:", res.statusText);
+      return;
     }
-  }, [userId]);
+
+    const data: WorkItem[] = await res.json();
+    setWorkItems(data);
+  } catch (err) {
+    console.error("Failed to fetch tasks:", err);
+  }
+}, [status]);
 
   useEffect(() => {
     fetchWorkItems();
@@ -139,19 +146,19 @@ export default function KanbanPage() {
 
   const handleCreateTask = async ({ title, description }: { title: string; description: string }) => {
     if (!userId) return;
-    const res = await fetch("/api/tasks", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        title,
-        description,
-        userId,
-        status: "BACKLOG",
-        priority: "NONE",
-        assignees: [],
-        labels: []
-      })
-    });
+const res = await fetch("/api/tasks", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    title,
+    description,
+    status: "BACKLOG",
+    priority: "NONE",
+    assignees: [],
+    labels: []
+  })
+});
+
     const task = await res.json();
     setWorkItems((prev) => [...prev, task]);
   };
@@ -191,7 +198,7 @@ export default function KanbanPage() {
         </div>
   
         {/* Data de Início */}
-        {item.startDate && (
+          {item.startDate && !isNaN(new Date(item.startDate).getTime()) && (
           <div className="flex items-center gap-1 border border-gray-300 rounded-full px-2 py-1">
             <FaCalendarAlt className="text-gray-500" />
             <span>Início: {format(new Date(item.startDate), "MMM dd, yyyy")}</span>
@@ -240,7 +247,13 @@ export default function KanbanPage() {
   );
   
 
-  if (!session) return <div className="p-4 text-white">Carregando sessão...</div>;
+  if (status === "loading") {
+    return <div className="p-4 text-white">Carregando sessão...</div>;
+  }
+  
+  if (!session) {
+    return <div className="p-4 text-red-500">Sessão inválida</div>;
+  }
 
   return (
     <div className="min-h-screen bg-white text-gray-900 flex">
@@ -296,7 +309,10 @@ export default function KanbanPage() {
                   </div>
                   {!collapsedColumns[typedStatus] && (
                     <div className="bg-white rounded-b p-2 space-y-2">
-                      {workItems.filter(item => item.status === typedStatus).map(renderCard)}
+                      {workItems
+                        .filter(item => item.status && item.status === typedStatus)
+                        .map(renderCard)}
+
                     </div>
                   )}
                 </div>
