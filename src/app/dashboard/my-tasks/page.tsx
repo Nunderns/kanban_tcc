@@ -108,7 +108,8 @@ function CreateTaskModal({
 }
 
 export default function KanbanPage() {
-  const { data: session } = useSession();
+const { data: session, status } = useSession();
+
   const userId = session?.user?.id;
 
   const [workspaceName] = useState("Primeiro Projeto");
