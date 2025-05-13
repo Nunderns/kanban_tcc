@@ -123,16 +123,22 @@ const { data: session, status } = useSession();
   const [workItems, setWorkItems] = useState<WorkItem[]>([]);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
-  const fetchWorkItems = useCallback(async () => {
-    if (!userId) return;
-    try {
-      const res = await fetch(`/api/tasks?userId=${userId}`);
-      const data: WorkItem[] = await res.json();
-      setWorkItems(data);
-    } catch (err) {
-      console.error("Failed to fetch tasks:", err);
+const fetchWorkItems = useCallback(async () => {
+  if (status !== "authenticated") return;
+
+  try {
+    const res = await fetch("/api/tasks");
+    if (!res.ok) {
+      console.error("Erro ao buscar tarefas:", res.statusText);
+      return;
     }
-  }, [userId]);
+
+    const data: WorkItem[] = await res.json();
+    setWorkItems(data);
+  } catch (err) {
+    console.error("Failed to fetch tasks:", err);
+  }
+}, [status]);
 
   useEffect(() => {
     fetchWorkItems();
@@ -140,19 +146,19 @@ const { data: session, status } = useSession();
 
   const handleCreateTask = async ({ title, description }: { title: string; description: string }) => {
     if (!userId) return;
-    const res = await fetch("/api/tasks", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        title,
-        description,
-        userId,
-        status: "BACKLOG",
-        priority: "NONE",
-        assignees: [],
-        labels: []
-      })
-    });
+const res = await fetch("/api/tasks", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    title,
+    description,
+    status: "BACKLOG",
+    priority: "NONE",
+    assignees: [],
+    labels: []
+  })
+});
+
     const task = await res.json();
     setWorkItems((prev) => [...prev, task]);
   };
