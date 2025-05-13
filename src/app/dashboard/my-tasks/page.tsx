@@ -192,7 +192,7 @@ const { data: session, status } = useSession();
         </div>
   
         {/* Data de Início */}
-        {item.startDate && (
+          {item.startDate && !isNaN(new Date(item.startDate).getTime()) && (
           <div className="flex items-center gap-1 border border-gray-300 rounded-full px-2 py-1">
             <FaCalendarAlt className="text-gray-500" />
             <span>Início: {format(new Date(item.startDate), "MMM dd, yyyy")}</span>
@@ -303,7 +303,10 @@ const { data: session, status } = useSession();
                   </div>
                   {!collapsedColumns[typedStatus] && (
                     <div className="bg-white rounded-b p-2 space-y-2">
-                      {workItems.filter(item => item.status === typedStatus).map(renderCard)}
+                      {workItems
+                        .filter(item => item.status && item.status === typedStatus)
+                        .map(renderCard)}
+
                     </div>
                   )}
                 </div>
