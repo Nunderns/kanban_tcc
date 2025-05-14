@@ -150,13 +150,18 @@ export const Sidebar = () => {
                 Convites Recebidos
               </button>
 
-              <button
-                onClick={() => signOut()}
-                className="flex items-center w-full text-sm text-red-500 hover:bg-red-100 px-2 py-1 rounded-md"
-              >
-                <LogOut size={16} className="mr-2" />
-                Sair
-              </button>
+
+<button
+  onClick={() =>
+    signOut({
+      callbackUrl: `${window.location.origin}/`
+    })
+  }
+  className="flex items-center w-full text-sm text-red-500 hover:bg-red-100 px-2 py-1 rounded-md"
+>
+  <LogOut size={16} className="mr-2" />
+  Sair
+</button>
             </div>
           </div>
         )}
