@@ -25,7 +25,6 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const statusParam = searchParams.get("status");
 
-    // ⚠️ Conversão segura de string para enum
     const status = (statusParam && ["BACKLOG", "TODO", "IN_PROGRESS", "DONE"].includes(statusParam))
       ? statusParam as Status
       : undefined;
