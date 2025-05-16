@@ -2,11 +2,8 @@
 
 import FilterDropdown from "@/components/FilterDropdown";
 import DisplayDropdown from "@/components/DisplayDown";
-import { useState } from "react";
-import {
-  FaFilter,
-  FaTimes
-} from "react-icons/fa";
+import { useState, useRef, useEffect } from "react";
+import { FaFilter, FaTimes } from "react-icons/fa";
 
 export type Priority = "NONE" | "LOW" | "MEDIUM" | "HIGH";
 export type Status = "BACKLOG" | "TODO" | "IN_PROGRESS" | "DONE";
@@ -38,6 +35,29 @@ function CreateTaskModal({
   const [description, setDescription] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [isDisplayOpen, setIsDisplayOpen] = useState(false);
+
+  const modalRef = useRef<HTMLDivElement>(null);
+  const displayRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (displayRef.current && displayRef.current.contains(event.target as Node)) return;
+      if (isDisplayOpen) {
+        setIsDisplayOpen(false);
+        return;
+      }
+
+      if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
+        onClose();
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isDisplayOpen, onClose]);
 
   if (!isOpen) return null;
 
@@ -59,7 +79,10 @@ function CreateTaskModal({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md text-black">
+      <div
+        className="bg-white rounded-lg p-6 w-full max-w-md text-black"
+        ref={modalRef}
+      >
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold">Criar Tarefa</h2>
           <button onClick={onClose} className="text-gray-500 hover:text-black">
@@ -101,7 +124,9 @@ function CreateTaskModal({
                   </div>
                 )}
               </div>
-              <DisplayDropdown />
+                <div className="relative" ref={displayRef}>
+                  <DisplayDropdown />
+                </div>
             </div>
             <div className="flex gap-2">
               <button

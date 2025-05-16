@@ -77,7 +77,9 @@ export default function KanbanPage() {
   const fetchWorkItems = useCallback(async () => {
     if (status !== "authenticated") return;
     try {
-      const res = await fetch("/api/tasks");
+      const res = await fetch("/api/tasks", {
+        credentials: "include",
+      });
       if (!res.ok) {
         console.error("Erro ao buscar tarefas:", res.statusText);
         return;
