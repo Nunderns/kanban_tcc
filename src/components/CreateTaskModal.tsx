@@ -1,27 +1,12 @@
 "use client";
 
-import Sidebar from "@/components/Sidebar";
 import FilterDropdown from "@/components/FilterDropdown";
 import DisplayDropdown from "@/components/DisplayDown";
-import { format } from "date-fns";
-import WorkItemSidebar from "@/components/WorkItemSidebar";
-import { useSession } from "next-auth/react";
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import {
   FaFilter,
-  FaChartBar,
-  FaPlus,
-  FaChevronDown,
-  FaChevronRight,
-  FaCircle,
-  FaRegCircle,
-  FaTimes,
-  FaUser,
-  FaTag,
-  FaCalendarAlt,
-  FaSyncAlt,
+  FaTimes
 } from "react-icons/fa";
-import { IoMdOptions } from "react-icons/io";
 
 export type Priority = "NONE" | "LOW" | "MEDIUM" | "HIGH";
 export type Status = "BACKLOG" | "TODO" | "IN_PROGRESS" | "DONE";
