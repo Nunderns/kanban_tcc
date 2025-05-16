@@ -63,9 +63,9 @@ export default function LoginPage() {
         toast.success("Login bem-sucedido!");
         router.push("/dashboard");
       }
-    } catch (error) {
-      toast.error("Ocorreu um erro durante o login");
-    } finally {
+      } catch {
+        toast.error("Ocorreu um erro durante o login");
+      } finally {
       setIsLoading(false);
     }
   };
