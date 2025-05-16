@@ -1,24 +1,24 @@
 "use client";
+
 import Sidebar from "@/components/Sidebar";
-import { format } from "date-fns";
+import CreateTaskModal from "@/components/CreateTaskModal";
+import FilterDropdown from "@/components/FilterDropdown";
+import DisplayDropdown from "@/components/DisplayDown";
 import WorkItemSidebar from "@/components/WorkItemSidebar";
 import { useSession } from "next-auth/react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useRef } from "react";
+import { format } from "date-fns";
 import {
-  FaFilter,
-  FaChartBar,
   FaPlus,
   FaChevronDown,
   FaChevronRight,
   FaCircle,
   FaRegCircle,
-  FaTimes,
   FaUser,
   FaTag,
   FaCalendarAlt,
   FaSyncAlt
 } from "react-icons/fa";
-import { IoMdOptions } from "react-icons/io";
 
 export type Priority = "NONE" | "LOW" | "MEDIUM" | "HIGH";
 export type Status = "BACKLOG" | "TODO" | "IN_PROGRESS" | "DONE";
@@ -37,79 +37,8 @@ export type WorkItem = {
   creator?: string;
 };
 
-function CreateTaskModal({
-  isOpen,
-  onClose,
-  onSubmit,
-}: {
-  isOpen: boolean;
-  onClose: () => void;
-  onSubmit: (task: { title: string; description: string }) => Promise<void>;
-}) {
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  if (!isOpen) return null;
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!title.trim()) return;
-    setIsSubmitting(true);
-    try {
-      await onSubmit({ title, description });
-      setTitle("");
-      setDescription("");
-      onClose();
-    } catch (error) {
-      console.error("Error creating task:", error);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-gray-800 rounded-lg p-6 w-full max-w-md">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold">Create Task</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-white">
-            <FaTimes />
-          </button>
-        </div>
-        <form onSubmit={handleSubmit}>
-          <input
-            type="text"
-            className="w-full bg-gray-700 border border-gray-600 rounded p-2 text-sm mb-4"
-            placeholder="Title"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            required
-          />
-          <textarea
-            className="w-full bg-gray-700 border border-gray-600 rounded p-2 text-sm h-24 mb-4"
-            placeholder="Description"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-          />
-          <div className="flex justify-end">
-            <button
-              type="submit"
-              className="bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded text-sm"
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? "Creating..." : "Create Task"}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-}
-
 export default function KanbanPage() {
-const { data: session, status } = useSession();
-
+  const { data: session, status } = useSession();
   const userId = session?.user?.id;
 
   const [workspaceName] = useState("Primeiro Projeto");
@@ -122,45 +51,72 @@ const { data: session, status } = useSession();
   const [selectedItem, setSelectedItem] = useState<WorkItem | null>(null);
   const [workItems, setWorkItems] = useState<WorkItem[]>([]);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [showFilter, setShowFilter] = useState<boolean>(false);
+  const dropdownRef = useRef<HTMLDivElement | null>(null);
 
-const fetchWorkItems = useCallback(async () => {
-  if (status !== "authenticated") return;
-
-  try {
-    const res = await fetch("/api/tasks");
-    if (!res.ok) {
-      console.error("Erro ao buscar tarefas:", res.statusText);
-      return;
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowFilter(false);
+      }
     }
 
-    const data: WorkItem[] = await res.json();
-    setWorkItems(data);
-  } catch (err) {
-    console.error("Failed to fetch tasks:", err);
-  }
-}, [status]);
+    if (showFilter) {
+      document.addEventListener("mousedown", handleClickOutside);
+    } else {
+      document.removeEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showFilter]);
+
+
+
+  const fetchWorkItems = useCallback(async () => {
+    if (status !== "authenticated") return;
+    try {
+      const res = await fetch("/api/tasks", {
+        credentials: "include",
+      });
+      if (!res.ok) {
+        console.error("Erro ao buscar tarefas:", res.statusText);
+        return;
+      }
+      const data: WorkItem[] = await res.json();
+      if (Array.isArray(data)) setWorkItems(data);
+    } catch (err) {
+      console.error("Failed to fetch tasks:", err);
+    }
+  }, [status]);
 
   useEffect(() => {
     fetchWorkItems();
   }, [fetchWorkItems]);
 
   const handleCreateTask = async ({ title, description }: { title: string; description: string }) => {
-    if (!userId) return;
-const res = await fetch("/api/tasks", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({
-    title,
-    description,
-    status: "BACKLOG",
-    priority: "NONE",
-    assignees: [],
-    labels: []
-  })
-});
-
-    const task = await res.json();
-    setWorkItems((prev) => [...prev, task]);
+    if (status !== "authenticated" || !userId) return;
+    try {
+      const res = await fetch("/api/tasks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title,
+          description,
+          status: "BACKLOG",
+          priority: "NONE",
+          assignees: [],
+          labels: [],
+          creator: userId,
+        }),
+      });
+      if (!res.ok) throw new Error("Erro ao criar tarefa.");
+      const task = await res.json();
+      setWorkItems((prev) => [...prev, task]);
+    } catch (error) {
+      console.error(error);
+    }
   };
 
   const toggleColumnCollapse = (status: Status) => {
@@ -184,58 +140,42 @@ const res = await fetch("/api/tasks", {
     >
       <div className="text-xs text-gray-500 mb-1 font-semibold">PRIME-{item.id}</div>
       <h3 className="text-base font-semibold mb-3">{item.title}</h3>
-  
       <div className="flex flex-wrap gap-2 text-xs">
-        {/* Status */}
         <div className="flex items-center gap-1 border border-gray-300 rounded-full px-2 py-1">
           <FaSyncAlt className="text-gray-500" />
           <span className="capitalize">{item.status.toLowerCase()}</span>
         </div>
-  
-        {/* Prioridade */}
         <div className="flex items-center gap-1 border border-gray-300 rounded-full px-2 py-1">
           {getPriorityIcon(item.priority)}
         </div>
-  
-        {/* Data de Início */}
-          {item.startDate && !isNaN(new Date(item.startDate).getTime()) && (
+        {item.startDate && !isNaN(new Date(item.startDate).getTime()) && (
           <div className="flex items-center gap-1 border border-gray-300 rounded-full px-2 py-1">
             <FaCalendarAlt className="text-gray-500" />
             <span>Início: {format(new Date(item.startDate), "MMM dd, yyyy")}</span>
           </div>
         )}
-  
-        {/* Data de Entrega */}
         {item.dueDate && (
           <div className="flex items-center gap-1 border border-red-400 text-red-500 rounded-full px-2 py-1">
             <FaCalendarAlt />
             <span>Prazo: {format(new Date(item.dueDate), "MMM dd, yyyy")}</span>
           </div>
         )}
-  
-        {/* Responsável (nome) */}
         {item.creator && (
           <div className="flex items-center gap-1 border border-gray-300 rounded-full px-2 py-1">
             <FaUser className="text-gray-500" />
             <span>{item.creator}</span>
           </div>
         )}
-  
-        {/* Módulo */}
         {item.module && (
           <div className="flex items-center gap-1 border border-gray-300 rounded-full px-2 py-1">
             <span>{item.module}</span>
           </div>
         )}
-  
-        {/* Ciclo */}
         {item.cycle && (
           <div className="flex items-center gap-1 border border-gray-300 rounded-full px-2 py-1">
             <span>{item.cycle}</span>
           </div>
         )}
-  
-        {/* Etiquetas */}
         {item.labels && item.labels.length > 0 && (
           <div className="flex items-center gap-1 border border-gray-300 rounded-full px-2 py-1">
             <FaTag className="text-gray-500" />
@@ -245,45 +185,45 @@ const res = await fetch("/api/tasks", {
       </div>
     </div>
   );
-  
 
-  if (status === "loading") {
-    return <div className="p-4 text-white">Carregando sessão...</div>;
-  }
-  
-  if (!session) {
-    return <div className="p-4 text-red-500">Sessão inválida</div>;
-  }
+  if (status === "loading") return <div className="p-4 text-white">Carregando sessão...</div>;
+  if (!session) return <div className="p-4 text-red-500">Sessão inválida</div>;
 
   return (
-    <div className="min-h-screen bg-white text-gray-900 flex">
+    <div className="flex min-h-screen bg-white text-gray-900">
       <Sidebar />
       <div className="flex-1 flex flex-col">
         <div className="flex justify-between items-center p-4 border-b border-gray-300 bg-white">
           <h1 className="text-xl font-bold">{workspaceName} &gt; Work items</h1>
           <div className="flex gap-2">
-            <button className="flex items-center gap-1 bg-gray-100 px-3 py-2 rounded hover:bg-gray-200 text-sm text-gray-700">
-              <FaFilter /> Filters
-            </button>
-            <button className="flex items-center gap-1 bg-gray-100 px-3 py-2 rounded hover:bg-gray-200 text-sm text-gray-700">
-              <IoMdOptions /> Display
-            </button>
-            <button className="flex items-center gap-1 bg-gray-100 px-3 py-2 rounded hover:bg-gray-200 text-sm text-gray-700">
-              <FaChartBar /> Analytics
-            </button>
+            <div className="relative">
+              <button
+                className="bg-gray-200 text-sm px-3 py-2 rounded hover:bg-gray-300"
+                onClick={() => setShowFilter(prev => !prev)}
+              >
+                Filtros
+              </button>
+              {showFilter && (
+                <div ref={dropdownRef} className="absolute right-0 mt-2 z-50">
+                  <FilterDropdown />
+                </div>
+              )}
+            </div>
+
+
+            <DisplayDropdown />
             <button
               className="flex items-center gap-1 bg-blue-600 px-3 py-2 rounded hover:bg-blue-500 text-sm text-white"
               onClick={() => setIsCreateModalOpen(true)}
             >
-              <FaPlus /> Add Work Item
+              <FaPlus /> Adicionar novo item
             </button>
           </div>
         </div>
-  
         <div className="flex-1 overflow-x-auto p-4">
           <div className="flex gap-4 min-w-max">
-            {Object.keys(collapsedColumns).map((status) => {
-              const typedStatus = status as Status;
+            {Object.entries(collapsedColumns).map(([statusKey, isCollapsed]) => {
+              const typedStatus = statusKey as Status;
               return (
                 <div key={typedStatus} className="w-72 flex-shrink-0">
                   <div
@@ -291,7 +231,7 @@ const res = await fetch("/api/tasks", {
                     onClick={() => toggleColumnCollapse(typedStatus)}
                   >
                     <div className="flex items-center gap-2">
-                      {collapsedColumns[typedStatus] ? <FaChevronRight /> : <FaChevronDown />}
+                      {isCollapsed ? <FaChevronRight /> : <FaChevronDown />}
                       <h2 className="font-semibold">{typedStatus.replace("_", " ")}</h2>
                       <span className="text-gray-500 text-sm">
                         {workItems.filter(i => i.status === typedStatus).length}
@@ -301,18 +241,15 @@ const res = await fetch("/api/tasks", {
                       className="text-gray-500 hover:text-gray-700"
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleCreateTask({ title: "New Task", description: "" });
+                        setIsCreateModalOpen(true);
                       }}
                     >
                       <FaPlus />
                     </button>
                   </div>
-                  {!collapsedColumns[typedStatus] && (
+                  {!isCollapsed && (
                     <div className="bg-white rounded-b p-2 space-y-2">
-                      {workItems
-                        .filter(item => item.status && item.status === typedStatus)
-                        .map(renderCard)}
-
+                      {workItems.filter(item => item.status === typedStatus).map(renderCard)}
                     </div>
                   )}
                 </div>
@@ -338,4 +275,4 @@ const res = await fetch("/api/tasks", {
       />
     </div>
   );
-  }
+}
