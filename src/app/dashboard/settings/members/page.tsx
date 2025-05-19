@@ -1,5 +1,6 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useState } from "react";
 import Link from "next/link";
@@ -12,9 +13,7 @@ type InviteField = {
 };
 
 function InviteModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
-  const [fields, setFields] = useState<InviteField[]>([
-    { email: "", role: "Membro" },
-  ]);
+  const [fields, setFields] = useState<InviteField[]>([{ email: "", role: "Membro" }]);
 
   const handleChange = <K extends keyof InviteField>(
     index: number,
@@ -26,14 +25,8 @@ function InviteModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void
     setFields(updated);
   };
 
-  const handleAdd = () => {
-    setFields([...fields, { email: "", role: "Membro" }]);
-  };
-
-  const handleRemove = (index: number) => {
-    const updated = fields.filter((_, i) => i !== index);
-    setFields(updated);
-  };
+  const handleAdd = () => setFields([...fields, { email: "", role: "Membro" }]);
+  const handleRemove = (index: number) => setFields(fields.filter((_, i) => i !== index));
 
   if (!isOpen) return null;
 
@@ -98,21 +91,12 @@ function InviteModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void
 
 export default function MembersPage() {
   const { data: session, status } = useSession();
+  const pathname = usePathname();
   const [search, setSearch] = useState("");
-  const [selected, setSelected] = useState("members");
   const [showModal, setShowModal] = useState(false);
 
-  if (status === "loading") {
-    return <div className="p-6">Carregando...</div>;
-  }
-
-  if (!session) {
-    return (
-      <div className="p-6 text-red-600">
-        Você precisa estar logado para acessar esta página.
-      </div>
-    );
-  }
+  if (status === "loading") return <div className="p-4 text-white">Carregando sessão...</div>;
+  if (!session) return <div className="p-4 text-red-500">Sessão inválida</div>;
 
   const currentUser = {
     id: 1,
@@ -132,11 +116,12 @@ export default function MembersPage() {
     );
   });
 
+  const selected = pathname?.split("/").pop();
+
   return (
     <div className="flex h-screen bg-gray-100">
       <Sidebar />
       <div className="flex flex-1">
-        {/* Sidebar de Navegação de Configurações */}
         <aside className="w-64 bg-white p-6 border-r border-gray-300 text-gray-800">
           <h2 className="text-lg font-semibold mb-4 border-b border-gray-300 pb-2">Configurações</h2>
           <ul className="space-y-2 text-sm">
@@ -164,7 +149,6 @@ export default function MembersPage() {
                       ? "bg-blue-100 text-blue-600 font-semibold"
                       : "hover:bg-gray-100 text-gray-700"
                   }`}
-                  onClick={() => setSelected(href)}
                 >
                   {label}
                 </Link>
@@ -173,7 +157,6 @@ export default function MembersPage() {
           </ul>
         </aside>
 
-        {/* Conteúdo principal */}
         <div className="flex-1 p-6 overflow-auto bg-white text-gray-900">
           <div className="flex items-center justify-between mb-6 border-b border-gray-200 pb-4">
             <h1 className="text-2xl font-semibold">
