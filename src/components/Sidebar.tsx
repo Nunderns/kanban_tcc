@@ -130,12 +130,13 @@ export const Sidebar = () => {
               </button>
 
               <Link
-                href="dashboard/settings/members"
+                href="/dashboard/settings/members"
                 className="flex items-center text-sm text-gray-700 hover:bg-gray-100 px-2 py-1 rounded-md"
               >
                 <UserPlus size={16} className="mr-2" />
                 Convidar Membros
               </Link>
+
 
               <Link
                 href="/create-workspace"
