@@ -208,7 +208,7 @@ export default function KanbanPage() {
       <Sidebar />
       <div className="flex-1 flex flex-col">
         <div className="flex justify-between items-center p-4 border-b border-gray-300 bg-white">
-          <h1 className="text-xl font-bold">{workspaceName} &gt; Work items</h1>
+          <h1 className="text-xl font-bold">{workspaceName} &gt; Item de Trabalho</h1>
           <div className="flex gap-2">
             <div className="relative">
               <button
@@ -273,7 +273,7 @@ export default function KanbanPage() {
                             type="text"
                             value={newTaskTitle}
                             autoFocus
-                            placeholder="Work item title"
+                            placeholder="Título da tarefa"
                             className="w-full px-3 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded shadow-sm focus:outline-none focus:ring focus:border-blue-500"
                             onChange={(e) => setNewTaskTitle(e.target.value)}
                             onKeyDown={async (e) => {
@@ -289,7 +289,7 @@ export default function KanbanPage() {
                             }}
                           />
                           <p className="text-xs text-gray-500 mt-1 px-1 italic">
-                            Press 'Enter' to add another work item
+                            Pressione 'Enter' para adicionar um outro item de tarefa
                           </p>
                         </div>
                       ) : (
