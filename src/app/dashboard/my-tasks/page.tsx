@@ -118,8 +118,8 @@ export default function KanbanPage() {
         console.error("Error response:", errorText);
         throw new Error("Erro ao criar tarefa: " + errorText);
       }
-      const task = await res.json();
-      setWorkItems((prev) => [...prev, task]);
+      const createdTask = await res.json();
+      await fetchWorkItems(); 
     } catch (error) {
       console.error("Error creating task:", error);
       alert("Erro ao criar tarefa. Por favor, tente novamente.");
