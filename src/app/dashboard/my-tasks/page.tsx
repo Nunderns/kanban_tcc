@@ -100,6 +100,7 @@ export default function KanbanPage() {
     try {
       const res = await fetch("/api/tasks", {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title,
@@ -107,8 +108,7 @@ export default function KanbanPage() {
           status: "BACKLOG",
           priority: "NONE",
           assignees: [],
-          labels: [],
-          creator: userId,
+          labels: []
         }),
       });
       if (!res.ok) throw new Error("Erro ao criar tarefa.");
