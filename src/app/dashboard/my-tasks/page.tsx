@@ -289,7 +289,7 @@ export default function KanbanPage() {
                             }}
                           />
                           <p className="text-xs text-gray-500 mt-1 px-1 italic">
-                            Pressione 'Enter' para adicionar um outro item de tarefa
+                            Pressione &apos;Enter&apos; para adicionar um outro item de tarefa
                           </p>
                         </div>
                       ) : (
