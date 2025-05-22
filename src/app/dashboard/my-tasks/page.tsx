@@ -53,6 +53,9 @@ export default function KanbanPage() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [showFilter, setShowFilter] = useState<boolean>(false);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
+  const [targetStatus, setTargetStatus] = useState<Status>("BACKLOG");
+  const [creatingTaskInColumn, setCreatingTaskInColumn] = useState<Status | null>(null);
+  const [newTaskTitle, setNewTaskTitle] = useState("");
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -71,8 +74,6 @@ export default function KanbanPage() {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [showFilter]);
-
-
 
   const fetchWorkItems = useCallback(async () => {
     if (status !== "authenticated") return;
@@ -100,22 +101,33 @@ export default function KanbanPage() {
     try {
       const res = await fetch("/api/tasks", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json"
+        },
         body: JSON.stringify({
           title,
           description,
-          status: "BACKLOG",
+          status: targetStatus,
           priority: "NONE",
           assignees: [],
-          labels: [],
-          creator: userId,
-        }),
+          labels: []
+        })
       });
-      if (!res.ok) throw new Error("Erro ao criar tarefa.");
-      const task = await res.json();
-      setWorkItems((prev) => [...prev, task]);
+
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error("Error response:", errorText);
+        throw new Error("Erro ao criar tarefa: " + errorText);
+      }
+
+      await res.json();
+      await fetchWorkItems();
+
+      setIsCreateModalOpen(false);
     } catch (error) {
-      console.error(error);
+      console.error("Error creating task:", error);
+      alert("Erro ao criar tarefa. Por favor, tente novamente.");
     }
   };
 
@@ -194,7 +206,7 @@ export default function KanbanPage() {
       <Sidebar />
       <div className="flex-1 flex flex-col">
         <div className="flex justify-between items-center p-4 border-b border-gray-300 bg-white">
-          <h1 className="text-xl font-bold">{workspaceName} &gt; Work items</h1>
+          <h1 className="text-xl font-bold">{workspaceName} &gt; Item de Trabalho</h1>
           <div className="flex gap-2">
             <div className="relative">
               <button
@@ -209,7 +221,6 @@ export default function KanbanPage() {
                 </div>
               )}
             </div>
-
 
             <DisplayDropdown />
             <button
@@ -231,7 +242,10 @@ export default function KanbanPage() {
                     onClick={() => toggleColumnCollapse(typedStatus)}
                   >
                     <div className="flex items-center gap-2">
-                      {isCollapsed ? <FaChevronRight /> : <FaChevronDown />}
+                      {/* Adicionando animação ao ícone de seta */}
+                      <div className="transition-transform duration-300 ease-in-out">
+                        {isCollapsed ? <FaChevronRight /> : <FaChevronDown />}
+                      </div>
                       <h2 className="font-semibold">{typedStatus.replace("_", " ")}</h2>
                       <span className="text-gray-500 text-sm">
                         {workItems.filter(i => i.status === typedStatus).length}
@@ -247,11 +261,55 @@ export default function KanbanPage() {
                       <FaPlus />
                     </button>
                   </div>
-                  {!isCollapsed && (
-                    <div className="bg-white rounded-b p-2 space-y-2">
-                      {workItems.filter(item => item.status === typedStatus).map(renderCard)}
+                  {/* Conteúdo da coluna com animação */}
+                  <div 
+                    className={`bg-white rounded-b overflow-hidden transition-all duration-300 ease-in-out ${
+                      isCollapsed ? 'max-h-0 opacity-0' : 'max-h-[calc(100vh-220px)] opacity-100'
+                    }`}
+                  >
+                    <div className="p-2 space-y-2 h-[calc(100vh-280px)] overflow-y-auto">
+                        {workItems
+                          .filter(item => item.status === typedStatus)
+                          .map(renderCard)}
+
+                        {creatingTaskInColumn === typedStatus ? (
+                          <div className="w-full mt-2">
+                            <input
+                              type="text"
+                              value={newTaskTitle}
+                              autoFocus
+                              placeholder="Título da tarefa"
+                              className="w-full px-3 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded shadow-sm focus:outline-none focus:ring focus:border-blue-500"
+                              onChange={(e) => setNewTaskTitle(e.target.value)}
+                              onKeyDown={async (e) => {
+                                if (e.key === "Enter" && newTaskTitle.trim()) {
+                                  setTargetStatus(typedStatus);
+                                  await handleCreateTask({ title: newTaskTitle.trim(), description: "" });
+                                  setNewTaskTitle("");
+                                  setCreatingTaskInColumn(null);
+                                } else if (e.key === "Escape") {
+                                  setCreatingTaskInColumn(null);
+                                  setNewTaskTitle("");
+                                }
+                              }}
+                            />
+                            <p className="text-xs text-gray-500 mt-1 px-1 italic">
+                              Pressione &apos;Enter&apos; para adicionar um outro item de tarefa
+                            </p>
+                          </div>
+                        ) : (
+                          <button
+                            className="w-full mt-2 px-3 py-2 border border-dashed border-gray-400 rounded text-sm text-gray-500 hover:bg-gray-50"
+                            onClick={() => {
+                              setTargetStatus(typedStatus);
+                              setCreatingTaskInColumn(typedStatus);
+                            }}
+                          >
+                            + Criar tarefa
+                          </button>
+                        )}
+                      </div>
                     </div>
-                  )}
                 </div>
               );
             })}
@@ -273,6 +331,19 @@ export default function KanbanPage() {
         onClose={() => setIsCreateModalOpen(false)}
         onSubmit={handleCreateTask}
       />
+      
+      {/* Estilos CSS para animações */}
+      <style jsx global>{`
+        /* Animação suave para o ícone de seta */
+        .transition-transform {
+          transition: transform 0.3s ease-in-out;
+        }
+        
+        /* Animação para o conteúdo da coluna */
+        .transition-all {
+          transition: max-height 0.3s ease-in-out, opacity 0.3s ease-in-out;
+        }
+      `}</style>
     </div>
   );
 }
