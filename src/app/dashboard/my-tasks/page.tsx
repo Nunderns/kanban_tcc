@@ -75,8 +75,6 @@ export default function KanbanPage() {
     };
   }, [showFilter]);
 
-
-
   const fetchWorkItems = useCallback(async () => {
     if (status !== "authenticated") return;
     try {
@@ -224,7 +222,6 @@ export default function KanbanPage() {
               )}
             </div>
 
-
             <DisplayDropdown />
             <button
               className="flex items-center gap-1 bg-blue-600 px-3 py-2 rounded hover:bg-blue-500 text-sm text-white"
@@ -245,7 +242,10 @@ export default function KanbanPage() {
                     onClick={() => toggleColumnCollapse(typedStatus)}
                   >
                     <div className="flex items-center gap-2">
-                      {isCollapsed ? <FaChevronRight /> : <FaChevronDown />}
+                      {/* Adicionando animação ao ícone de seta */}
+                      <div className="transition-transform duration-300 ease-in-out">
+                        {isCollapsed ? <FaChevronRight /> : <FaChevronDown />}
+                      </div>
                       <h2 className="font-semibold">{typedStatus.replace("_", " ")}</h2>
                       <span className="text-gray-500 text-sm">
                         {workItems.filter(i => i.status === typedStatus).length}
@@ -261,50 +261,55 @@ export default function KanbanPage() {
                       <FaPlus />
                     </button>
                   </div>
-                  {!isCollapsed && (
-                    <div className="bg-white rounded-b p-2 space-y-2 h-[calc(100vh-180px)] overflow-y-auto">
-                      {workItems
-                        .filter(item => item.status === typedStatus)
-                        .map(renderCard)}
+                  {/* Conteúdo da coluna com animação */}
+                  <div 
+                    className={`bg-white rounded-b overflow-hidden transition-all duration-300 ease-in-out ${
+                      isCollapsed ? 'max-h-0 opacity-0' : 'max-h-[calc(100vh-220px)] opacity-100'
+                    }`}
+                  >
+                    <div className="p-2 space-y-2 h-[calc(100vh-280px)] overflow-y-auto">
+                        {workItems
+                          .filter(item => item.status === typedStatus)
+                          .map(renderCard)}
 
-                      {creatingTaskInColumn === typedStatus ? (
-                        <div className="w-full mt-2">
-                          <input
-                            type="text"
-                            value={newTaskTitle}
-                            autoFocus
-                            placeholder="Título da tarefa"
-                            className="w-full px-3 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded shadow-sm focus:outline-none focus:ring focus:border-blue-500"
-                            onChange={(e) => setNewTaskTitle(e.target.value)}
-                            onKeyDown={async (e) => {
-                              if (e.key === "Enter" && newTaskTitle.trim()) {
-                                setTargetStatus(typedStatus);
-                                await handleCreateTask({ title: newTaskTitle.trim(), description: "" });
-                                setNewTaskTitle("");
-                                setCreatingTaskInColumn(null);
-                              } else if (e.key === "Escape") {
-                                setCreatingTaskInColumn(null);
-                                setNewTaskTitle("");
-                              }
+                        {creatingTaskInColumn === typedStatus ? (
+                          <div className="w-full mt-2">
+                            <input
+                              type="text"
+                              value={newTaskTitle}
+                              autoFocus
+                              placeholder="Título da tarefa"
+                              className="w-full px-3 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded shadow-sm focus:outline-none focus:ring focus:border-blue-500"
+                              onChange={(e) => setNewTaskTitle(e.target.value)}
+                              onKeyDown={async (e) => {
+                                if (e.key === "Enter" && newTaskTitle.trim()) {
+                                  setTargetStatus(typedStatus);
+                                  await handleCreateTask({ title: newTaskTitle.trim(), description: "" });
+                                  setNewTaskTitle("");
+                                  setCreatingTaskInColumn(null);
+                                } else if (e.key === "Escape") {
+                                  setCreatingTaskInColumn(null);
+                                  setNewTaskTitle("");
+                                }
+                              }}
+                            />
+                            <p className="text-xs text-gray-500 mt-1 px-1 italic">
+                              Pressione &apos;Enter&apos; para adicionar um outro item de tarefa
+                            </p>
+                          </div>
+                        ) : (
+                          <button
+                            className="w-full mt-2 px-3 py-2 border border-dashed border-gray-400 rounded text-sm text-gray-500 hover:bg-gray-50"
+                            onClick={() => {
+                              setTargetStatus(typedStatus);
+                              setCreatingTaskInColumn(typedStatus);
                             }}
-                          />
-                          <p className="text-xs text-gray-500 mt-1 px-1 italic">
-                            Pressione &apos;Enter&apos; para adicionar um outro item de tarefa
-                          </p>
-                        </div>
-                      ) : (
-                        <button
-                          className="w-full mt-2 px-3 py-2 border border-dashed border-gray-400 rounded text-sm text-gray-500 hover:bg-gray-50"
-                          onClick={() => {
-                            setTargetStatus(typedStatus);
-                            setCreatingTaskInColumn(typedStatus);
-                          }}
-                        >
-                          + Criar tarefa
-                        </button>
-                      )}
+                          >
+                            + Criar tarefa
+                          </button>
+                        )}
+                      </div>
                     </div>
-                  )}
                 </div>
               );
             })}
@@ -326,6 +331,19 @@ export default function KanbanPage() {
         onClose={() => setIsCreateModalOpen(false)}
         onSubmit={handleCreateTask}
       />
+      
+      {/* Estilos CSS para animações */}
+      <style jsx global>{`
+        /* Animação suave para o ícone de seta */
+        .transition-transform {
+          transition: transform 0.3s ease-in-out;
+        }
+        
+        /* Animação para o conteúdo da coluna */
+        .transition-all {
+          transition: max-height 0.3s ease-in-out, opacity 0.3s ease-in-out;
+        }
+      `}</style>
     </div>
   );
 }
