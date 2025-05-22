@@ -100,22 +100,29 @@ export default function KanbanPage() {
     try {
       const res = await fetch("/api/tasks", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        headers: { 
+          "Content-Type": "application/json"
+        },
         body: JSON.stringify({
           title,
           description,
           status: "BACKLOG",
           priority: "NONE",
           assignees: [],
-          labels: [],
-          creator: userId,
-        }),
+          labels: []
+        })
       });
-      if (!res.ok) throw new Error("Erro ao criar tarefa.");
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error("Error response:", errorText);
+        throw new Error("Erro ao criar tarefa: " + errorText);
+      }
       const task = await res.json();
       setWorkItems((prev) => [...prev, task]);
     } catch (error) {
-      console.error(error);
+      console.error("Error creating task:", error);
+      alert("Erro ao criar tarefa. Por favor, tente novamente.");
     }
   };
 
