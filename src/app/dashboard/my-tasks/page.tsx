@@ -95,13 +95,13 @@ export default function KanbanPage() {
     fetchWorkItems();
   }, [fetchWorkItems]);
 
-  const handleCreateTask = async ({ title, description }: { title: string; description: string }) => {
-    if (status !== "authenticated" || !userId) return;
+const handleCreateTask = async ({ title, description }: { title: string; description: string }) => {
+  if (status !== "authenticated" || !userId) return;
     try {
       const res = await fetch("/api/tasks", {
         method: "POST",
         credentials: "include",
-        headers: { 
+        headers: {
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
@@ -113,19 +113,23 @@ export default function KanbanPage() {
           labels: []
         })
       });
+
       if (!res.ok) {
         const errorText = await res.text();
         console.error("Error response:", errorText);
         throw new Error("Erro ao criar tarefa: " + errorText);
       }
-      const task = await res.json();
-      setWorkItems((prev) => [...prev, task]);
+
+      await res.json();
+      await fetchWorkItems();
+
+      setIsCreateModalOpen(false);
     } catch (error) {
       console.error("Error creating task:", error);
       alert("Erro ao criar tarefa. Por favor, tente novamente.");
     }
   };
-
+  
   const toggleColumnCollapse = (status: Status) => {
     setCollapsedColumns(prev => ({ ...prev, [status]: !prev[status] }));
   };
