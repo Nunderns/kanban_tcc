@@ -53,6 +53,9 @@ export default function KanbanPage() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [showFilter, setShowFilter] = useState<boolean>(false);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
+  const [targetStatus, setTargetStatus] = useState<Status>("BACKLOG");
+  const [creatingTaskInColumn, setCreatingTaskInColumn] = useState<Status | null>(null);
+  const [newTaskTitle, setNewTaskTitle] = useState("");
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -95,8 +98,8 @@ export default function KanbanPage() {
     fetchWorkItems();
   }, [fetchWorkItems]);
 
-const handleCreateTask = async ({ title, description }: { title: string; description: string }) => {
-  if (status !== "authenticated" || !userId) return;
+  const handleCreateTask = async ({ title, description }: { title: string; description: string }) => {
+    if (status !== "authenticated" || !userId) return;
     try {
       const res = await fetch("/api/tasks", {
         method: "POST",
@@ -107,7 +110,7 @@ const handleCreateTask = async ({ title, description }: { title: string; descrip
         body: JSON.stringify({
           title,
           description,
-          status: "BACKLOG",
+          status: targetStatus,
           priority: "NONE",
           assignees: [],
           labels: []
@@ -129,7 +132,7 @@ const handleCreateTask = async ({ title, description }: { title: string; descrip
       alert("Erro ao criar tarefa. Por favor, tente novamente.");
     }
   };
-  
+
   const toggleColumnCollapse = (status: Status) => {
     setCollapsedColumns(prev => ({ ...prev, [status]: !prev[status] }));
   };
@@ -259,8 +262,47 @@ const handleCreateTask = async ({ title, description }: { title: string; descrip
                     </button>
                   </div>
                   {!isCollapsed && (
-                    <div className="bg-white rounded-b p-2 space-y-2">
-                      {workItems.filter(item => item.status === typedStatus).map(renderCard)}
+                    <div className="bg-white rounded-b p-2 space-y-2 h-[calc(100vh-180px)] overflow-y-auto">
+                      {workItems
+                        .filter(item => item.status === typedStatus)
+                        .map(renderCard)}
+
+                      {creatingTaskInColumn === typedStatus ? (
+                        <div className="w-full mt-2">
+                          <input
+                            type="text"
+                            value={newTaskTitle}
+                            autoFocus
+                            placeholder="Work item title"
+                            className="w-full px-3 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded shadow-sm focus:outline-none focus:ring focus:border-blue-500"
+                            onChange={(e) => setNewTaskTitle(e.target.value)}
+                            onKeyDown={async (e) => {
+                              if (e.key === "Enter" && newTaskTitle.trim()) {
+                                setTargetStatus(typedStatus);
+                                await handleCreateTask({ title: newTaskTitle.trim(), description: "" });
+                                setNewTaskTitle("");
+                                setCreatingTaskInColumn(null);
+                              } else if (e.key === "Escape") {
+                                setCreatingTaskInColumn(null);
+                                setNewTaskTitle("");
+                              }
+                            }}
+                          />
+                          <p className="text-xs text-gray-500 mt-1 px-1 italic">
+                            Press 'Enter' to add another work item
+                          </p>
+                        </div>
+                      ) : (
+                        <button
+                          className="w-full mt-2 px-3 py-2 border border-dashed border-gray-400 rounded text-sm text-gray-500 hover:bg-gray-50"
+                          onClick={() => {
+                            setTargetStatus(typedStatus);
+                            setCreatingTaskInColumn(typedStatus);
+                          }}
+                        >
+                          + Criar tarefa
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>
