@@ -6,6 +6,8 @@ import FilterDropdown from "@/components/FilterDropdown";
 import DisplayDropdown from "@/components/DisplayDown";
 import WorkItemSidebar from "@/components/WorkItemSidebar";
 import { useSession } from "next-auth/react";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import { useCallback, useEffect, useState, useRef } from "react";
 import { format } from "date-fns";
 import {
@@ -98,10 +100,17 @@ export default function KanbanPage() {
   const handleCreateTask = async ({ title, description }: { title: string; description: string }) => {
     if (status !== "authenticated" || !userId) return;
     try {
+      const session = await getServerSession(authOptions);
+      if (!session || !session.user?.id) {
+        throw new Error("Not authenticated");
+      }
+
       const res = await fetch("/api/tasks", {
         method: "POST",
         credentials: "include",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json"
+        },
         body: JSON.stringify({
           title,
           description,
