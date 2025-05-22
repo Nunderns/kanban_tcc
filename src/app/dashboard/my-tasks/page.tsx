@@ -56,14 +56,6 @@ export default function KanbanPage() {
   const [targetStatus, setTargetStatus] = useState<Status>("BACKLOG");
   const [creatingTaskInColumn, setCreatingTaskInColumn] = useState<Status | null>(null);
   const [newTaskTitle, setNewTaskTitle] = useState("");
-  
-  // Referências para as alturas das colunas
-  const columnHeightRefs = useRef<Record<Status, number>>({
-    BACKLOG: 0,
-    TODO: 0,
-    IN_PROGRESS: 0,
-    DONE: 0,
-  });
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
