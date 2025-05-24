@@ -60,10 +60,16 @@ export default function ActivityHistoryModal({ taskId, isOpen, onClose }: Props)
         (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       );
       setActivities(sortedData);
-    } catch (err: any) {
-      console.error("Erro ao buscar histórico de atividades:", err);
-      setError(err.message || "Falha ao carregar o histórico de atividades.");
-    } finally {
+        } catch (err: unknown) {
+        if (err instanceof Error) {
+            console.error("Erro ao buscar histórico de atividades:", err);
+            setError(err.message || "Falha ao carregar o histórico de atividades.");
+        } else {
+            console.error("Erro desconhecido ao buscar atividades:", err);
+            setError("Erro inesperado ao carregar o histórico.");
+        }
+        }
+        finally {
       setIsLoading(false);
     }
   }, [taskId, isOpen]);
