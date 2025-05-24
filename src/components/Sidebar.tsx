@@ -31,20 +31,6 @@ export const Sidebar = () => {
     setShowPopover((prev) => !prev);
   };
 
-  const handleWorkspaceChange = () => {
-    const newName = prompt("Digite o novo nome do espaço de trabalho:");
-    if (newName) {
-      setWorkspace(newName);
-      const workspaceAtual = localStorage.getItem("workspaceSelecionado");
-      if (workspaceAtual) {
-        const parsed = JSON.parse(workspaceAtual);
-        parsed.nome = newName;
-        localStorage.setItem("workspaceSelecionado", JSON.stringify(parsed));
-      }
-    }
-  };
-
-  // Carrega dados da API ao montar
   useEffect(() => {
     async function fetchWorkspaceData() {
       try {
@@ -63,10 +49,9 @@ export const Sidebar = () => {
     }
 
     fetchWorkspaceData();
-    setMounted(true); // necessário para evitar erro de hydration
+    setMounted(true);
   }, []);
 
-  // Fecha o popover ao clicar fora
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
