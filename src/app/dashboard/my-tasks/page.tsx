@@ -34,7 +34,7 @@ export type WorkItem = {
   module?: string;
   cycle?: string;
   labels?: string[];
-  creator?: string;
+  creator?: string | null;
 };
 
 export default function KanbanPage() {
@@ -324,6 +324,7 @@ export default function KanbanPage() {
             setWorkItems(prev => prev.map(i => (i.id === updated.id ? updated : i)));
             setSelectedItem(updated);
           }}
+          currentUser={session?.user?.name || "Desconhecido"}
         />
       )}
       <CreateTaskModal

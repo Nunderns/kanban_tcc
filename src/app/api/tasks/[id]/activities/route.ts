@@ -10,6 +10,7 @@ interface ActivityLog {
   timestamp: string;
 }
 
+// Simulando um banco de dados em memória
 const fakeDB: Record<string, ActivityLog[]> = {
   "2": [
     {
@@ -24,20 +25,22 @@ const fakeDB: Record<string, ActivityLog[]> = {
   ],
 };
 
+// GET: /api/tasks/[id]/activities
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
-  const taskId = params.id;
+  const taskId = context.params.id;
   const activities = fakeDB[taskId] || [];
   return NextResponse.json(activities);
 }
 
+// POST: /api/tasks/[id]/activities
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
-  const taskId = params.id;
+  const taskId = context.params.id;
   const body: Partial<ActivityLog> = await req.json();
 
   const newActivity: ActivityLog = {

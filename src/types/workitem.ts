@@ -12,4 +12,9 @@ export type WorkItem = {
   module?: string;
   cycle?: string;
   labels?: string[];
+
+  // 🔧 Adicione essas linhas abaixo
+  description?: string | null;
+  creator?: string | null;
+  parentId?: string | number | null;
 };
