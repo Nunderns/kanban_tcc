@@ -1,11 +1,27 @@
-// src/app/api/tasks/[id]/activities/route.ts
 import { NextRequest, NextResponse } from "next/server";
 
-// Simulação de banco de dados em memória (substitua por chamada ao Prisma ou ORM real)
-const fakeDB: Record<string, any[]> = {
+interface ActivityLog {
+  id: number;
+  user: string;
+  action: string;
+  field?: string;
+  oldValue?: string | null;
+  newValue?: string | null;
+  timestamp: string;
+}
+
+const fakeDB: Record<string, ActivityLog[]> = {
   "2": [
-    { id: 1, user: "Henri", action: "editou", field: "title", oldValue: "Antigo", newValue: "Novo", timestamp: new Date().toISOString() }
-  ]
+    {
+      id: 1,
+      user: "Henri",
+      action: "editou",
+      field: "title",
+      oldValue: "Antigo",
+      newValue: "Novo",
+      timestamp: new Date().toISOString(),
+    },
+  ],
 };
 
 export async function GET(
@@ -22,15 +38,22 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   const taskId = params.id;
-  const body = await req.json();
+  const body: Partial<ActivityLog> = await req.json();
 
-  const newActivity = {
+  const newActivity: ActivityLog = {
     id: Date.now(),
-    ...body,
+    user: body.user || "Desconhecido",
+    action: body.action || "realizou uma ação",
+    field: body.field,
+    oldValue: body.oldValue ?? null,
+    newValue: body.newValue ?? null,
     timestamp: new Date().toISOString(),
   };
 
-  if (!fakeDB[taskId]) fakeDB[taskId] = [];
+  if (!fakeDB[taskId]) {
+    fakeDB[taskId] = [];
+  }
+
   fakeDB[taskId].unshift(newActivity);
 
   return NextResponse.json(newActivity, { status: 201 });
