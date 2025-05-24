@@ -357,7 +357,7 @@ export default function WorkItemSidebarImproved({ item, onClose, onUpdate, curre
                 {activities.map((activity, index) => (
                   <li key={index} className="border-b border-gray-100 pb-1 last:border-b-0">
                     <span className="font-medium">{activity.user || 'Sistema'}</span> {activity.action} 
-                    {activity.field && <span className="font-semibold"> {activity.field}</span>}
+                    {activity.field && <span className="font-semibold"> &quot;{activity.field}&quot</span>}
                     {/* Simplificado para a lista curta */} 
                   </li>
                 ))}

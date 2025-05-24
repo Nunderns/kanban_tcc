@@ -139,7 +139,7 @@ export default function ActivityHistoryModal({ taskId, isOpen, onClose }: Props)
                   </div>
                   <p className="text-sm text-gray-600">
                     {activity.action}
-                    {activity.field && <span className="font-medium text-gray-700"> "{activity.field}"</span>}
+                    {activity.field && <span className="font-medium text-gray-700"> &quot;{activity.field}&quot</span>}
                     {activity.oldValue !== null && activity.oldValue !== undefined && (
                       <span className="text-gray-500"> de <code className="bg-gray-100 px-1 rounded text-xs">{activity.oldValue || "vazio"}</code></span>
                     )}
