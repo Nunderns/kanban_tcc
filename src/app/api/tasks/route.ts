@@ -1,32 +1,32 @@
-import { NextResponse } from 'next/server';
+import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { Prisma, Status } from "@prisma/client";
-import { getServerSession } from "next-auth";
+import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
+import { NextRequest } from "next/server";
 
 const handleServerError = (error: unknown) => {
   console.error("Server error:", error);
   return NextResponse.json(
     {
       error: "Internal server error",
-      details: error instanceof Error ? error.message : String(error)
+      details: error instanceof Error ? error.message : String(error),
     },
     { status: 500 }
   );
 };
 
-export async function GET(request: Request) {
+export async function GET(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession({ req, ...authOptions });
+
     if (!session || !session.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { searchParams } = new URL(request.url);
-    const statusParam = searchParams.get("status");
-
-    const status = (statusParam && ["BACKLOG", "TODO", "IN_PROGRESS", "DONE"].includes(statusParam))
-      ? statusParam as Status
+    const statusParam = req.nextUrl.searchParams.get("status");
+    const status = statusParam && ["BACKLOG", "TODO", "IN_PROGRESS", "DONE"].includes(statusParam)
+      ? (statusParam as Status)
       : undefined;
 
     const where: Prisma.TaskWhereInput = {
@@ -49,20 +49,21 @@ export async function GET(request: Request) {
         creator: task.user?.name || "Desconhecido"
       }))
     );
-    
+
   } catch (error) {
     return handleServerError(error);
   }
 }
 
-export async function POST(request: Request) {
+export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession({ req, ...authOptions });
+
     if (!session || !session.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body = await request.json();
+    const body = await req.json();
 
     if (!body.title) {
       return NextResponse.json({ error: "Title is required" }, { status: 400 });

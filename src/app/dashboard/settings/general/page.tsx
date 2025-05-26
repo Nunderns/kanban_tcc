@@ -25,7 +25,10 @@ export default function WorkspaceSettings() {
   
     async function fetchWorkspace() {
       try {
-        const res = await fetch("/api/workspaces/current");
+        const res = await fetch("/api/workspaces/current", {
+          method: "GET",
+          credentials: "include", // 👈 isso é essencial
+        });
         const data = await res.json();
   
         if (res.ok) {
@@ -163,12 +166,14 @@ export default function WorkspaceSettings() {
                   const res = await fetch("/api/workspaces/current", {
                     method: "PATCH",
                     headers: { "Content-Type": "application/json" },
+                    credentials: "include", // 👈 necessário aqui também
                     body: JSON.stringify({
                       name: workspaceName,
                       companySize,
-                      slug, // 🔥 importante!
+                      slug,
                     }),
                   });
+
 
                 const data = await res.json();
                 if (res.ok) {
