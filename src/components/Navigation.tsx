@@ -1,7 +1,13 @@
 import Link from "next/link";
 import { SettingsIcon, UsersIcon } from "lucide-react";
-import { GoCheckCircle, GoCheckCircleFill, GoHome, GoHomeFill } from "react-icons/go";
+import {
+    GoCheckCircle,
+    GoCheckCircleFill,
+    GoHome,
+    GoHomeFill,
+} from "react-icons/go";
 import { cn } from "@/lib/utils";
+import { usePathname } from "next/navigation";
 
 const routes = [
     {
@@ -31,10 +37,12 @@ const routes = [
 ];
 
 export const Navigation = () => {
+    const pathname = usePathname();
+
     return (
         <div className="flex flex-col">
             {routes.map((item) => {
-                const isActive = false; // Aqui você pode adicionar lógica para verificar se a rota está ativa
+                const isActive = pathname.startsWith(item.href);
                 const Icon = isActive ? item.activeIcon : item.icon;
                 
                 return (
