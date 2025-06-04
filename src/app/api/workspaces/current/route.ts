@@ -1,12 +1,12 @@
 // src/app/api/workspaces/current/route.ts
 
-import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-export async function GET() {
-  const session = await getServerSession(authOptions);
+export async function GET(req: NextRequest) {
+  const session = await getServerSession({ req, ...authOptions });
 
   if (!session?.user?.email) {
     return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
