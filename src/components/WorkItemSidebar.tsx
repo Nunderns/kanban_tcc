@@ -15,13 +15,26 @@ interface Props {
 
 export default function WorkItemSidebar({ item, onClose, onUpdate }: Props) {
   const [localItem, setLocalItem] = useState(item);
-  const [activities, setActivities] = useState<string[]>([]);
+  interface TaskActivity {
+    id: number;
+    taskId: number;
+    user: string;
+    action: string;
+    field?: string | null;
+    oldValue?: string | null;
+    newValue?: string | null;
+    createdAt: string;
+  }
+
+  const [activities, setActivities] = useState<TaskActivity[]>([]);
 
   const fetchActivities = useCallback(async () => {
     try {
       const res = await fetch(`/api/tasks/${item.id}/activities`);
-      const data = await res.json();
-      setActivities(data);
+      const data: TaskActivity[] = await res.json();
+      if (Array.isArray(data)) {
+        setActivities(data);
+      }
     } catch (error) {
       console.error("Erro ao buscar atividades:", error);
     }
@@ -186,8 +199,14 @@ export default function WorkItemSidebar({ item, onClose, onUpdate }: Props) {
             {activities.length === 0 ? (
               <li>Nenhuma atividade registrada.</li>
             ) : (
-              activities.map((activity, index) => (
-                <li key={index}>{activity}</li>
+              activities.map((activity) => (
+                <li key={activity.id}>
+                  {`${activity.user} ${activity.action}${activity.field ? ` ${activity.field}` : ""}`}
+                  {activity.oldValue || activity.newValue ? (
+                    <> {activity.oldValue ? ` de ${activity.oldValue}` : ""}{activity.newValue ? ` para ${activity.newValue}` : ""}</>
+                  ) : null}
+                  {` em ${new Date(activity.createdAt).toLocaleDateString("pt-BR")}`}
+                </li>
               ))
             )}
           </ul>
