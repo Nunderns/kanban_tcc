@@ -82,6 +82,14 @@ npm run dev
 
 Abra no navegador: http://localhost:3000
 
+### 6️⃣ Rode os testes
+
+```bash
+npm run test
+```
+
+Os testes são executados com o [Vitest](https://vitest.dev/), garantindo o funcionamento correto de utilidades como `cn`.
+
 ## 🛠 Funcionalidades
 
 - 🔐 Autenticação com NextAuth.js
