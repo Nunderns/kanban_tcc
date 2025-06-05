@@ -39,7 +39,7 @@ export default function FilterDropdown() {
       </Section>
 
       <Section title="Status">
-        {["Backlog", "Nâo iniciado", "Iniciado", "Completado", "Cancelado"].map((s) => (
+        {["Backlog", "Não iniciado", "Iniciado", "Completado", "Cancelado"].map((s) => (
           <label className="flex items-center gap-2" key={s}>
             <input type="checkbox" className="form-checkbox text-blue-600 bg-[#2a2a2a] border-gray-600" />
             {s}
@@ -75,7 +75,7 @@ export default function FilterDropdown() {
       </Section>
 
       <Section title="Data de início">
-        {["Daqui a 1 semana", "Daqui a 2 semandas", "Daqui um mês", "Daqui 2 mêses", "Customizar"].map((d) => (
+        {["Daqui a 1 semana", "Daqui a 2 semanas", "Daqui um mês", "Daqui 2 meses", "Customizar"].map((d) => (
           <label className="flex items-center gap-2" key={d}>
             <input type="checkbox" className="form-checkbox text-blue-600 bg-[#2a2a2a] border-gray-600" />
             {d}
@@ -84,7 +84,7 @@ export default function FilterDropdown() {
       </Section>
 
       <Section title="Data de entrega">
-        {["Daqui a 1 semana", "Daqui a 2 semandas", "Daqui um mês", "Daqui 2 mêses", "Customizar"].map((d) => (
+        {["Daqui a 1 semana", "Daqui a 2 semanas", "Daqui um mês", "Daqui 2 meses", "Customizar"].map((d) => (
           <label className="flex items-center gap-2" key={d}>
             <input type="checkbox" className="form-checkbox text-blue-600 bg-[#2a2a2a] border-gray-600" />
             {d}
