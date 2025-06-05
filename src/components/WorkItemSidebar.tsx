@@ -44,11 +44,11 @@ export default function WorkItemSidebar({ item, onClose, onUpdate }: Props) {
     fetchActivities();
   }, [fetchActivities]);
 
-  const handleChange = (
-    field: keyof WorkItem,
-    value: string | string[] | null | undefined
+  const handleChange = <K extends keyof WorkItem>(
+    field: K,
+    value: WorkItem[K]
   ) => {
-    const updated = { ...localItem, [field]: value };
+    const updated: WorkItem = { ...localItem, [field]: value };
     setLocalItem(updated);
   };
 
@@ -58,7 +58,7 @@ export default function WorkItemSidebar({ item, onClose, onUpdate }: Props) {
 
     (Object.keys(localItem) as (keyof WorkItem)[]).forEach((field) => {
       if (localItem[field] !== item[field]) {
-        updates[field] = localItem[field];
+        updates[field] = localItem[field] as WorkItem[keyof WorkItem];
         changedFields.push(field);
       }
     });
