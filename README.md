@@ -67,6 +67,9 @@ NEXTAUTH_SECRET="sua_chave_secreta"
 NEXTAUTH_URL="http://localhost:3000"
 ```
 
+Para ambientes de produção (como o Vercel), defina `NEXTAUTH_URL` para a URL do
+seu site e utilize o mesmo valor de `NEXTAUTH_SECRET` usado localmente.
+
 ### 4️⃣ Rode as migrações do banco
 
 ```bash
