@@ -44,33 +44,60 @@ export default function WorkItemSidebar({ item, onClose, onUpdate }: Props) {
     fetchActivities();
   }, [fetchActivities]);
 
-  const handleChange = (field: keyof WorkItem, value: string | string[] | null | undefined) => {
+  const handleChange = (
+    field: keyof WorkItem,
+    value: string | string[] | null | undefined
+  ) => {
     const updated = { ...localItem, [field]: value };
-    const oldValue = localItem[field];
     setLocalItem(updated);
-
-    fetch(`/api/work-items/${item.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ [field]: value })
-    });
-
-    fetch(`/api/tasks/${item.id}/activities`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        user: "henri.okayama",
-        action: "atualizou o campo",
-        field,
-        oldValue: Array.isArray(oldValue) ? oldValue.join(", ") : oldValue,
-        newValue: Array.isArray(value) ? value.join(", ") : value
-      })
-    }).then(() => fetchActivities());
   };
 
-  const handleUpdateClick = () => {
-    onUpdate(localItem);
-    onClose();
+  const handleUpdateClick = async () => {
+    const updates: Partial<WorkItem> = {};
+    const changedFields: (keyof WorkItem)[] = [];
+
+    (Object.keys(localItem) as (keyof WorkItem)[]).forEach((field) => {
+      if (localItem[field] !== item[field]) {
+        updates[field] = localItem[field];
+        changedFields.push(field);
+      }
+    });
+
+    try {
+      if (Object.keys(updates).length > 0) {
+        await fetch(`/api/work-items/${item.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(updates),
+        });
+      }
+
+      await Promise.all(
+        changedFields.map((field) =>
+          fetch(`/api/tasks/${item.id}/activities`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              user: "henri.okayama",
+              action: "atualizou o campo",
+              field,
+              oldValue: Array.isArray(item[field])
+                ? (item[field] as string[]).join(", ")
+                : (item[field] as string | null),
+              newValue: Array.isArray(localItem[field])
+                ? (localItem[field] as string[]).join(", ")
+                : (localItem[field] as string | null),
+            }),
+          })
+        )
+      );
+
+      fetchActivities();
+      onUpdate(localItem);
+      onClose();
+    } catch (error) {
+      console.error("Erro ao atualizar tarefa:", error);
+    }
   };
 
   return (
