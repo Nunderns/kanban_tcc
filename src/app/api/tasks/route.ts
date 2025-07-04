@@ -92,9 +92,11 @@ export async function POST(req: NextRequest) {
 
 export async function PATCH(req: NextRequest) {
   try {
+    console.log('PATCH /api/tasks - Starting request');
     const session = await getServerSession(authOptions);
 
     if (!session || !session.user?.id) {
+      console.log('Unauthorized: No valid session or user ID');
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -102,10 +104,13 @@ export async function PATCH(req: NextRequest) {
     const taskId = searchParams.get('id');
     
     if (!taskId) {
+      console.log('Bad Request: Task ID is required');
       return NextResponse.json({ error: "Task ID is required" }, { status: 400 });
     }
 
+    console.log('Processing task ID:', taskId);
     const body = await req.json();
+    console.log('Request body:', JSON.stringify(body, null, 2));
     
     // Verify the task exists and belongs to the user
     const existingTask = await prisma.task.findUnique({
@@ -113,27 +118,70 @@ export async function PATCH(req: NextRequest) {
     });
 
     if (!existingTask) {
+      console.log('Task not found:', taskId);
       return NextResponse.json({ error: "Task not found" }, { status: 404 });
     }
 
     if (existingTask.userId !== Number(session.user.id)) {
+      console.log('Forbidden: User does not own this task');
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
+
+    // Use Prisma's generated types for update data
+    type TaskUpdateData = Prisma.TaskUpdateInput;
+
+    // Only include fields that can be updated
+    const updateData: TaskUpdateData = { updatedAt: new Date() };
+    
+    // Handle project update separately as it's a relation
+    if ('projectId' in body) {
+      updateData.project = body.projectId 
+        ? { connect: { id: Number(body.projectId) } }
+        : { disconnect: true };
+    }
+    
+    // Define other updatable fields (non-relation fields)
+    type UpdatableField = keyof Pick<Prisma.TaskUpdateInput, 
+      'title' | 'description' | 'status' | 'priority' | 'startDate' | 
+      'dueDate' | 'module' | 'cycle' | 'assignees' | 'labels'
+    >;
+    
+    const updatableFields: UpdatableField[] = [
+      'title', 'description', 'status', 'priority', 'startDate', 
+      'dueDate', 'module', 'cycle', 'assignees', 'labels'
+    ];
+
+    // Create a type-safe body object with only the fields we expect
+    const safeBody: Record<string, unknown> = body;
+    
+    updatableFields.forEach((field: UpdatableField) => {
+      if (field in safeBody) {
+        // We know the field is in UpdatableField and safeBody
+        (updateData as Record<string, unknown>)[field] = safeBody[field];
+      }
+    });
+    
+    // Always update the updatedAt field
+    updateData.updatedAt = new Date();
+
+    console.log('Update data prepared:', JSON.stringify(updateData, null, 2));
 
     // Update the task
     const updatedTask = await prisma.task.update({
       where: { id: Number(taskId) },
-      data: {
-        ...body,
-        // Ensure these fields are properly typed
-        projectId: body.projectId ? Number(body.projectId) : null,
-        startDate: body.startDate || null,
-        dueDate: body.dueDate || null
-      }
+      data: updateData
     });
 
+    console.log('Task updated successfully:', updatedTask.id);
     return NextResponse.json(updatedTask);
   } catch (error) {
-    return handleServerError(error);
+    console.error('Error in PATCH /api/tasks:', error);
+    return NextResponse.json(
+      { 
+        error: "Internal server error",
+        details: error instanceof Error ? error.message : String(error)
+      },
+      { status: 500 }
+    );
   }
 }
