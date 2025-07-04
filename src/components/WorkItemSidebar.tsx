@@ -36,21 +36,23 @@ export default function WorkItemSidebar({ item, onClose, onUpdate }: Props) {
     const oldValue = localItem[field];
     setLocalItem(updated);
 
-    fetch(`/api/work-items/${item.id}`, {
+    // Update the task
+    fetch(`/api/tasks/${item.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ [field]: value })
     });
 
+    // Log the activity
     fetch(`/api/tasks/${item.id}/activities`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        user: "henri.okayama",
-        action: "atualizou o campo",
+        user: "henri.okayama", // In a real app, you would get this from the session
+        action: "updated field",
         field,
-        oldValue: Array.isArray(oldValue) ? oldValue.join(", ") : oldValue,
-        newValue: Array.isArray(value) ? value.join(", ") : value
+        oldValue: Array.isArray(oldValue) ? oldValue.join(", ") : (oldValue?.toString() || ""),
+        newValue: Array.isArray(value) ? value.join(", ") : (value?.toString() || "")
       })
     }).then(() => fetchActivities());
   };
