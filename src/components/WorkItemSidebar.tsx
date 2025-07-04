@@ -1,11 +1,36 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { FaTimes } from "react-icons/fa";
 import { ptBR } from "date-fns/locale";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import type { WorkItem } from "@/app/dashboard/my-tasks/page";
+import { 
+  XMarkIcon, 
+  UserCircleIcon, 
+  TagIcon, 
+  CalendarIcon, 
+  ClockIcon, 
+  CheckCircleIcon,
+  UserGroupIcon,
+  FlagIcon,
+  CubeIcon,
+  ArrowsPointingOutIcon,
+  ListBulletIcon,
+  ArrowPathIcon
+} from '@heroicons/react/24/outline';
+import { statusColors, priorityColors } from "@/lib/constants";
+
+interface Activity {
+  id: string;
+  taskId: string;
+  user: string;
+  action: string;
+  field: string;
+  oldValue: string;
+  newValue: string;
+  createdAt: string;
+}
 
 interface Props {
   item: WorkItem;
@@ -15,192 +40,322 @@ interface Props {
 
 export default function WorkItemSidebar({ item, onClose, onUpdate }: Props) {
   const [localItem, setLocalItem] = useState(item);
-  const [activities, setActivities] = useState<string[]>([]);
+  const [activities, setActivities] = useState<Activity[]>([]);
+
+  const formatActivity = (activity: Activity): string => {
+    const { user, action, field, oldValue, newValue, createdAt } = activity;
+    const formattedDate = new Date(createdAt).toLocaleString('pt-BR');
+    
+    if (action === 'updated field') {
+      return `${formattedDate} - ${user} ${action} ${field} from "${oldValue}" to "${newValue}"`;
+    }
+    
+    return `${formattedDate} - ${user} ${action}`;
+  };
 
   const fetchActivities = useCallback(async () => {
     try {
-      const res = await fetch(`/api/tasks/${item.id}/activities`);
-      const data = await res.json();
-      setActivities(data);
+      const response = await fetch(`/api/tasks/${item.id}/activities`);
+      if (response.ok) {
+        const data = await response.json();
+        setActivities(data || []);
+      }
     } catch (error) {
-      console.error("Erro ao buscar atividades:", error);
+      console.error("Failed to fetch activities:", error);
+      setActivities([]);
     }
   }, [item.id]);
+
+  // Update local state when item prop changes
+  useEffect(() => {
+    setLocalItem(item);
+  }, [item]);
 
   useEffect(() => {
     fetchActivities();
   }, [fetchActivities]);
 
   const handleChange = (field: keyof WorkItem, value: string | string[] | null | undefined) => {
-    const updated = { ...localItem, [field]: value };
-    const oldValue = localItem[field];
-    setLocalItem(updated);
-
-    // Update the task
-    fetch(`/api/tasks/${item.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ [field]: value })
-    });
-
-    // Log the activity
-    fetch(`/api/tasks/${item.id}/activities`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        user: "henri.okayama", // In a real app, you would get this from the session
-        action: "updated field",
-        field,
-        oldValue: Array.isArray(oldValue) ? oldValue.join(", ") : (oldValue?.toString() || ""),
-        newValue: Array.isArray(value) ? value.join(", ") : (value?.toString() || "")
-      })
-    }).then(() => fetchActivities());
+    setLocalItem(prev => ({
+      ...prev,
+      [field]: value
+    }));
   };
 
-  const handleUpdateClick = () => {
-    onUpdate(localItem);
-    onClose();
+  const handleUpdateClick = async () => {
+    try {
+      // Update the task - include ID as query parameter
+      const updateResponse = await fetch(`/api/tasks?id=${item.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(localItem)
+      });
+
+      if (!updateResponse.ok) {
+        const errorData = await updateResponse.json().catch(() => ({}));
+        console.error('Update failed with status:', updateResponse.status, 'Details:', errorData);
+        throw new Error(errorData.error || 'Failed to update task');
+      }
+
+      // Log activity for changed fields
+      const changedFields = Object.keys(localItem).filter(
+        key => JSON.stringify(localItem[key as keyof WorkItem]) !== JSON.stringify(item[key as keyof WorkItem])
+      );
+
+      // Create activity log for each changed field
+      await Promise.all(changedFields.map(async (field) => {
+        const oldValue = item[field as keyof WorkItem];
+        const newValue = localItem[field as keyof WorkItem];
+        
+        await fetch(`/api/tasks/${item.id}/activities`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            user: "henri.okayama",
+            action: "updated field",
+            field,
+            oldValue: Array.isArray(oldValue) ? oldValue.join(", ") : (oldValue?.toString() || ""),
+            newValue: Array.isArray(newValue) ? newValue.join(", ") : (newValue?.toString() || "")
+          })
+        });
+      }));
+
+      // Refresh activities and update parent
+      await fetchActivities();
+      onUpdate(localItem);
+      onClose();
+    } catch (error) {
+      console.error('Error updating task:', error);
+      // Optionally show error message to user
+    }
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'DONE':
+        return <CheckCircleIcon className="h-5 w-5 text-green-500" />;
+      case 'IN_PROGRESS':
+        return <ArrowPathIcon className="h-5 w-5 text-blue-500 animate-spin" />;
+      default:
+        return <ListBulletIcon className="h-5 w-5 text-gray-400" />;
+    }
+  };
+
+  const getPriorityIcon = (priority: string) => {
+    const color = priorityColors[priority as keyof typeof priorityColors] || 'gray';
+    return <FlagIcon className={`h-5 w-5 text-${color}-500`} />;
   };
 
   return (
-    <aside className="w-[400px] bg-white text-gray-900 border-l border-gray-300 p-6 overflow-y-auto h-screen fixed right-0 top-0 z-40 shadow-lg">
-      <div className="flex justify-between items-start mb-6">
-        <h2 className="text-xl font-bold">PRIME-{item.id}</h2>
-        <button onClick={onClose} className="text-gray-500 hover:text-black">
-          <FaTimes />
+    <aside className="w-[450px] bg-white text-gray-900 border-l border-gray-200 p-6 overflow-y-auto h-screen fixed right-0 top-0 z-50 shadow-xl">
+      <div className="flex justify-between items-center mb-6 pb-4 border-b border-gray-100">
+        <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+          <span className="text-blue-600">#PRIME-{item.id}</span>
+        </h2>
+        <button 
+          onClick={onClose} 
+          className="p-1.5 rounded-full hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors"
+          aria-label="Fechar"
+        >
+          <XMarkIcon className="h-5 w-5" />
         </button>
       </div>
 
-      <input
-        value={localItem.title}
-        onChange={(e) => handleChange("title", e.target.value)}
-        className="bg-gray-100 w-full mb-4 p-2 rounded border border-gray-300"
-        placeholder="Título da tarefa"
-      />
+      <div className="mb-6">
+        <input
+          value={localItem.title}
+          onChange={(e) => handleChange("title", e.target.value)}
+          className="w-full text-xl font-semibold p-2 border-0 border-b-2 border-transparent focus:border-blue-500 focus:ring-0 bg-transparent hover:bg-gray-50 rounded transition-colors"
+          placeholder="Título da tarefa"
+        />
+        <p className="text-xs text-gray-500 mt-1 px-2 flex items-center">
+          <UserCircleIcon className="h-4 w-4 mr-1" />
+          Criado por {item.creator || "henri.okayama"}
+        </p>
+      </div>
 
-      <p className="text-sm text-gray-600 mb-1">Clique para adicionar uma descrição</p>
+      <div className="space-y-4">
 
-      <div className="space-y-6 pb-6">
-        <div>
-          <p className="text-sm text-gray-600">Status</p>
-          <p className="text-black font-semibold capitalize">{localItem.status.replace("_", " ")}</p>
+        <div className="bg-gray-50 p-4 rounded-lg">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-2 bg-blue-50 rounded-lg">
+              {getStatusIcon(localItem.status)}
+            </div>
+            <div className="flex-1">
+              <p className="text-xs font-medium text-gray-500">Status</p>
+              <div className="flex items-center gap-2">
+                <span className={`px-2 py-1 text-xs font-medium rounded-full ${statusColors[localItem.status as keyof typeof statusColors] || 'bg-gray-100 text-gray-800'}`}>
+                  {localItem.status.replace("_", " ")}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-2 bg-purple-50 rounded-lg">
+              <UserGroupIcon className="h-5 w-5 text-purple-500" />
+            </div>
+            <div className="flex-1">
+              <p className="text-xs font-medium text-gray-500">Responsáveis</p>
+              <input
+                value={localItem.assignees?.join(", ") || ""}
+                onChange={(e) => handleChange("assignees", e.target.value.split(", "))}
+                className="w-full p-1.5 text-sm border-0 border-b border-transparent focus:border-blue-500 focus:ring-0 bg-transparent"
+                placeholder="Adicionar responsáveis"
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-red-50 rounded-lg">
+              {getPriorityIcon(localItem.priority)}
+            </div>
+            <div className="flex-1">
+              <p className="text-xs font-medium text-gray-500">Prioridade</p>
+              <select
+                value={localItem.priority}
+                onChange={(e) => handleChange("priority", e.target.value)}
+                className="w-full p-1.5 text-sm border-0 border-b border-transparent focus:border-blue-500 focus:ring-0 bg-transparent"
+              >
+                <option value="NONE">Nenhuma</option>
+                <option value="LOW">Baixa</option>
+                <option value="MEDIUM">Média</option>
+                <option value="HIGH">Alta</option>
+              </select>
+            </div>
+          </div>
         </div>
 
-        <div>
-          <p className="text-sm text-gray-600">Responsáveis</p>
-          <input
-            value={localItem.assignees?.join(", ") || ""}
-            onChange={(e) => handleChange("assignees", e.target.value.split(", "))}
-            className="bg-gray-100 w-full p-2 rounded border border-gray-300"
-            placeholder="Adicionar responsáveis"
-          />
+        <div className="grid grid-cols-2 gap-4">
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-green-50 rounded-lg">
+                <CalendarIcon className="h-5 w-5 text-green-500" />
+              </div>
+              <div className="flex-1">
+                <p className="text-xs font-medium text-gray-500">Data de Início</p>
+                <DatePicker
+                  selected={localItem.startDate ? new Date(localItem.startDate) : null}
+                  onChange={(date) =>
+                    handleChange("startDate", date?.toISOString().split("T")[0])
+                  }
+                  locale={ptBR}
+                  className="w-full p-1.5 text-sm border-0 border-b border-transparent focus:border-blue-500 focus:ring-0 bg-transparent"
+                  dateFormat="dd/MM/yyyy"
+                  placeholderText="--/--/----"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-red-50 rounded-lg">
+                <ClockIcon className="h-5 w-5 text-red-500" />
+              </div>
+              <div className="flex-1">
+                <p className="text-xs font-medium text-gray-500">Data de Entrega</p>
+                <DatePicker
+                  selected={localItem.dueDate ? new Date(localItem.dueDate) : null}
+                  onChange={(date) =>
+                    handleChange("dueDate", date?.toISOString().split("T")[0])
+                  }
+                  locale={ptBR}
+                  className="w-full p-1.5 text-sm border-0 border-b border-transparent focus:border-blue-500 focus:ring-0 bg-transparent"
+                  dateFormat="dd/MM/yyyy"
+                  placeholderText="--/--/----"
+                />
+              </div>
+            </div>
+          </div>
         </div>
 
-        <div>
-          <p className="text-sm text-gray-600">Prioridade</p>
-          <select
-            value={localItem.priority}
-            onChange={(e) => handleChange("priority", e.target.value)}
-            className="bg-gray-100 w-full p-2 rounded border border-gray-300"
-          >
-            <option value="NONE">Nenhuma</option>
-            <option value="LOW">Baixa</option>
-            <option value="MEDIUM">Média</option>
-            <option value="HIGH">Alta</option>
-          </select>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-blue-50 rounded-lg">
+                <CubeIcon className="h-5 w-5 text-blue-500" />
+              </div>
+              <div className="flex-1">
+                <p className="text-xs font-medium text-gray-500">Módulo</p>
+                <input
+                  value={localItem.module || ""}
+                  onChange={(e) => handleChange("module", e.target.value)}
+                  className="w-full p-1.5 text-sm border-0 border-b border-transparent focus:border-blue-500 focus:ring-0 bg-transparent"
+                  placeholder="Sem módulo"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-yellow-50 rounded-lg">
+                <ArrowsPointingOutIcon className="h-5 w-5 text-yellow-500" />
+              </div>
+              <div className="flex-1">
+                <p className="text-xs font-medium text-gray-500">Ciclo</p>
+                <input
+                  value={localItem.cycle || ""}
+                  onChange={(e) => handleChange("cycle", e.target.value)}
+                  className="w-full p-1.5 text-sm border-0 border-b border-transparent focus:border-blue-500 focus:ring-0 bg-transparent"
+                  placeholder="Sem ciclo"
+                />
+              </div>
+            </div>
+          </div>
         </div>
 
-        <div>
-          <p className="text-sm text-gray-600">Criado por</p>
-          <p className="font-medium">{item.creator || "henri.okayama"}</p>
+        <div className="bg-gray-50 p-4 rounded-lg">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-purple-50 rounded-lg">
+              <TagIcon className="h-5 w-5 text-purple-500" />
+            </div>
+            <div className="flex-1">
+              <p className="text-xs font-medium text-gray-500">Etiquetas</p>
+              <input
+                value={localItem.labels?.join(", ") || ""}
+                onChange={(e) => handleChange("labels", e.target.value.split(", "))}
+                className="w-full p-1.5 text-sm border-0 border-b border-transparent focus:border-blue-500 focus:ring-0 bg-transparent"
+                placeholder="Adicione etiquetas separadas por vírgula"
+              />
+            </div>
+          </div>
         </div>
 
-        <div>
-          <p className="text-sm text-gray-600">Data de Início</p>
-          <DatePicker
-            selected={localItem.startDate ? new Date(localItem.startDate) : null}
-            onChange={(date) =>
-              handleChange("startDate", date?.toISOString().split("T")[0])
-            }
-            locale={ptBR}
-            className="bg-gray-100 w-full p-2 rounded border border-gray-300"
-            dateFormat="dd/MM/yyyy"
-            placeholderText="DD/MM/AAAA"
-          />
-        </div>
-
-        <div>
-          <p className="text-sm text-gray-600">Data de Entrega</p>
-          <DatePicker
-            selected={localItem.dueDate ? new Date(localItem.dueDate) : null}
-            onChange={(date) =>
-              handleChange("dueDate", date?.toISOString().split("T")[0])
-            }
-            locale={ptBR}
-            className="bg-gray-100 w-full p-2 rounded border border-gray-300"
-            dateFormat="dd/MM/yyyy"
-            placeholderText="DD/MM/AAAA"
-          />
-        </div>
-
-        <div>
-          <p className="text-sm text-gray-600">Módulo</p>
-          <input
-            value={localItem.module || ""}
-            onChange={(e) => handleChange("module", e.target.value)}
-            className="bg-gray-100 w-full p-2 rounded border border-gray-300"
-            placeholder="Sem módulo"
-          />
-        </div>
-
-        <div>
-          <p className="text-sm text-gray-600">Ciclo</p>
-          <input
-            value={localItem.cycle || ""}
-            onChange={(e) => handleChange("cycle", e.target.value)}
-            className="bg-gray-100 w-full p-2 rounded border border-gray-300"
-            placeholder="Sem ciclo"
-          />
-        </div>
-
-        <div>
-          <p className="text-sm text-gray-600">Item pai</p>
-          <input
-            className="bg-gray-100 w-full p-2 rounded border border-gray-300"
-            placeholder="Adicionar item pai"
-            disabled
-          />
-        </div>
-
-        <div>
-          <p className="text-sm text-gray-600">Etiquetas</p>
-          <input
-            value={localItem.labels?.join(", ") || ""}
-            onChange={(e) => handleChange("labels", e.target.value.split(", "))}
-            className="bg-gray-100 w-full p-2 rounded border border-gray-300"
-            placeholder="Adicionar etiquetas"
-          />
-        </div>
-
-        <div>
-          <p className="text-sm text-gray-600">Atividades</p>
-          <ul className="text-xs text-gray-600 space-y-1 mt-2">
+        <div className="bg-gray-50 p-4 rounded-lg">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="p-2 bg-gray-100 rounded-lg">
+              <ListBulletIcon className="h-5 w-5 text-gray-500" />
+            </div>
+            <h3 className="text-sm font-medium text-gray-700">Atividades</h3>
+          </div>
+          
+          <div className="space-y-3 max-h-60 overflow-y-auto pr-2">
             {activities.length === 0 ? (
-              <li>Nenhuma atividade registrada.</li>
+              <p className="text-xs text-gray-500 italic">Nenhuma atividade registrada</p>
             ) : (
-              activities.map((activity, index) => (
-                <li key={index}>{activity}</li>
+              activities.map((activity) => (
+                <div key={activity.id} className="flex items-start gap-2 p-2 bg-white rounded-lg border border-gray-100 shadow-xs">
+                  <div className="mt-0.5">
+                    <div className="h-2 w-2 rounded-full bg-blue-500"></div>
+                  </div>
+                  <p className="text-xs text-gray-700">
+                    {formatActivity(activity)}
+                  </p>
+                </div>
               ))
             )}
-          </ul>
+          </div>
         </div>
 
-        <div className="pt-4">
+        <div className="pt-2">
           <button
             onClick={handleUpdateClick}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded font-bold"
+            className="w-full bg-blue-600 text-white py-2.5 px-4 rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center justify-center gap-2"
           >
-            Atualizar Tarefa
+            <CheckCircleIcon className="h-5 w-5" />
+            Salvar Alterações
           </button>
         </div>
       </div>
