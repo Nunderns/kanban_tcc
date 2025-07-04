@@ -127,20 +127,34 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
+    // Use Prisma's generated types for update data
+    type TaskUpdateData = Prisma.TaskUpdateInput;
+
     // Only include fields that can be updated
-    const updateData: any = {};
-    const updatableFields = [
+    const updateData: TaskUpdateData = { updatedAt: new Date() };
+    
+    // Handle project update separately as it's a relation
+    if ('projectId' in body) {
+      updateData.project = body.projectId 
+        ? { connect: { id: Number(body.projectId) } }
+        : { disconnect: true };
+    }
+    
+    // Define other updatable fields (non-relation fields)
+    type UpdatableField = keyof Pick<Prisma.TaskUpdateInput, 
+      'title' | 'description' | 'status' | 'priority' | 'startDate' | 
+      'dueDate' | 'module' | 'cycle' | 'assignees' | 'labels'
+    >;
+    
+    const updatableFields: UpdatableField[] = [
       'title', 'description', 'status', 'priority', 'startDate', 
-      'dueDate', 'module', 'cycle', 'assignees', 'labels', 'projectId'
+      'dueDate', 'module', 'cycle', 'assignees', 'labels'
     ];
 
-    updatableFields.forEach(field => {
+    updatableFields.forEach((field: UpdatableField) => {
       if (field in body) {
-        if (field === 'projectId') {
-          updateData[field] = body[field] ? Number(body[field]) : null;
-        } else {
-          updateData[field] = body[field];
-        }
+        // Type assertion is safe here because we've already checked the field is in UpdatableField
+        updateData[field] = (body as any)[field];
       }
     });
     
