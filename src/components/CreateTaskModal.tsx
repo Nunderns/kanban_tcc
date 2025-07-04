@@ -35,19 +35,11 @@ function CreateTaskModal({
   const [description, setDescription] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [isDisplayOpen, setIsDisplayOpen] = useState(false);
 
   const modalRef = useRef<HTMLDivElement>(null);
-  const displayRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (displayRef.current && displayRef.current.contains(event.target as Node)) return;
-      if (isDisplayOpen) {
-        setIsDisplayOpen(false);
-        return;
-      }
-
       if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
         onClose();
       }
@@ -57,7 +49,7 @@ function CreateTaskModal({
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [isDisplayOpen, onClose]);
+  }, [onClose]);
 
   if (!isOpen) return null;
 
@@ -124,9 +116,7 @@ function CreateTaskModal({
                   </div>
                 )}
               </div>
-                <div className="relative" ref={displayRef}>
-                  <DisplayDropdown />
-                </div>
+              <DisplayDropdown />
             </div>
             <div className="flex gap-2">
               <button
