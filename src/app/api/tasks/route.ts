@@ -6,7 +6,7 @@ import { authOptions } from "@/lib/auth";
 import { NextRequest } from "next/server";
 
 const handleServerError = (error: unknown) => {
-  console.error("Server error:", error);
+  // console.error("Server error:", error);
   return NextResponse.json(
     {
       error: "Internal server error",
@@ -85,6 +85,54 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json(newTask, { status: 201 });
+  } catch (error) {
+    return handleServerError(error);
+  }
+}
+
+export async function PATCH(req: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions);
+
+    if (!session || !session.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const searchParams = req.nextUrl.searchParams;
+    const taskId = searchParams.get('id');
+    
+    if (!taskId) {
+      return NextResponse.json({ error: "Task ID is required" }, { status: 400 });
+    }
+
+    const body = await req.json();
+    
+    // Verify the task exists and belongs to the user
+    const existingTask = await prisma.task.findUnique({
+      where: { id: Number(taskId) }
+    });
+
+    if (!existingTask) {
+      return NextResponse.json({ error: "Task not found" }, { status: 404 });
+    }
+
+    if (existingTask.userId !== Number(session.user.id)) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    }
+
+    // Update the task
+    const updatedTask = await prisma.task.update({
+      where: { id: Number(taskId) },
+      data: {
+        ...body,
+        // Ensure these fields are properly typed
+        projectId: body.projectId ? Number(body.projectId) : null,
+        startDate: body.startDate || null,
+        dueDate: body.dueDate || null
+      }
+    });
+
+    return NextResponse.json(updatedTask);
   } catch (error) {
     return handleServerError(error);
   }
