@@ -24,13 +24,13 @@ const routes = [
     },
     {
         label: "Configurações",
-        href: "/settings",
+        href: "/dashboard/settings/general",
         icon: SettingsIcon,
         activeIcon: SettingsIcon,
     },
     {
         label: "Membros",
-        href: "/members",
+        href: "/dashboard/settings/members",
         icon: UsersIcon,
         activeIcon: UsersIcon,
     }
