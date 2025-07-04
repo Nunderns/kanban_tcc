@@ -4,7 +4,7 @@ import { Sidebar } from "@/components/Sidebar";
 import { usePathname } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { Plus, X, ArrowLeft, Trash2, GripVertical } from "lucide-react";
+import { Plus, Trash2, GripVertical } from "lucide-react";
 // Using native HTML elements instead of shadcn/ui components
 
 type ProjectState = {

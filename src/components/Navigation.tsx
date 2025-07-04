@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { SettingsIcon, ChevronDown, ChevronRight, Users } from "lucide-react";
+import { SettingsIcon, ChevronDown, ChevronRight } from "lucide-react";
 import {
     GoCheckCircle,
     GoCheckCircleFill,
@@ -15,8 +15,8 @@ import { usePathname } from "next/navigation";
 interface NavItem {
     label: string;
     href: string;
-    icon: any;
-    activeIcon?: any;
+    icon: React.ComponentType<{ className?: string }>;
+    activeIcon?: React.ComponentType<{ className?: string }>;
     subItems?: {
         label: string;
         href: string;
