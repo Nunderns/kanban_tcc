@@ -151,10 +151,13 @@ export async function PATCH(req: NextRequest) {
       'dueDate', 'module', 'cycle', 'assignees', 'labels'
     ];
 
+    // Create a type-safe body object with only the fields we expect
+    const safeBody: Record<string, unknown> = body;
+    
     updatableFields.forEach((field: UpdatableField) => {
-      if (field in body) {
-        // Type assertion is safe here because we've already checked the field is in UpdatableField
-        updateData[field] = (body as any)[field];
+      if (field in safeBody) {
+        // We know the field is in UpdatableField and safeBody
+        (updateData as Record<string, unknown>)[field] = safeBody[field];
       }
     });
     
