@@ -46,7 +46,7 @@ export default function WorkItemSidebar({ item, onClose, onUpdate }: Props) {
     try {
       const date = new Date(dateString);
       return date.toLocaleDateString('pt-BR');
-    } catch (e) {
+    } catch (_) {
       return dateString;
     }
   };
@@ -121,6 +121,7 @@ export default function WorkItemSidebar({ item, onClose, onUpdate }: Props) {
       console.log('Updating localItem from prop item:', item);
       setLocalItem({...item});
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [item]);
 
   useEffect(() => {
