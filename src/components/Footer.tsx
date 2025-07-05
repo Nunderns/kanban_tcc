@@ -1,57 +1,87 @@
-import Image from "next/image";
+import Link from "next/link";
+import { FaGithub, FaTwitter, FaLinkedin } from 'react-icons/fa';
 
-export default function Footer() {
-    return (
-      <footer className="bg-white text-gray-700 py-10 border-t">
-        <div className="container mx-auto px-6 flex flex-col md:flex-row justify-between items-center">
-          <div className="text-center md:text-left mb-6 md:mb-0">
-          <Image src="/logo.png" alt="Logo" width={100} height={50} />
-            <p className="text-sm">info@taskflow.com.br</p>
-            <p className="text-sm mt-2">Copyright © 2025 TaskFlow</p>
-            <p className="text-sm">Powered by TaskFlow</p>
-          </div>
-          
-          <div className="flex flex-col md:flex-row space-y-6 md:space-y-0 md:space-x-12">
-            <div>
-              <h3 className="font-semibold">Suporte</h3>
-              <ul className="text-sm space-y-2 mt-2">
-                <li><a href="#" className="hover:underline">Central de Ajuda</a></li>
-                <li><a href="#" className="hover:underline">Changelog</a></li>
-                <li><a href="#" className="hover:underline">Comunidade</a></li>
-              </ul>
+const footerLinks = {
+  support: [
+    { name: "Ajuda", href: "#" },
+    { name: "Documentação", href: "#" },
+    { name: "Tutoriais", href: "#" },
+  ],
+  company: [
+    { name: "Sobre", href: "#" },
+    { name: "Blog", href: "#" },
+    { name: "Contato", href: "#" },
+  ],
+  legal: [
+    { name: "Termos", href: "#" },
+    { name: "Privacidade", href: "#" },
+  ]
+};
+
+const Footer = () => {
+  const currentYear = new Date().getFullYear();
+
+  return (
+    <footer className="bg-white border-t border-gray-200">
+      <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6">
+        <div className="md:flex md:justify-between">
+          <div className="mb-8 md:mb-0">
+            <div className="flex items-center space-x-2">
+              <span className="text-xl font-semibold text-gray-900">TaskFlow</span>
             </div>
-            <div>
-              <h3 className="font-semibold">TaskFlow</h3>
-              <ul className="text-sm space-y-2 mt-2">
-                <li><a href="#" className="hover:underline">Funcionalidades</a></li>
-                <li><a href="#" className="hover:underline">Planos e Preços</a></li>
-                <li><a href="#" className="hover:underline">Sobre TaskFlow</a></li>
-                <li><a href="#" className="hover:underline">Cases</a></li>
-              </ul>
-            </div>
+            <p className="mt-2 text-sm text-gray-500">
+              Simplificando sua produtividade
+            </p>
           </div>
-  
-          <div className="mt-6 md:mt-0 text-center md:text-left">
-            <h3 className="font-semibold">Newsletter</h3>
-            <form className="mt-2 flex">
-              <input 
-                type="email" 
-                placeholder="Email address" 
-                className="px-4 py-2 border rounded-l-md focus:outline-none focus:ring-2 focus:ring-pink-500"
-              />
-              <button 
-                type="submit" 
-                className="bg-pink-500 text-white px-4 py-2 rounded-r-md hover:bg-pink-600"
-              >
-                Subscribe
-              </button>
-            </form>
+
+          <div className="grid grid-cols-2 gap-8 sm:grid-cols-3">
+            {Object.entries(footerLinks).map(([section, links]) => (
+              <div key={section}>
+                <h3 className="text-xs font-semibold text-gray-900 uppercase tracking-wider">
+                  {section}
+                </h3>
+                <ul className="mt-3 space-y-2">
+                  {links.map((link) => (
+                    <li key={link.name}>
+                      <Link 
+                        href={link.href}
+                        className="text-sm text-gray-600 hover:text-pink-500"
+                      >
+                        {link.name}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
           </div>
         </div>
-        <div className="text-center mt-6 text-sm">
-          <a href="#" className="hover:underline">Termos e condições gerais</a>
+
+        <div className="mt-8 pt-8 border-t border-gray-200">
+          <div className="md:flex md:items-center md:justify-between">
+            <div className="flex space-x-6">
+              <a href="#" className="text-gray-400 hover:text-gray-500">
+                <span className="sr-only">GitHub</span>
+                <FaGithub className="h-5 w-5" />
+              </a>
+              <a href="#" className="text-gray-400 hover:text-gray-500">
+                <span className="sr-only">Twitter</span>
+                <FaTwitter className="h-5 w-5" />
+              </a>
+              <a href="#" className="text-gray-400 hover:text-gray-500">
+                <span className="sr-only">LinkedIn</span>
+                <FaLinkedin className="h-5 w-5" />
+              </a>
+            </div>
+            <p className="mt-4 text-sm text-gray-500 md:mt-0">
+              &copy; {currentYear} TaskFlow. Todos os direitos reservados.
+            </p>
+          </div>
         </div>
-      </footer>
-    );
-  }
+      </div>
+    </footer>
+  );
+};
+
+export default Footer;
   
