@@ -147,15 +147,28 @@ export async function PATCH(req: NextRequest) {
     >;
     
     const updatableFields: UpdatableField[] = [
-      'title', 'description', 'status', 'priority', 'startDate', 
-      'dueDate', 'module', 'cycle', 'assignees', 'labels'
+      'title', 'description', 'status', 'priority', 
+      'module', 'cycle', 'assignees', 'labels'
     ];
+
+    // Handle date fields separately to ensure they're proper Date objects
+    if (body.startDate) {
+      updateData.startDate = new Date(body.startDate);
+    } else if ('startDate' in body) {
+      updateData.startDate = null;
+    }
+
+    if (body.dueDate) {
+      updateData.dueDate = new Date(body.dueDate);
+    } else if ('dueDate' in body) {
+      updateData.dueDate = null;
+    }
 
     // Create a type-safe body object with only the fields we expect
     const safeBody: Record<string, unknown> = body;
     
     updatableFields.forEach((field: UpdatableField) => {
-      if (field in safeBody) {
+      if (field in safeBody && safeBody[field] !== undefined) {
         // We know the field is in UpdatableField and safeBody
         (updateData as Record<string, unknown>)[field] = safeBody[field];
       }

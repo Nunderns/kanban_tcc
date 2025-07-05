@@ -6,7 +6,7 @@ import FilterDropdown from "@/components/FilterDropdown";
 import DisplayDropdown from "@/components/DisplayDown";
 import WorkItemSidebar from "@/components/WorkItemSidebar";
 import { useSession } from "next-auth/react";
-import { useCallback, useEffect, useState, useRef } from "react";
+import { useCallback, useEffect, useState, useRef, useMemo } from "react";
 import { format } from "date-fns";
 import {
   FaPlus,
@@ -19,6 +19,7 @@ import {
   FaCalendarAlt,
   FaSyncAlt
 } from "react-icons/fa";
+import { IoFunnelOutline } from "react-icons/io5";
 
 export type Priority = "NONE" | "LOW" | "MEDIUM" | "HIGH";
 export type Status = "BACKLOG" | "TODO" | "IN_PROGRESS" | "DONE";
@@ -51,8 +52,213 @@ export default function KanbanPage() {
   const [selectedItem, setSelectedItem] = useState<WorkItem | null>(null);
   const [workItems, setWorkItems] = useState<WorkItem[]>([]);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [showFilter, setShowFilter] = useState<boolean>(false);
+  const [showFilter, setShowFilter] = useState(false);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
+  
+  // Filter states
+  const [filters, setFilters] = useState({
+    priority: [] as string[],
+    status: [] as string[],
+    assignee: [] as string[],
+    creator: [] as string[],
+    project: [] as string[],
+    startDate: [] as string[],
+    dueDate: [] as string[],
+  });
+  
+  // Display options state
+  const [displayOptions, setDisplayOptions] = useState({
+    showSubtasks: true,
+    visibleProperties: ["ID", "Responsável", "Data de início", "Prazo", "Prioridade", "Estado"],
+  });
+  
+  // Map status for filtering (UI -> Internal)
+  const statusMap: Record<string, string> = {
+    'Backlog': 'BACKLOG',
+    'Não iniciado': 'TODO',
+    'Iniciado': 'IN_PROGRESS',
+    'Completado': 'DONE',
+    'Cancelado': 'CANCELLED'
+  };
+
+  // Map priority for filtering (UI -> Internal)
+  const priorityMap: Record<string, string> = {
+    'Urgent': 'HIGH',
+    'High': 'HIGH',
+    'Medium': 'MEDIUM',
+    'Low': 'LOW',
+    'None': 'NONE'
+  };
+  
+  // Reverse maps for filtering (Internal -> UI)
+  const reverseStatusMap = Object.entries(statusMap).reduce((acc, [key, value]) => {
+    acc[value] = key;
+    return acc;
+  }, {} as Record<string, string>);
+  
+  const reversePriorityMap = Object.entries(priorityMap).reduce((acc, [key, value]) => {
+    // Para evitar sobrescrever valores, mantenha apenas o primeiro mapeamento
+    if (!acc[value]) {
+      acc[value] = key;
+    }
+    return acc;
+  }, {} as Record<string, string>);
+  
+  // Apply filters to tasks
+  const filteredTasks = useMemo(() => {
+    console.log('Filtering tasks with filters:', filters);
+    
+    if (!workItems.length) return [];
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    
+    const endOfWeek = new Date(today);
+    endOfWeek.setDate(endOfWeek.getDate() + (7 - endOfWeek.getDay()));
+    
+    const nextWeekEnd = new Date(endOfWeek);
+    nextWeekEnd.setDate(nextWeekEnd.getDate() + 7);
+    
+    const nextMonth = new Date(today);
+    nextMonth.setMonth(nextMonth.getMonth() + 1);
+    
+    const isDateInRange = (date: Date | string | undefined, range: string): boolean => {
+      if (!date) return false;
+      
+      // Função para normalizar datas para o início do dia (meia-noite) para comparação
+      const normalizeDate = (d: Date) => {
+        const normalized = new Date(d);
+        normalized.setHours(0, 0, 0, 0);
+        return normalized;
+      };
+      
+      // Converter a data da tarefa para objeto Date se for string
+      let taskDate: Date;
+      if (typeof date === 'string') {
+        // Tenta converter do formato dd/MM/yyyy
+        if (date.includes('/')) {
+          const [day, month, year] = date.split('/').map(Number);
+          taskDate = new Date(year, month - 1, day);
+        } else {
+          // Tenta converter do formato ISO
+          taskDate = new Date(date);
+        }
+      } else {
+        taskDate = new Date(date);
+      }
+      
+      // Se a data for inválida, retorna falso
+      if (isNaN(taskDate.getTime())) return false;
+      
+      // Normaliza a data da tarefa para meia-noite
+      taskDate = normalizeDate(taskDate);
+      
+      switch (range) {
+        case 'Hoje':
+          return taskDate.getTime() === today.getTime();
+        case 'Amanhã':
+          return taskDate.getTime() === tomorrow.getTime();
+        case 'Esta semana':
+          return taskDate >= today && taskDate <= endOfWeek;
+        case 'Próxima semana': {
+          const nextWeekStart = new Date(endOfWeek);
+          nextWeekStart.setDate(nextWeekStart.getDate() + 1);
+          return taskDate >= nextWeekStart && taskDate <= nextWeekEnd;
+        }
+        case 'Próximo mês':
+          return taskDate.getMonth() === nextMonth.getMonth() && 
+                 taskDate.getFullYear() === nextMonth.getFullYear();
+        default:
+          if (range.startsWith('data:')) {
+            try {
+              const dateStr = range.replace('data:', '');
+              let filterDate: Date;
+              
+              // Verifica se a data está no formato dd/MM/yyyy
+              if (dateStr.includes('/')) {
+                const [day, month, year] = dateStr.split('/').map(Number);
+                filterDate = new Date(year, month - 1, day);
+              } else {
+                // Tenta converter do formato ISO
+                filterDate = new Date(dateStr);
+              }
+              
+              filterDate = normalizeDate(filterDate);
+              return taskDate.getTime() === filterDate.getTime();
+            } catch (e) {
+              console.error('Error parsing filter date:', e);
+              return false;
+            }
+          }
+          return false;
+      }
+    };
+    
+    const filtered = workItems.filter(task => {
+      console.log('\n--- Checking task:', task.id, task.title);
+      
+      // Filter by priority
+      if (filters.priority.length > 0) {
+        const taskPriorityName = reversePriorityMap[task.priority] || '';
+        if (!filters.priority.includes(taskPriorityName)) {
+          return false;
+        }
+      }
+      
+      // Filter by status
+      if (filters.status.length > 0) {
+        const taskStatusName = reverseStatusMap[task.status] || '';
+        if (!filters.status.includes(taskStatusName)) {
+          return false;
+        }
+      }
+      
+      // Filter by start date
+      if (filters.startDate.length > 0) {
+        const hasMatchingStartDate = filters.startDate.some(range => 
+          isDateInRange(task.startDate, range)
+        );
+        if (!hasMatchingStartDate) return false;
+      }
+      
+      // Filter by due date
+      if (filters.dueDate.length > 0) {
+        const hasMatchingDueDate = filters.dueDate.some(range => 
+          isDateInRange(task.dueDate, range)
+        );
+        if (!hasMatchingDueDate) return false;
+      }
+      
+      return true;
+    });
+    
+    console.log(`Filtered ${workItems.length} tasks down to ${filtered.length}`);
+    return filtered;
+  }, [workItems, filters, reverseStatusMap, reversePriorityMap]);
+  
+  // Handle filter changes
+  const handleFilterChange = (filterType: keyof typeof filters, value: string, checked: boolean) => {
+    setFilters(prev => ({
+      ...prev,
+      [filterType]: checked
+        ? [...prev[filterType], value]
+        : prev[filterType].filter((item: string) => item !== value)
+    }));
+  };
+  
+  // Handle display option changes
+  const handleDisplayOptionChange = (option: string, checked: boolean) => {
+    setDisplayOptions(prev => ({
+      ...prev,
+      visibleProperties: checked
+        ? [...prev.visibleProperties, option]
+        : prev.visibleProperties.filter(item => item !== option)
+    }));
+  };
+
   const [targetStatus, setTargetStatus] = useState<Status>("BACKLOG");
   const [creatingTaskInColumn, setCreatingTaskInColumn] = useState<Status | null>(null);
   const [newTaskTitle, setNewTaskTitle] = useState("");
@@ -210,19 +416,28 @@ export default function KanbanPage() {
           <div className="flex gap-2">
             <div className="relative">
               <button
-                className="bg-gray-200 text-sm px-3 py-2 rounded hover:bg-gray-300"
+                className="flex items-center gap-1 bg-[#2c2c2c] text-white px-3 py-2 rounded-md text-sm border border-gray-700 hover:bg-[#3a3a3a] transition"
                 onClick={() => setShowFilter(prev => !prev)}
               >
+                <IoFunnelOutline />
                 Filtros
               </button>
               {showFilter && (
                 <div ref={dropdownRef} className="absolute right-0 mt-2 z-50">
-                  <FilterDropdown />
+                  <FilterDropdown 
+                  filters={filters}
+                  onFilterChange={handleFilterChange}
+                />
                 </div>
               )}
             </div>
 
-            <DisplayDropdown />
+            <DisplayDropdown 
+              visibleProperties={displayOptions.visibleProperties}
+              showSubtasks={displayOptions.showSubtasks}
+              onDisplayOptionChange={handleDisplayOptionChange}
+              onToggleSubtasks={(checked) => setDisplayOptions(prev => ({ ...prev, showSubtasks: checked }))}
+            />
             <button
               className="flex items-center gap-1 bg-blue-600 px-3 py-2 rounded hover:bg-blue-500 text-sm text-white"
               onClick={() => setIsCreateModalOpen(true)}
@@ -248,7 +463,7 @@ export default function KanbanPage() {
                       </div>
                       <h2 className="font-semibold">{typedStatus.replace("_", " ")}</h2>
                       <span className="text-gray-500 text-sm">
-                        {workItems.filter(i => i.status === typedStatus).length}
+                        {filteredTasks.filter(i => i.status === typedStatus).length}
                       </span>
                     </div>
                     <button
@@ -268,7 +483,7 @@ export default function KanbanPage() {
                     }`}
                   >
                     <div className="p-2 space-y-2 h-[calc(100vh-280px)] overflow-y-auto">
-                        {workItems
+                        {filteredTasks
                           .filter(item => item.status === typedStatus)
                           .map(renderCard)}
 
