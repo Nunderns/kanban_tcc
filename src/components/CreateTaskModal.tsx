@@ -35,6 +35,51 @@ function CreateTaskModal({
   const [description, setDescription] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [filters, setFilters] = useState({
+    priority: [],
+    status: [],
+    assignee: [],
+    creator: [],
+    project: [],
+    startDate: [],
+    dueDate: []
+  });
+  const [displayOptions, setDisplayOptions] = useState({
+    visibleProperties: [
+      "ID",
+      "Responsável",
+      "Data de início",
+      "Prazo",
+      "Prioridade",
+      "Estado"
+    ],
+    showSubtasks: true
+  });
+
+  const handleFilterChange = (filterType: string, value: string, checked: boolean) => {
+    setFilters(prev => ({
+      ...prev,
+      [filterType]: checked
+        ? [...prev[filterType as keyof typeof prev], value]
+        : prev[filterType as keyof typeof prev].filter((v: string) => v !== value)
+    }));
+  };
+
+  const handleDisplayOptionChange = (option: string, checked: boolean) => {
+    setDisplayOptions(prev => ({
+      ...prev,
+      visibleProperties: checked
+        ? [...prev.visibleProperties, option]
+        : prev.visibleProperties.filter(prop => prop !== option)
+    }));
+  };
+
+  const handleToggleSubtasks = (checked: boolean) => {
+    setDisplayOptions(prev => ({
+      ...prev,
+      showSubtasks: checked
+    }));
+  };
 
   const modalRef = useRef<HTMLDivElement>(null);
 
@@ -112,11 +157,19 @@ function CreateTaskModal({
                 </button>
                 {isFilterOpen && (
                   <div className="absolute mt-2 z-50">
-                    <FilterDropdown />
+                    <FilterDropdown 
+                      filters={filters}
+                      onFilterChange={handleFilterChange}
+                    />
                   </div>
                 )}
               </div>
-              <DisplayDropdown />
+              <DisplayDropdown 
+                visibleProperties={displayOptions.visibleProperties}
+                showSubtasks={displayOptions.showSubtasks}
+                onDisplayOptionChange={handleDisplayOptionChange}
+                onToggleSubtasks={handleToggleSubtasks}
+              />
             </div>
             <div className="flex gap-2">
               <button

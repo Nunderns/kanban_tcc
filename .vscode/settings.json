@@ -1,0 +1,21 @@
+{
+  "css.validate": true,
+  "tailwindCSS.includeLanguages": {
+    "plaintext": "html",
+    "javascript": "javascriptreact",
+    "typescript": "typescriptreact"
+  },
+  "editor.quickSuggestions": {
+    "strings": true
+  },
+  "tailwindCSS.experimental.classRegex": [
+    "class:\\s*\"([^\"]*)\"",
+    "class:\\s*'([^']*)'",
+    "class:\\s*`([^`]*)`",
+    "class=\"([^\"]*)\"",
+    "class='([^']*)'",
+    "class=`([^`]*)`"
+  ],
+  "editor.quickSuggestions.strings": true,
+  "css.lint.unknownAtRules": "ignore"
+}
