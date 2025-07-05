@@ -1,9 +1,8 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { ptBR } from "date-fns/locale";
-import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
+import { FormattedDateInput } from "./FormattedDateInput";
 import type { WorkItem } from "@/app/dashboard/my-tasks/page";
 import { 
   XMarkIcon, 
@@ -42,15 +41,64 @@ export default function WorkItemSidebar({ item, onClose, onUpdate }: Props) {
   const [localItem, setLocalItem] = useState(item);
   const [activities, setActivities] = useState<Activity[]>([]);
 
+  const formatDate = (dateString: string): string => {
+    if (!dateString) return 'não definida';
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('pt-BR');
+    } catch (e) {
+      return dateString;
+    }
+  };
+
+  // Mapeia os nomes dos campos para algo mais amigável
+  const getFieldName = (field: string): string => {
+    const fieldMap: Record<string, string> = {
+      'startDate': 'data de início',
+      'dueDate': 'prazo',
+      'title': 'título',
+      'description': 'descrição',
+      'status': 'status',
+      'priority': 'prioridade',
+      'module': 'módulo',
+      'cycle': 'ciclo',
+      'assignees': 'responsáveis',
+      'labels': 'etiquetas'
+    };
+    
+    return fieldMap[field] || field;
+  };
+
   const formatActivity = (activity: Activity): string => {
     const { user, action, field, oldValue, newValue, createdAt } = activity;
     const formattedDate = new Date(createdAt).toLocaleString('pt-BR');
     
     if (action === 'updated field') {
-      return `${formattedDate} - ${user} ${action} ${field} from "${oldValue}" to "${newValue}"`;
+      const isDateField = field.toLowerCase().includes('date');
+      const fieldName = getFieldName(field);
+      
+      // Formata valores antigos e novos
+      const formatValue = (value: string) => {
+        if (isDateField) return formatDate(value);
+        if (!value) return 'não definido';
+        return value;
+      };
+      
+      const oldVal = formatValue(oldValue);
+      const newVal = formatValue(newValue);
+      
+      return `${formattedDate} - ${user} alterou o campo ${fieldName} de "${oldVal}" para "${newVal}"`;
     }
     
-    return `${formattedDate} - ${user} ${action}`;
+    // Outras ações (criado, excluído, etc)
+    const actionMap: Record<string, string> = {
+      'created': 'criou a tarefa',
+      'deleted': 'excluiu a tarefa',
+      'assigned': 'atribuiu a tarefa',
+      'commented': 'comentou na tarefa'
+    };
+    
+    return `${formattedDate} - ${user} ${actionMap[action] || action}`;
   };
 
   const fetchActivities = useCallback(async () => {
@@ -68,7 +116,11 @@ export default function WorkItemSidebar({ item, onClose, onUpdate }: Props) {
 
   // Update local state when item prop changes
   useEffect(() => {
-    setLocalItem(item);
+    // Usando JSON.stringify para garantir uma comparação profunda
+    if (JSON.stringify(item) !== JSON.stringify(localItem)) {
+      console.log('Updating localItem from prop item:', item);
+      setLocalItem({...item});
+    }
   }, [item]);
 
   useEffect(() => {
@@ -84,11 +136,24 @@ export default function WorkItemSidebar({ item, onClose, onUpdate }: Props) {
 
   const handleUpdateClick = async () => {
     try {
+      // Prepare the update data
+      const updateData = { ...localItem };
+      
+      // Ensure assignees is an array
+      if (updateData.assignees && typeof updateData.assignees === 'string') {
+        updateData.assignees = (updateData.assignees as string)
+          .split(',')
+          .map((s: string) => s.trim())
+          .filter(Boolean);
+      } else if (!updateData.assignees) {
+        updateData.assignees = [];
+      }
+      
       // Update the task - include ID as query parameter
       const updateResponse = await fetch(`/api/tasks?id=${item.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(localItem)
+        body: JSON.stringify(updateData)
       });
 
       if (!updateResponse.ok) {
@@ -198,10 +263,16 @@ export default function WorkItemSidebar({ item, onClose, onUpdate }: Props) {
             <div className="flex-1">
               <p className="text-xs font-medium text-gray-500">Responsáveis</p>
               <input
-                value={localItem.assignees?.join(", ") || ""}
-                onChange={(e) => handleChange("assignees", e.target.value.split(", "))}
+                value={Array.isArray(localItem.assignees) ? localItem.assignees.join(", ") : localItem.assignees || ""}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  const assigneesArray = value 
+                    ? value.split(',').map(s => s.trim()).filter(Boolean)
+                    : [];
+                  handleChange("assignees", assigneesArray);
+                }}
                 className="w-full p-1.5 text-sm border-0 border-b border-transparent focus:border-blue-500 focus:ring-0 bg-transparent"
-                placeholder="Adicionar responsáveis"
+                placeholder="Adicionar responsáveis (separados por vírgula)"
               />
             </div>
           </div>
@@ -234,15 +305,11 @@ export default function WorkItemSidebar({ item, onClose, onUpdate }: Props) {
               </div>
               <div className="flex-1">
                 <p className="text-xs font-medium text-gray-500">Data de Início</p>
-                <DatePicker
-                  selected={localItem.startDate ? new Date(localItem.startDate) : null}
-                  onChange={(date) =>
-                    handleChange("startDate", date?.toISOString().split("T")[0])
-                  }
-                  locale={ptBR}
+                <FormattedDateInput
+                  value={localItem.startDate || ''}
+                  onChange={(value) => handleChange("startDate", value)}
                   className="w-full p-1.5 text-sm border-0 border-b border-transparent focus:border-blue-500 focus:ring-0 bg-transparent"
-                  dateFormat="dd/MM/yyyy"
-                  placeholderText="--/--/----"
+                  placeholder="dd/mm/aaaa"
                 />
               </div>
             </div>
@@ -255,15 +322,11 @@ export default function WorkItemSidebar({ item, onClose, onUpdate }: Props) {
               </div>
               <div className="flex-1">
                 <p className="text-xs font-medium text-gray-500">Data de Entrega</p>
-                <DatePicker
-                  selected={localItem.dueDate ? new Date(localItem.dueDate) : null}
-                  onChange={(date) =>
-                    handleChange("dueDate", date?.toISOString().split("T")[0])
-                  }
-                  locale={ptBR}
+                <FormattedDateInput
+                  value={localItem.dueDate || ''}
+                  onChange={(value) => handleChange("dueDate", value)}
                   className="w-full p-1.5 text-sm border-0 border-b border-transparent focus:border-blue-500 focus:ring-0 bg-transparent"
-                  dateFormat="dd/MM/yyyy"
-                  placeholderText="--/--/----"
+                  placeholder="dd/mm/aaaa"
                 />
               </div>
             </div>

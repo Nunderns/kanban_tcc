@@ -2,11 +2,21 @@
 import { useState, useRef, useEffect } from "react";
 import { IoMdOptions } from "react-icons/io";
 
-function DisplayDropdown() {
+interface DisplayDropdownProps {
+  visibleProperties: string[];
+  showSubtasks: boolean;
+  onDisplayOptionChange: (option: string, checked: boolean) => void;
+  onToggleSubtasks: (checked: boolean) => void;
+}
+
+function DisplayDropdown({ 
+  visibleProperties, 
+  showSubtasks, 
+  onDisplayOptionChange, 
+  onToggleSubtasks 
+}: DisplayDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
-  const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
-
   const displayOptions = [
     "ID",
     "Responsável",
@@ -23,13 +33,7 @@ function DisplayDropdown() {
     "Ciclo",
   ];
 
-  const toggleOption = (option: string) => {
-    setSelectedOptions((prev) =>
-      prev.includes(option)
-        ? prev.filter((o) => o !== option)
-        : [...prev, option]
-    );
-  };
+
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -54,7 +58,7 @@ function DisplayDropdown() {
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-1 bg-[#2c2c2c] text-white px-3 py-1 rounded-md text-sm border border-gray-700 hover:bg-[#3a3a3a] transition"
+        className="flex items-center gap-1 bg-[#2c2c2c] text-white px-3 py-2 rounded-md text-sm border border-gray-700 hover:bg-[#3a3a3a] transition"
       >
         <IoMdOptions />
         Exibição
@@ -68,9 +72,9 @@ function DisplayDropdown() {
             {displayOptions.map((option) => (
               <button
                 key={option}
-                onClick={() => toggleOption(option)}
+                onClick={() => onDisplayOptionChange(option, !visibleProperties.includes(option))}
                 className={`px-2 py-1 rounded-md text-sm font-medium transition ${
-                  selectedOptions.includes(option)
+                  visibleProperties.includes(option)
                     ? "bg-blue-600 text-white"
                     : "bg-[#2a2a2a] text-white hover:bg-[#333]"
                 }`}
@@ -82,8 +86,13 @@ function DisplayDropdown() {
 
           <div className="mt-4 pt-3 border-t border-gray-700">
             <label className="flex items-center gap-2 text-sm text-white">
-              <input type="checkbox" className="form-checkbox text-blue-600 bg-[#2a2a2a] border-gray-600" />
-              Mostrar subtarefas
+              <input 
+              type="checkbox" 
+              className="form-checkbox text-blue-600 bg-[#2a2a2a] border-gray-600" 
+              checked={showSubtasks}
+              onChange={(e) => onToggleSubtasks(e.target.checked)}
+            />
+            Mostrar subtarefas
             </label>
           </div>
         </div>
