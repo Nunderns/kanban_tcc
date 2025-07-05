@@ -68,8 +68,11 @@ export default function WorkItemSidebar({ item, onClose, onUpdate }: Props) {
 
   // Update local state when item prop changes
   useEffect(() => {
-    setLocalItem(item);
-  }, [item]);
+    // Only update if the item prop has actually changed
+    if (JSON.stringify(item) !== JSON.stringify(localItem)) {
+      setLocalItem(item);
+    }
+  }, [item]); // We can safely remove localItem from deps as we're doing a deep comparison
 
   useEffect(() => {
     fetchActivities();
