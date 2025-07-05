@@ -46,7 +46,8 @@ export default function WorkItemSidebar({ item, onClose, onUpdate }: Props) {
     try {
       const date = new Date(dateString);
       return date.toLocaleDateString('pt-BR');
-    } catch (_) {
+    } catch (error) {
+      console.error('Error formatting date:', error);
       return dateString;
     }
   };
