@@ -63,11 +63,11 @@ export default function ImportSettings() {
     if (selectedFile) {
       setFile(selectedFile);
       // Simular leitura do arquivo para extrair cabeçalhos/campos
-      simulateFileRead(selectedFile);
+      simulateFileRead();
     }
   };
 
-  const simulateFileRead = (selectedFile: File) => {
+  const simulateFileRead = () => {
     // Simular leitura do arquivo para extrair cabeçalhos
     setTimeout(() => {
       // Exemplo de cabeçalhos simulados
