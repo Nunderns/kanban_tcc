@@ -1,10 +1,36 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Sidebar } from "@/components/Sidebar";
 import Link from "next/link";
 import axios from "axios";
+import { 
+  FiCalendar, 
+  FiCheckSquare, 
+  FiClipboard, 
+  FiUsers, 
+  FiChevronRight, 
+  FiClock, 
+  FiFolder, 
+  FiUser, 
+  FiPlus, 
+  FiSearch, 
+  FiBell, 
+  FiMenu 
+} from "react-icons/fi";
+import { motion } from "framer-motion";
+import { Skeleton } from "@/components/ui/skeleton";
+
+// Progress component
+const Progress = ({ value, className = "" }: { value: number; className?: string }) => (
+  <div className={`w-full bg-gray-200 rounded-full h-2.5 ${className}`}>
+    <div 
+      className="bg-blue-600 h-2.5 rounded-full transition-all duration-300"
+      style={{ width: `${value}%` }}
+    />
+  </div>
+);
 
 interface Task {
   id: string;
@@ -25,6 +51,14 @@ interface Member {
 }
 
 export default function Dashboard() {
+  const [isLoading, setIsLoading] = useState(true);
+  const [isClient, setIsClient] = useState(false);
+  const [activeTab, setActiveTab] = useState('overview');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filteredTasks, setFilteredTasks] = useState<Task[]>([]);
+  const [isAddingTask, setIsAddingTask] = useState(false);
+  const [isAddingProject, setIsAddingProject] = useState(false);
+  const [isAddingMember, setIsAddingMember] = useState(false);
   const [stats, setStats] = useState<{
     totalProjects: number;
     totalTasks: number;
@@ -46,117 +80,507 @@ export default function Dashboard() {
   const firstTaskRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
+    setIsClient(true);
+    
     async function fetchData() {
       try {
+        setIsLoading(true);
+        // Simulando carregamento
+        await new Promise(resolve => setTimeout(resolve, 1000));
         const { data } = await axios.get("/api/dashboard");
         setStats(data);
       } catch (error) {
         console.error("Erro ao buscar dados do dashboard:", error);
+      } finally {
+        setIsLoading(false);
       }
     }
-    fetchData();
-  }, []);
+    
+    if (isClient) {
+      fetchData();
+    }
+  }, [isClient]);
 
+  // Filter tasks based on search query
   useEffect(() => {
-    if (stats.tasks.length > 0 && firstTaskRef.current) {
+    if (searchQuery.trim() === '') {
+      setFilteredTasks(stats.tasks);
+    } else {
+      const query = searchQuery.toLowerCase();
+      setFilteredTasks(
+        stats.tasks.filter(
+          task => 
+            task.title.toLowerCase().includes(query) || 
+            task.description.toLowerCase().includes(query)
+        )
+      );
+    }
+  }, [searchQuery, stats.tasks]);
+
+  // Scroll to first task when tasks change
+  useEffect(() => {
+    if (filteredTasks.length > 0 && firstTaskRef.current) {
       firstTaskRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
     }
-  }, [stats.tasks]);
+  }, [filteredTasks]);
+
+  // Handler functions
+  const handleAddTask = () => {
+    setIsAddingTask(true);
+    // In a real app, you would open a modal or navigate to a new task page
+    console.log('Opening new task form...');
+    // Simulate API call
+    setTimeout(() => {
+      setIsAddingTask(false);
+      // Add your task creation logic here
+    }, 1000);
+  };
+
+  const handleAddProject = () => {
+    setIsAddingProject(true);
+    console.log('Opening new project form...');
+    // Simulate API call
+    setTimeout(() => {
+      setIsAddingProject(false);
+      // Add your project creation logic here
+    }, 1000);
+  };
+
+  const handleAddMember = () => {
+    setIsAddingMember(true);
+    console.log('Opening add member form...');
+    // Simulate API call
+    setTimeout(() => {
+      setIsAddingMember(false);
+      // Add your member addition logic here
+    }, 1000);
+  };
 
   return (
-    <div className="flex h-screen">
+    <div className="flex min-h-screen bg-gradient-to-br from-gray-25 to-gray-50">
       <Sidebar />
-      <div className="flex-1 p-6 bg-gray-100 overflow-auto">
-        <h1 className="text-2xl font-semibold text-gray-900">Início</h1>
-        <p className="text-gray-600 mb-6">Monitore todos os seus projetos e tarefas aqui</p>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {[
-            { title: "Total de Projetos", value: stats.totalProjects },
-            { title: "Total de Tarefas", value: stats.totalTasks },
-            { title: "Tarefas encarregadas", value: stats.assignedTasks },
-            { title: "Tarefas finalizadas", value: stats.completedTasks },
-          ].map((item, index) => (
-            <Card
-              key={index}
-              className="flex flex-col items-center justify-center p-6 bg-white shadow-lg rounded-lg"
-            >
-              <CardContent>
-                <p className="text-gray-600 text-center">{item.title}</p>
-                <p className="text-4xl font-bold text-blue-600">{item.value}</p>
-              </CardContent>
-            </Card>
-          ))}
+      <div className="flex-1 p-4 md:p-6 lg:p-8 overflow-auto">
+        {/* Header */}
+        <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+          <div>
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
+              Dashboard
+            </h1>
+            <p className="text-gray-500">Bem-vindo de volta! Aqui está seu resumo diário.</p>
+          </div>
+          
+          <div className="flex items-center gap-4 w-full md:w-auto">
+            <div className="relative flex-1 md:min-w-[300px]">
+              <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Pesquisar..."
+                className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+            <button className="p-2 rounded-full bg-white shadow-sm hover:bg-gray-50 transition-colors">
+              <FiBell className="w-5 h-5 text-gray-600" />
+            </button>
+            <button className="md:hidden p-2 rounded-full bg-white shadow-sm hover:bg-gray-50 transition-colors">
+              <FiMenu className="w-5 h-5 text-gray-600" />
+            </button>
+          </div>
+        </header>
+        {/* Tabs */}
+        <div className="border-b border-gray-200 mb-8">
+          <nav className="flex space-x-8">
+            {['overview', 'projects', 'tasks', 'reports', 'team'].map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`py-3 px-1 font-medium text-sm border-b-2 transition-colors ${
+                  activeTab === tab 
+                    ? 'border-blue-500 text-blue-600' 
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                {tab.charAt(0).toUpperCase() + tab.slice(1)}
+              </button>
+            ))}
+          </nav>
         </div>
 
-        {/* Container para Tarefas e Projetos */}
-        <div className="flex flex-col md:flex-row justify-between gap-4 mt-6">
-          {/* Lista de Tarefas encarregadas */}
-            <div className="bg-white p-6 rounded-lg shadow w-full md:w-2/3 max-h-[400px] overflow-y-auto">
-              <h2 className="text-xl font-semibold">Tarefas encarregadas ({stats.tasks.length})</h2>
-              <div className="mt-4 space-y-4">
-                {stats.tasks.slice(0, 5).map((task, index) => (
-                  <div
-                    key={task.id}
-                    ref={index === 0 ? firstTaskRef : null}
-                    className="bg-gray-100 p-4 rounded-lg shadow"
-                  >
-                    <p className="font-semibold text-gray-800">{task.title}</p>
-                    <p className="text-sm text-gray-500">
-                      {task.description} • {task.remainingDays} Dias Restantes
-                    </p>
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          {isLoading ? (
+            // Skeleton loaders for stats cards
+            Array(4).fill(0).map((_, index) => (
+              <Card key={`skeleton-${index}`} className="overflow-hidden">
+                <CardContent className="p-6">
+                  <div className="flex justify-between items-start">
+                    <div className="w-full">
+                      <Skeleton className="h-4 w-24 mb-2" />
+                      <Skeleton className="h-8 w-16" />
+                    </div>
+                    <Skeleton className="h-10 w-10 rounded-lg" />
                   </div>
-                ))}
-              </div>
+                </CardContent>
+              </Card>
+            ))
+          ) : (
+            [
+              { 
+                title: "Total de Projetos", 
+                value: stats.totalProjects,
+                icon: <FiFolder className="w-6 h-6 text-blue-500" />,
+                color: "bg-blue-100 text-blue-600"
+              },
+              { 
+                title: "Total de Tarefas", 
+                value: stats.totalTasks,
+                icon: <FiClipboard className="w-6 h-6 text-green-500" />,
+                color: "bg-green-100 text-green-600"
+              },
+              { 
+                title: "Tarefas Atribuídas", 
+                value: stats.assignedTasks,
+                icon: <FiUsers className="w-6 h-6 text-yellow-500" />,
+                color: "bg-yellow-100 text-yellow-600"
+              },
+              { 
+                title: "Tarefas Concluídas", 
+                value: stats.completedTasks,
+                icon: <FiCheckSquare className="w-6 h-6 text-purple-500" />,
+                color: "bg-purple-100 text-purple-600"
+              },
+            ].map((item, index) => (
+              <motion.div
+                key={item.title}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: index * 0.1 }}
+              >
+                <Card className="overflow-hidden transition-all duration-300 hover:shadow-lg h-full">
+                  <CardContent className="p-6">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <p className="text-sm font-medium text-gray-500">{item.title}</p>
+                        <p className="text-3xl font-bold mt-1">{item.value}</p>
+                      </div>
+                      <div className={`p-3 rounded-lg ${item.color} bg-opacity-20`}>
+                        {item.icon}
+                      </div>
+                    </div>
+                    {item.title === "Tarefas Concluídas" && stats.totalTasks > 0 && (
+                      <div className="mt-4">
+                        <div className="flex justify-between text-sm text-gray-500 mb-1">
+                          <span>Progresso</span>
+                          <span>{Math.round((stats.completedTasks / stats.totalTasks) * 100)}%</span>
+                        </div>
+                        <Progress value={(stats.completedTasks / stats.totalTasks) * 100} className="h-2" />
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))
+          )}
+        </div>
 
-              {/* Botão para visualizar todas as tarefas */}
-              {stats.tasks.length > 5 && (
-                <Link
-                  href="/dashboard/my-tasks"
-                  className="block w-full text-center text-blue-600 mt-4 hover:underline"
-                >
-                  Mostrar Todas
-                </Link>
-              )}
-            </div>
+        {/* Tasks and Projects */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+          {/* Tasks List */}
+          <Card className="lg:col-span-2">
+            {isLoading ? (
+              <div>
+                <CardHeader className="pb-3">
+                  <Skeleton className="h-6 w-32 mb-2" />
+                  <Skeleton className="h-4 w-24" />
+                </CardHeader>
+                <CardContent>
+                  {Array(3).fill(0).map((_, idx) => (
+                    <div key={`task-skeleton-${idx}`} className="mb-4">
+                      <Skeleton className="h-5 w-3/4 mb-2" />
+                      <Skeleton className="h-4 w-full mb-1" />
+                      <Skeleton className="h-3 w-24" />
+                    </div>
+                  ))}
+                </CardContent>
+              </div>
+            ) : (
+              <>
+                <CardHeader className="pb-3">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <CardTitle className="text-lg font-semibold">Minhas Tarefas</CardTitle>
+                      <CardDescription>{stats.tasks.length} tarefas atribuídas</CardDescription>
+                    </div>
+                    <button 
+                      onClick={() => setActiveTab('tasks')}
+                      className="text-sm text-blue-600 hover:underline flex items-center"
+                    >
+                      Ver todas <FiChevronRight className="ml-1" />
+                    </button>
+                  </div>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <div className="divide-y divide-gray-100">
+                    {filteredTasks.slice(0, 5).map((task, index) => (
+                      <motion.div 
+                        key={task.id}
+                        ref={index === 0 ? firstTaskRef : null}
+                        className="p-4 hover:bg-gray-50 transition-colors duration-200 rounded-lg"
+                        whileHover={{ scale: 1.01, boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' }}
+                      >
+                        <div className="flex items-start">
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-gray-900 truncate">{task.title}</p>
+                            <p className="text-sm text-gray-500 mt-1 line-clamp-2">{task.description}</p>
+                            <div className="flex items-center mt-2 text-xs text-gray-500">
+                              <FiClock className="mr-1" />
+                              <span>{task.remainingDays} {task.remainingDays === 1 ? 'dia restante' : 'dias restantes'}</span>
+                            </div>
+                          </div>
+                          <div className="ml-4 flex-shrink-0">
+                            <div className="h-2.5 w-2.5 rounded-full bg-blue-500"></div>
+                          </div>
+                        </div>
+                      </motion.div>
+                    ))}
+                    {stats.tasks.length === 0 && (
+                      <motion.div 
+                        className="p-6 text-center text-gray-500"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.2 }}
+                      >
+                        <div className="flex flex-col items-center justify-center py-8">
+                          <FiClipboard className="w-12 h-12 text-gray-300 mb-4" />
+                          <p className="text-gray-500">Nenhuma tarefa atribuída no momento.</p>
+                          <button 
+                            onClick={handleAddTask}
+                            disabled={isAddingTask}
+                            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center disabled:opacity-50"
+                          >
+                            {isAddingTask ? (
+                              <>
+                                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                Adicionando...
+                              </>
+                            ) : (
+                              <>
+                                <FiPlus className="mr-2" /> Nova Tarefa
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      </motion.div>
+                    )}
+                  </div>
+                </CardContent>
+              </>
+            )}
+          </Card>
 
           {/* Lista de Projetos */}
-          <div className="bg-white p-6 rounded-lg shadow w-full md:w-1/3">
-            <h2 className="text-xl font-semibold">Projetos ({stats.projects.length})</h2>
-            <div className="mt-4 space-x-2">
-              {stats.projects.map((project) => (
-                <button
-                  key={project.id}
-                  className="px-4 py-2 bg-gray-200 rounded-md hover:bg-gray-300 text-gray-700"
-                >
-                  {project.name}
-                </button>
-              ))}
-            </div>
-          </div>
+          <Card>
+            {isLoading ? (
+              <div>
+                <CardHeader>
+                  <Skeleton className="h-6 w-32 mb-2" />
+                  <Skeleton className="h-4 w-24" />
+                </CardHeader>
+                <CardContent>
+                  {Array(3).fill(0).map((_, idx) => (
+                    <div key={`project-skeleton-${idx}`} className="flex items-center mb-3">
+                      <Skeleton className="h-10 w-10 rounded-lg mr-3" />
+                      <div className="flex-1">
+                        <Skeleton className="h-4 w-3/4 mb-1" />
+                        <Skeleton className="h-3 w-1/2" />
+                      </div>
+                    </div>
+                  ))}
+                </CardContent>
+              </div>
+            ) : (
+              <>
+                <CardHeader>
+                  <CardTitle className="text-lg">Meus Projetos</CardTitle>
+                  <CardDescription>{stats.projects.length} projetos ativos</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {stats.projects.map((project) => (
+                      <Link 
+                        key={project.id}
+                        href={`/projects/${project.id}`}
+                        className="block p-3 rounded-lg border border-gray-100 hover:border-blue-200 hover:bg-blue-50 transition-colors duration-200 group"
+                      >
+                        <div className="flex items-center">
+                          <div className="p-2 rounded-lg bg-blue-100 text-blue-600 mr-3 group-hover:bg-blue-200 transition-colors duration-200">
+                            <FiFolder className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <p className="font-medium text-gray-900 group-hover:text-blue-600">{project.name}</p>
+                            <p className="text-xs text-gray-500">Última atualização: 2 dias atrás</p>
+                          </div>
+                          <FiChevronRight className="ml-auto text-gray-400 group-hover:text-blue-600 transition-colors duration-200" />
+                        </div>
+                      </Link>
+                    ))}
+                    {stats.projects.length === 0 && (
+                      <div className="text-center py-6">
+                        <div className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-gray-200 rounded-lg">
+                          <FiFolder className="w-12 h-12 text-gray-300 mb-4" />
+                          <p className="text-gray-500 mb-4">Nenhum projeto encontrado</p>
+                          <button 
+                            onClick={handleAddProject}
+                            disabled={isAddingProject}
+                            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center disabled:opacity-50"
+                          >
+                            {isAddingProject ? (
+                              <>
+                                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                Criando...
+                              </>
+                            ) : (
+                              <>
+                                <FiPlus className="mr-2" /> Criar Projeto
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </>
+            )}
+          </Card>
         </div>
 
-        {/* Lista de Membros */}
-        <div className="bg-white p-6 rounded-lg shadow mt-6 max-w-4xl">
-          <h2 className="text-xl font-semibold">Pessoas ({stats.members.length})</h2>
-          <div className="grid grid-cols-2 gap-4 mt-4">
-            {stats.members.map((member) => (
-              <div
-                key={member.id}
-                className="flex items-center p-4 bg-gray-100 rounded-lg shadow"
-              >
-                <div className="text-xl font-semibold text-blue-600">
-                  {member.name[0]}
+        {/* Team Members */}
+        <Card className="mt-6">
+          {isLoading ? (
+            <div>
+              <CardHeader>
+                <Skeleton className="h-6 w-32 mb-2" />
+                <Skeleton className="h-4 w-24" />
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  {Array(4).fill(0).map((_, idx) => (
+                    <div key={`member-skeleton-${idx}`} className="flex items-center">
+                      <Skeleton className="h-10 w-10 rounded-full mr-3" />
+                      <div>
+                        <Skeleton className="h-4 w-24 mb-1" />
+                        <Skeleton className="h-3 w-32" />
+                      </div>
+                    </div>
+                  ))}
                 </div>
-                <div className="ml-4">
-                  <p className="font-semibold">{member.name}</p>
-                  <p className="text-sm text-gray-500">{member.email}</p>
+              </CardContent>
+            </div>
+          ) : (
+            <>
+              <CardHeader>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <CardTitle>Membros da Equipe</CardTitle>
+                    <CardDescription>{stats.members.length} pessoas na equipe</CardDescription>
+                  </div>
+                  <button 
+                    onClick={() => setActiveTab('team')}
+                    className="text-sm text-blue-600 hover:underline flex items-center"
+                  >
+                    Ver todos <FiUsers className="ml-1" />
+                  </button>
                 </div>
-              </div>
-            ))}
-          </div>
-        </div>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  {stats.members.map((member) => (
+                    <div
+                      key={member.id}
+                      className="flex items-center p-4 rounded-lg border border-gray-100 hover:border-blue-200 hover:bg-blue-50 transition-colors duration-200"
+                    >
+                      <div className="flex items-center justify-center w-10 h-10 rounded-full bg-blue-100 text-blue-600 font-semibold">
+                        {member.name[0].toUpperCase()}
+                      </div>
+                      <div className="ml-4 overflow-hidden">
+                        <p className="font-medium text-gray-900 truncate">{member.name}</p>
+                        <p className="text-sm text-gray-500 truncate">{member.email}</p>
+                      </div>
+                    </div>
+                  ))}
+                  {stats.members.length === 0 && (
+                    <div className="col-span-full text-center py-8">
+                      <div className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-gray-200 rounded-lg">
+                        <FiUsers className="w-12 h-12 text-gray-300 mb-4" />
+                        <p className="text-gray-500 mb-4">Nenhum membro encontrado</p>
+                        <button 
+                          onClick={handleAddMember}
+                          disabled={isAddingMember}
+                          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center disabled:opacity-50"
+                        >
+                          {isAddingMember ? (
+                            <>
+                              <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                              </svg>
+                              Adicionando...
+                            </>
+                          ) : (
+                            <>
+                              <FiUser className="mr-2" /> Adicionar Membro
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </>
+          )}
+        </Card>
       </div>
+
+      {/* Floating Action Button with Dropdown */}
+      {isClient && !isLoading && (
+        <div className="fixed bottom-8 right-8 z-10">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="relative"
+          >
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => {
+                // Toggle between actions or open a menu
+                // For now, we'll default to adding a task
+                handleAddTask();
+              }}
+              className="w-14 h-14 rounded-full bg-blue-600 text-white flex items-center justify-center shadow-lg hover:bg-blue-700 transition-colors"
+              aria-label="Adicionar novo item"
+            >
+              {isAddingTask || isAddingProject || isAddingMember ? (
+                <svg className="animate-spin h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              ) : (
+                <FiPlus className="w-6 h-6" />
+              )}
+            </motion.button>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 }
