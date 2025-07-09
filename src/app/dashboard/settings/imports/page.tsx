@@ -28,7 +28,7 @@ export default function ImportSettings() {
   const [error, setError] = useState<string | null>(null);
   const [mapping, setMapping] = useState<Record<string, string>>({});
   const [availableFields, setAvailableFields] = useState<string[]>([]);
-  const [filePreview, setFilePreview] = useState<any[]>([]);
+  const [filePreview, setFilePreview] = useState<Record<string, string>[]>([]);
 
   const links = [
     { href: "/dashboard/settings/general", label: "Geral" },
@@ -67,7 +67,7 @@ export default function ImportSettings() {
     }
   };
 
-  const simulateFileRead = (file: File) => {
+  const simulateFileRead = (selectedFile: File) => {
     // Simular leitura do arquivo para extrair cabeçalhos
     setTimeout(() => {
       // Exemplo de cabeçalhos simulados
