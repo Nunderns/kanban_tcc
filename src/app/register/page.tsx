@@ -2,6 +2,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "react-hot-toast";
+import { Lock, Mail, User, ArrowRight } from "lucide-react";
+import Link from "next/link";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -66,60 +68,116 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center h-screen bg-gray-100 p-6">
-      <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
-        <h1 className="text-3xl font-bold text-center mb-6 text-blue-600">
-          Criar Conta
-        </h1>
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-white flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Crie sua conta</h1>
+          <p className="text-gray-500">Preencha os dados abaixo para começar</p>
+        </div>
 
-        <form onSubmit={handleRegister}>
-          <input
-            type="text"
-            placeholder="Nome"
-            className={`mb-1 w-full p-3 border ${
-              errors.name ? "border-red-500" : "border-gray-300"
-            } rounded-md text-black focus:outline-none focus:ring-2 focus:ring-blue-500`}
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-          />
-          {errors.name && <p className="text-red-500 text-sm mb-3">{errors.name}</p>}
+        <div className="bg-white p-8 rounded-2xl shadow-xl border border-gray-100">
+          <form onSubmit={handleRegister} className="space-y-5">
+            <div>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <User size={18} className="text-gray-400" />
+                </div>
+                <input
+                  type="text"
+                  placeholder="Nome completo"
+                  className={`pl-10 w-full p-3 border ${
+                    errors.name ? 'border-red-300' : 'border-gray-200'
+                  } rounded-xl text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all`}
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                />
+              </div>
+              {errors.name && (
+                <p className="mt-1.5 text-sm text-red-500 flex items-center">
+                  <span className="ml-1">{errors.name}</span>
+                </p>
+              )}
+            </div>
 
-          <input
-            type="email"
-            placeholder="Email"
-            className={`mb-1 w-full p-3 border ${
-              errors.email ? "border-red-500" : "border-gray-300"
-            } rounded-md text-black focus:outline-none focus:ring-2 focus:ring-blue-500`}
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-          {errors.email && <p className="text-red-500 text-sm mb-3">{errors.email}</p>}
+            <div>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Mail size={18} className="text-gray-400" />
+                </div>
+                <input
+                  type="email"
+                  placeholder="Seu email"
+                  className={`pl-10 w-full p-3 border ${
+                    errors.email ? 'border-red-300' : 'border-gray-200'
+                  } rounded-xl text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all`}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              </div>
+              {errors.email && (
+                <p className="mt-1.5 text-sm text-red-500 flex items-center">
+                  <span className="ml-1">{errors.email}</span>
+                </p>
+              )}
+            </div>
 
-          <input
-            type="password"
-            placeholder="Senha"
-            className={`mb-1 w-full p-3 border ${
-              errors.password ? "border-red-500" : "border-gray-300"
-            } rounded-md text-black focus:outline-none focus:ring-2 focus:ring-blue-500`}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-          {errors.password && <p className="text-red-500 text-sm mb-3">{errors.password}</p>}
+            <div>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Lock size={18} className="text-gray-400" />
+                </div>
+                <input
+                  type="password"
+                  placeholder="Sua senha"
+                  className={`pl-10 w-full p-3 border ${
+                    errors.password ? 'border-red-300' : 'border-gray-200'
+                  } rounded-xl text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all`}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+              </div>
+              {errors.password && (
+                <p className="mt-1.5 text-sm text-red-500 flex items-center">
+                  <span className="ml-1">{errors.password}</span>
+                </p>
+              )}
+            </div>
 
-          <button
-            type="submit"
-            className="w-full bg-blue-600 text-white py-3 rounded-md hover:bg-blue-700 transition"
-          >
-            Criar Conta
-          </button>
-        </form>
+            <div className="pt-2">
+              <button
+                type="submit"
+                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-3 px-4 rounded-xl transition-all duration-200 flex items-center justify-center space-x-2"
+              >
+                <span>Criar conta</span>
+                <ArrowRight size={18} className="text-white" />
+              </button>
+            </div>
+          </form>
 
-        <p className="mt-4 text-center text-gray-600">
-          Já tem uma conta?{" "}
-          <a href="/login" className="text-blue-500 font-medium hover:underline">
-            Entrar
-          </a>
-        </p>
+          <div className="mt-6 text-center">
+            <p className="text-sm text-gray-600">
+              Já possui uma conta?{" "}
+              <Link 
+                href="/login" 
+                className="font-medium text-indigo-600 hover:text-indigo-500 transition-colors"
+              >
+                Fazer login
+              </Link>
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-6 text-center">
+          <p className="text-xs text-gray-500">
+            Ao se registrar, você concorda com nossos{" "}
+            <a href="#" className="text-indigo-600 hover:underline">
+              Termos de Serviço
+            </a>{" "}e{" "}
+            <a href="#" className="text-indigo-600 hover:underline">
+              Política de Privacidade
+            </a>.
+          </p>
+        </div>
       </div>
     </div>
   );
