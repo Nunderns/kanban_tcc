@@ -4,7 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { Resend } from 'resend';
 import { randomBytes } from 'crypto';
-import { NextApiRequest, NextApiResponse } from 'next';
+
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -23,9 +23,9 @@ export async function POST(req: Request) {
     }
 
     // Check if user already exists
-    const existingUser = await prisma.user.findUnique({
-      where: { email },
-    });
+    // const existingUser = await prisma.user.findUnique({
+    //   where: { email },
+    // });
 
     // Check if invitation already exists and is pending
     const existingInvitation = await prisma.invitation.findFirst({
@@ -49,7 +49,7 @@ export async function POST(req: Request) {
     expiresAt.setDate(expiresAt.getDate() + 7); // 7 days expiry
 
     // Create invitation
-    const invitation = await prisma.invitation.create({
+    await prisma.invitation.create({
       data: {
         email,
         role,
@@ -74,7 +74,7 @@ export async function POST(req: Request) {
     // Use a verified email address from your Resend account
     const fromEmail = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
     
-    const { data, error } = await resend.emails.send({
+    const { error } = await resend.emails.send({
       from: `Kanban TCC <${fromEmail}>`,
       to: email,
       reply_to: fromEmail,
