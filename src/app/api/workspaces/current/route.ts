@@ -6,39 +6,58 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 export async function GET() {
-  const session = await getServerSession(authOptions);
+  try {
+    const session = await getServerSession(authOptions);
 
-  if (!session?.user?.email) {
-    return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
-  }
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
+    }
 
-  const user = await prisma.user.findUnique({
-    where: { email: session.user.email },
-    include: {
-      workspaces: {
-        orderBy: { createdAt: "asc" },
-        take: 1,
+    // Find the user with their workspace memberships
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email },
+      include: {
+        workspaceMembers: {
+          include: {
+            workspace: true
+          },
+          orderBy: { joinedAt: "asc" },
+          take: 1
+        }
       },
-    },
-  });
+    });
 
-  const workspace = user?.workspaces?.[0];
+    if (!user) {
+      return NextResponse.json({ error: "Usuário não encontrado" }, { status: 404 });
+    }
 
-  if (!workspace) {
-    return NextResponse.json({ error: "Workspace não encontrada" }, { status: 404 });
+    const workspaceMember = user.workspaceMembers[0];
+
+    if (!workspaceMember) {
+      return NextResponse.json({ error: "Nenhum workspace encontrado" }, { status: 404 });
+    }
+
+    const workspace = workspaceMember.workspace;
+
+    // Count all members in the workspace
+    const memberCount = await prisma.workspaceMember.count({
+      where: { workspaceId: workspace.id },
+    });
+
+    return NextResponse.json({
+      id: workspace.id,
+      nome: workspace.name,
+      slug: workspace.slug,
+      tamanhoEmpresa: workspace.companySize,
+      email: user.email,
+      funcao: workspaceMember.role,
+      membros: memberCount,
+    });
+  } catch (error) {
+    console.error('Error in /api/workspaces/current:', error);
+    return NextResponse.json(
+      { error: 'Erro ao carregar o workspace' },
+      { status: 500 }
+    );
   }
-
-  const membros = await prisma.workspaceMember.count({
-    where: { workspaceId: workspace.id },
-  });
-
-  return NextResponse.json({
-    id: workspace.id,
-    nome: workspace.name,
-    slug: workspace.slug,
-    tamanhoEmpresa: workspace.companySize,
-    email: user.email,
-    funcao: "Admin",
-    membros,
-  });
 }
