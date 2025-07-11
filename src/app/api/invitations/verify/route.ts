@@ -35,6 +35,14 @@ export async function POST(req: Request) {
       });
     }
 
+    // Ensure user has an email address
+    if (!session.user.email) {
+      return NextResponse.json(
+        { error: 'Usuário não possui um endereço de e-mail' },
+        { status: 400 }
+      );
+    }
+
     // Check if user is already a member of the workspace
     const existingMember = await prisma.workspaceMember.findFirst({
       where: {
