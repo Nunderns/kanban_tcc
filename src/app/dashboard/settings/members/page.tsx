@@ -18,7 +18,7 @@ function InviteModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-  const { data: session } = useSession();
+  // Removida sessão não utilizada
 
   const handleChange = <K extends keyof InviteField>(
     index: number,
@@ -34,7 +34,6 @@ function InviteModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void
   const handleRemove = (index: number) => setFields(fields.filter((_, i) => i !== index));
 
   const handleSubmit = async () => {
-    if (!session?.user?.email) return;
     
     setIsLoading(true);
     setError(null);
@@ -42,7 +41,7 @@ function InviteModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void
     try {
       const workspaceId = 1; // Replace with actual workspace ID
       
-      const results = await Promise.all(
+      await Promise.all(
         fields.map(async (field) => {
           if (!field.email.trim()) return null;
           
@@ -204,7 +203,7 @@ type Member = {
 };
 
 export default function MembersPage() {
-  const { data: session, status } = useSession();
+  const { status } = useSession();
   const pathname = usePathname();
   const [search, setSearch] = useState("");
   const [showModal, setShowModal] = useState(false);
