@@ -40,7 +40,16 @@ try {
   
   resendClient = new ResendClient(RESEND_API_KEY) as unknown as ResendClient & {
     emails: {
-      send: (payload: any) => Promise<{ data?: any; error?: any }>;
+      send: (payload: {
+        from: string;
+        to: string | string[];
+        subject: string;
+        html: string;
+        reply_to?: string;
+      }) => Promise<{
+        data?: { id: string };
+        error?: { message: string; name: string; statusCode: number };
+      }>;
     };
   };
   
@@ -58,7 +67,16 @@ try {
 // Export the Resend client with proper typing
 export const resend: ResendClient & {
   emails: {
-    send: (payload: any) => Promise<{ data?: any; error?: any }>;
+    send: (payload: {
+      from: string;
+      to: string | string[];
+      subject: string;
+      html: string;
+      reply_to?: string;
+    }) => Promise<{
+      data?: { id: string };
+      error?: { message: string; name: string; statusCode: number };
+    }>;
   };
 } | null = resendClient;
 
