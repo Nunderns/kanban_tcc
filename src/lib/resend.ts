@@ -1,9 +1,27 @@
-import { Resend } from 'resend';
+import { Resend as ResendClient } from 'resend';
 
 // Environment variables
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const RESEND_FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'noreply@kanbantcc.com';
 const NODE_ENV = process.env.NODE_ENV || 'development';
+
+// Extend the Resend client type to include the emails property
+declare module 'resend' {
+  interface Resend {
+    emails: {
+      send(payload: {
+        from: string;
+        to: string | string[];
+        subject: string;
+        html: string;
+        reply_to?: string;
+      }): Promise<{
+        data?: { id: string; };
+        error?: { message: string; name: string; statusCode: number };
+      }>;
+    };
+  }
+}
 
 // Log environment status
 console.log('=== RESEND EMAIL MODULE INITIALIZATION ===');
@@ -13,14 +31,19 @@ console.log('RESEND_FROM_EMAIL:', RESEND_FROM_EMAIL);
 console.log('NEXTAUTH_URL:', process.env.NEXTAUTH_URL || 'Não definido');
 
 // Initialize Resend client
-let resendClient: Resend | null = null;
+let resendClient: ResendClient | null = null;
 
 try {
   if (!RESEND_API_KEY) {
     throw new Error('RESEND_API_KEY is not defined in environment variables');
   }
   
-  resendClient = new Resend(RESEND_API_KEY);
+  resendClient = new ResendClient(RESEND_API_KEY) as unknown as ResendClient & {
+    emails: {
+      send: (payload: any) => Promise<{ data?: any; error?: any }>;
+    };
+  };
+  
   console.log('Resend client initialized successfully');
 } catch (error) {
   console.error('Failed to initialize Resend client:', error);
@@ -32,7 +55,12 @@ try {
   console.warn('Running without email functionality in development mode');
 }
 
-export const resend = resendClient;
+// Export the Resend client with proper typing
+export const resend: ResendClient & {
+  emails: {
+    send: (payload: any) => Promise<{ data?: any; error?: any }>;
+  };
+} | null = resendClient;
 
 export const sendInvitationEmail = async (params: {
   to: string | string[];
@@ -43,38 +71,34 @@ export const sendInvitationEmail = async (params: {
   
   const { to, token, workspaceName } = params;
   const recipients = Array.isArray(to) ? to : [to];
-  
-  // Use environment email or fallback
-  const fromEmail = RESEND_FROM_EMAIL;
   const inviteLink = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/invite?token=${token}`;
   
-  // Log email details
-  console.log('Email details:', {
-    to: recipients,
-    from: fromEmail,
-    subject: `Você foi convidado para o workspace ${workspaceName}`,
-    inviteLink: inviteLink,
-    environment: NODE_ENV
-  });
-  
-  // If in development or no API key, just log the link
-  if (NODE_ENV !== 'production' || !resend) {
-    console.log('=== DEVELOPMENT MODE: EMAIL NOT SENT ===');
-    console.log('Simulated invite link:', inviteLink);
+  // In development or if Resend client is not available, log the email instead of sending it
+  if (NODE_ENV !== 'production' || !resendClient) {
+    console.log('\n=== EMAIL NOT SENT (Development Mode) ===');
     console.log('To:', recipients);
     console.log('Subject:', `Você foi convidado para o workspace ${workspaceName}`);
-    return { id: 'local-dev-simulated' };
+    console.log('Invite Link:', inviteLink);
+    console.log('\n');
+    return { 
+      id: 'simulated-email-id', 
+      message: 'Email logged instead of sent in development',
+      recipients,
+      workspaceName,
+      inviteLink
+    };
   }
 
   try {
     console.log('Sending email via Resend...');
     
-    if (!resend) {
+    // This check is redundant but keeps TypeScript happy
+    if (!resendClient) {
       throw new Error('Resend client is not initialized');
     }
 
-    const { data, error } = await resend.emails.send({
-      from: `Kanban TCC <${fromEmail}>`,
+    const { data, error } = await resendClient.emails.send({
+      from: `Kanban TCC <${RESEND_FROM_EMAIL}>`,
       to: recipients,
       subject: `Você foi convidado para o workspace ${workspaceName}`,
       html: `
@@ -88,7 +112,7 @@ export const sendInvitationEmail = async (params: {
           <p style="background-color: #f3f4f6; padding: 10px; border-radius: 4px; font-family: monospace; word-break: break-all; font-size: 14px;">${inviteLink}</p>
           <p style="color: #6b7280; font-size: 14px; margin-top: 20px;">Este link expirará em 7 dias.</p>
         </div>
-      `,
+      `
     });
 
     if (error) {
@@ -100,6 +124,10 @@ export const sendInvitationEmail = async (params: {
     return data;
   } catch (error) {
     console.error('Unexpected error while sending email:', error);
+    // In production, we might want to log this to an error tracking service
+    if (NODE_ENV === 'production') {
+      console.error('Production error sending email:', error);
+    }
     throw error;
   }
 };
