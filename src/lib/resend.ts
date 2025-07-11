@@ -1,91 +1,88 @@
-import { Resend as ResendClient } from 'resend';
-
 // Environment variables
+const NODE_ENV = process.env.NODE_ENV || 'development';
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const RESEND_FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'noreply@kanbantcc.com';
-const NODE_ENV = process.env.NODE_ENV || 'development';
-
-// Extend the Resend client type to include the emails property
-declare module 'resend' {
-  interface Resend {
-    emails: {
-      send(payload: {
-        from: string;
-        to: string | string[];
-        subject: string;
-        html: string;
-        reply_to?: string;
-      }): Promise<{
-        data?: { id: string; };
-        error?: { message: string; name: string; statusCode: number };
-      }>;
-    };
-  }
-}
 
 // Log environment status
-console.log('=== RESEND EMAIL MODULE INITIALIZATION ===');
+console.log('=== EMAIL MODULE INITIALIZATION ===');
 console.log('NODE_ENV:', NODE_ENV);
 console.log('RESEND_API_KEY:', RESEND_API_KEY ? '*** (presente)' : 'Ausente!');
 console.log('RESEND_FROM_EMAIL:', RESEND_FROM_EMAIL);
 console.log('NEXTAUTH_URL:', process.env.NEXTAUTH_URL || 'Não definido');
 
-// Initialize Resend client
-let resendClient: ResendClient | null = null;
-
-// Only initialize in production or if we have an API key
-const shouldInitialize = NODE_ENV === 'production' || RESEND_API_KEY;
-
-if (shouldInitialize) {
-  try {
-    if (!RESEND_API_KEY) {
-      if (NODE_ENV === 'production') {
-        throw new Error('RESEND_API_KEY is required in production environment');
-      }
-      console.warn('RESEND_API_KEY is not defined. Email functionality will be disabled.');
-    } else {
-      resendClient = new ResendClient(RESEND_API_KEY) as unknown as ResendClient & {
-        emails: {
-          send: (payload: {
-            from: string;
-            to: string | string[];
-            subject: string;
-            html: string;
-            reply_to?: string;
-          }) => Promise<{
-            data?: { id: string };
-            error?: { message: string; name: string; statusCode: number };
-          }>;
-        };
-      };
-      console.log('Resend client initialized successfully');
-    }
-  } catch (error) {
-    console.error('Failed to initialize Resend client:', error);
-    if (NODE_ENV === 'production') {
-      throw new Error('Failed to initialize email service');
-    }
-    console.warn('Running without email functionality');
-  }
-} else {
-  console.warn('Running without email functionality (development mode)');
-}
-
-// Export the Resend client with proper typing
-export const resend: ResendClient & {
+// Create a mock Resend client that does nothing but log calls
+const mockResendClient = {
   emails: {
-    send: (payload: {
+    send: async (payload: {
       from: string;
       to: string | string[];
       subject: string;
       html: string;
       reply_to?: string;
-    }) => Promise<{
+    }): Promise<{
       data?: { id: string };
-      error?: { message: string; name: string; statusCode: number };
-    }>;
-  };
-} | null = resendClient;
+      error?: { message: string; statusCode: number };
+    }> => {
+      console.log('[MOCK] Email would be sent:', {
+        to: payload.to,
+        subject: payload.subject,
+        from: payload.from,
+        reply_to: payload.reply_to,
+        preview: payload.html.substring(0, 100) + '...',
+      });
+      return { data: { id: 'mock-email-id' } };
+    },
+  },
+};
+
+// Try to initialize the real Resend client if possible
+let resendClient: typeof mockResendClient | null = null;
+
+const initResend = () => {
+  if (resendClient) return resendClient;
+  
+  if (RESEND_API_KEY) {
+    try {
+      // Dynamic import to prevent build-time errors if the module is not available
+      const { Resend } = require('resend');
+      resendClient = new Resend(RESEND_API_KEY);
+      console.log('Resend client initialized successfully');
+    } catch (error) {
+      console.error('Failed to initialize Resend client:', error);
+      if (NODE_ENV === 'production') {
+        console.warn('Running in production without email functionality');
+      } else {
+        console.warn('Using mock email client in development');
+        resendClient = mockResendClient;
+      }
+    }
+  } else {
+    console.warn('RESEND_API_KEY not set. Using mock email client.');
+    resendClient = mockResendClient;
+  }
+  
+  return resendClient;
+};
+
+// Export the Resend client with proper typing
+export const resend = {
+  emails: {
+    send: async (payload: {
+      from: string;
+      to: string | string[];
+      subject: string;
+      html: string;
+      reply_to?: string;
+    }) => {
+      const client = initResend();
+      if (!client) {
+        console.warn('Email client not initialized. Email not sent.');
+        return { error: { message: 'Email client not initialized', statusCode: 500 } };
+      }
+      return client.emails.send(payload);
+    },
+  },
+};
 
 export const sendInvitationEmail = async (params: {
   to: string | string[];
