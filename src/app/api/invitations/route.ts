@@ -18,7 +18,10 @@ declare module 'resend' {
         subject: string;
         html: string;
         reply_to?: string;
-      }): Promise<{ data?: any; error?: any }>;
+      }): Promise<{ 
+        data?: { id: string; message: string };
+        error?: { message: string; name: string; statusCode: number };
+      }>;
     };
   }
 }
@@ -109,7 +112,7 @@ export async function POST(req: Request) {
     };
 
     try {
-      const { data, error } = await resend.emails.send(emailData);
+      const { error } = await resend.emails.send(emailData);
 
       if (error) {
         console.error('Error sending email:', error);
