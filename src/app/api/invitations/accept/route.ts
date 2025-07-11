@@ -435,7 +435,7 @@ export async function POST(req: Request) {
         data: {
           workspace: typeof updatedWorkspace;
           user: {
-            id: string;
+            id: string | number;  // Handle both string and number types for ID
             email: string | null;
             name: string | null;
           };
