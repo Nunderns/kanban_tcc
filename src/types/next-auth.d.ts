@@ -13,9 +13,7 @@ declare module 'next-auth' {
 
 declare module 'next-auth/react' {
   export function useSession(): {
-    data: {
-      session: Session | null;
-    };
+    data: Session | null;
     status: 'loading' | 'authenticated' | 'unauthenticated';
   };
   
