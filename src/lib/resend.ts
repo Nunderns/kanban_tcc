@@ -90,12 +90,14 @@ const initResend = (): ResendClientWithEmails => {
             try {
               const response = await clientWithEmails.emails.send(payload);
               return { data: { id: response.id } };
-            } catch (error: any) {
+            } catch (error) {
               console.error('Error sending email:', error);
+              const errorMessage = error instanceof Error ? error.message : 'Failed to send email';
+              const statusCode = (error as { statusCode?: number }).statusCode || 500;
               return {
                 error: {
-                  message: error.message || 'Failed to send email',
-                  statusCode: error.statusCode || 500,
+                  message: errorMessage,
+                  statusCode,
                 },
               };
             }
