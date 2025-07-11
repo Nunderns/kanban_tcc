@@ -10,19 +10,24 @@ console.log('RESEND_API_KEY:', RESEND_API_KEY ? '*** (presente)' : 'Ausente!');
 console.log('RESEND_FROM_EMAIL:', RESEND_FROM_EMAIL);
 console.log('NEXTAUTH_URL:', process.env.NEXTAUTH_URL || 'Não definido');
 
+// Define types for the Resend client
+type EmailPayload = {
+  from: string;
+  to: string | string[];
+  subject: string;
+  html: string;
+  reply_to?: string;
+};
+
+type EmailResponse = {
+  data?: { id: string };
+  error?: { message: string; statusCode: number };
+};
+
 // Create a mock Resend client that does nothing but log calls
-const mockResendClient = {
+const createMockResendClient = () => ({
   emails: {
-    send: async (payload: {
-      from: string;
-      to: string | string[];
-      subject: string;
-      html: string;
-      reply_to?: string;
-    }): Promise<{
-      data?: { id: string };
-      error?: { message: string; statusCode: number };
-    }> => {
+    send: async (payload: EmailPayload): Promise<EmailResponse> => {
       console.log('[MOCK] Email would be sent:', {
         to: payload.to,
         subject: payload.subject,
@@ -33,53 +38,102 @@ const mockResendClient = {
       return { data: { id: 'mock-email-id' } };
     },
   },
-};
+});
 
-// Try to initialize the real Resend client if possible
-let resendClient: typeof mockResendClient | null = null;
+// Type for the Resend client with emails property
+interface ResendClientWithEmails {
+  emails: {
+    send: (payload: EmailPayload) => Promise<EmailResponse>;
+  };
+}
 
-const initResend = () => {
+// Extend the Resend module types
+declare module 'resend' {
+  interface Resend {
+    emails: {
+      send(payload: EmailPayload): Promise<{ id: string }>;
+    };
+  }
+}
+
+let resendClient: ResendClientWithEmails | null = null;
+let resendInitialized = false;
+
+// Use a type assertion to handle the dynamic import
+const initResend = (): ResendClientWithEmails => {
   if (resendClient) return resendClient;
+  if (resendInitialized) return createMockResendClient();
   
-  if (RESEND_API_KEY) {
+  resendInitialized = true;
+  
+  const initResendClient = async () => {
+    if (!RESEND_API_KEY) {
+      console.warn('RESEND_API_KEY not set. Using mock email client.');
+      return createMockResendClient();
+    }
+
     try {
-      // Dynamic import to prevent build-time errors if the module is not available
-      const { Resend } = require('resend');
-      resendClient = new Resend(RESEND_API_KEY);
-      console.log('Resend client initialized successfully');
+      // Use dynamic import with await for better error handling
+      const resendModule = await import('resend');
+      const client = new resendModule.Resend(RESEND_API_KEY);
+      
+      // Create a wrapper around the actual Resend client
+      const clientWithEmails = client as unknown as { 
+        emails: { 
+          send: (payload: EmailPayload) => Promise<{ id: string }> 
+        } 
+      };
+      
+      return {
+        emails: {
+          send: async (payload: EmailPayload): Promise<EmailResponse> => {
+            try {
+              const response = await clientWithEmails.emails.send(payload);
+              return { data: { id: response.id } };
+            } catch (error: any) {
+              console.error('Error sending email:', error);
+              return {
+                error: {
+                  message: error.message || 'Failed to send email',
+                  statusCode: error.statusCode || 500,
+                },
+              };
+            }
+          },
+        },
+      };
     } catch (error) {
       console.error('Failed to initialize Resend client:', error);
-      if (NODE_ENV === 'production') {
-        console.warn('Running in production without email functionality');
-      } else {
-        console.warn('Using mock email client in development');
-        resendClient = mockResendClient;
-      }
+      return createMockResendClient();
     }
-  } else {
-    console.warn('RESEND_API_KEY not set. Using mock email client.');
-    resendClient = mockResendClient;
-  }
+  };
+
+  // Start the initialization but don't wait for it
+  initResendClient().then(client => {
+    resendClient = client;
+    console.log('Resend client initialized successfully');
+  });
   
-  return resendClient;
+  // Return mock client immediately, it will be replaced when the real one is ready
+  return createMockResendClient();
 };
 
 // Export the Resend client with proper typing
 export const resend = {
   emails: {
-    send: async (payload: {
-      from: string;
-      to: string | string[];
-      subject: string;
-      html: string;
-      reply_to?: string;
-    }) => {
+    send: async (payload: EmailPayload): Promise<EmailResponse> => {
       const client = initResend();
-      if (!client) {
-        console.warn('Email client not initialized. Email not sent.');
-        return { error: { message: 'Email client not initialized', statusCode: 500 } };
+      try {
+        return await client.emails.send(payload);
+      } catch (error) {
+        console.error('Error sending email:', error);
+        return {
+          error: {
+            message: 'Failed to send email',
+            statusCode: 500,
+          },
+        };
       }
-      return client.emails.send(payload);
     },
   },
 };
