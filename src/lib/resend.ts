@@ -33,35 +33,42 @@ console.log('NEXTAUTH_URL:', process.env.NEXTAUTH_URL || 'Não definido');
 // Initialize Resend client
 let resendClient: ResendClient | null = null;
 
-try {
-  if (!RESEND_API_KEY) {
-    throw new Error('RESEND_API_KEY is not defined in environment variables');
+// Only initialize in production or if we have an API key
+const shouldInitialize = NODE_ENV === 'production' || RESEND_API_KEY;
+
+if (shouldInitialize) {
+  try {
+    if (!RESEND_API_KEY) {
+      if (NODE_ENV === 'production') {
+        throw new Error('RESEND_API_KEY is required in production environment');
+      }
+      console.warn('RESEND_API_KEY is not defined. Email functionality will be disabled.');
+    } else {
+      resendClient = new ResendClient(RESEND_API_KEY) as unknown as ResendClient & {
+        emails: {
+          send: (payload: {
+            from: string;
+            to: string | string[];
+            subject: string;
+            html: string;
+            reply_to?: string;
+          }) => Promise<{
+            data?: { id: string };
+            error?: { message: string; name: string; statusCode: number };
+          }>;
+        };
+      };
+      console.log('Resend client initialized successfully');
+    }
+  } catch (error) {
+    console.error('Failed to initialize Resend client:', error);
+    if (NODE_ENV === 'production') {
+      throw new Error('Failed to initialize email service');
+    }
+    console.warn('Running without email functionality');
   }
-  
-  resendClient = new ResendClient(RESEND_API_KEY) as unknown as ResendClient & {
-    emails: {
-      send: (payload: {
-        from: string;
-        to: string | string[];
-        subject: string;
-        html: string;
-        reply_to?: string;
-      }) => Promise<{
-        data?: { id: string };
-        error?: { message: string; name: string; statusCode: number };
-      }>;
-    };
-  };
-  
-  console.log('Resend client initialized successfully');
-} catch (error) {
-  console.error('Failed to initialize Resend client:', error);
-  if (NODE_ENV === 'production') {
-    // In production, we want to fail fast if email service is not available
-    throw new Error('Failed to initialize email service');
-  }
-  // In development, we can continue without email functionality
-  console.warn('Running without email functionality in development mode');
+} else {
+  console.warn('Running without email functionality (development mode)');
 }
 
 // Export the Resend client with proper typing
