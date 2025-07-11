@@ -54,10 +54,9 @@ export async function POST(req: Request) {
     }
 
     let token: string | undefined;
-    let userId: string | undefined;
     
     try {
-      const requestData = await req.json() as { token?: string; userId?: string };
+      const requestData = await req.json() as { token?: string };
       log(`[${requestId}] Request data:`, JSON.stringify(requestData, null, 2));
       
       if (!requestData?.token || typeof requestData.token !== 'string') {
@@ -74,23 +73,8 @@ export async function POST(req: Request) {
         );
       }
       
-      if (!requestData?.userId || typeof requestData.userId !== 'string') {
-        const error = 'ID do usuário inválido';
-        log(`[${requestId}] ${error}`);
-        return NextResponse.json(
-          { 
-            error, 
-            code: 'INVALID_USER_ID',
-            requestId,
-            receivedUserId: requestData?.userId
-          },
-          { status: 400 }
-        );
-      }
-      
       token = requestData.token;
-      userId = requestData.userId;
-      log(`[${requestId}] Token and user ID from request: Received`);
+      log(`[${requestId}] Token from request: Received`);
     } catch (e) {
       const error = 'Erro ao processar a requisição';
       log('Error parsing request body:', e);
