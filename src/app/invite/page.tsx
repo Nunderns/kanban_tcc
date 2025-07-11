@@ -1,5 +1,11 @@
 'use client';
 
+// This page relies on search params from the URL. During the build step,
+// Next.js attempts to pre-render pages by default which causes errors
+// when `useSearchParams` is executed without a request context.
+// Mark the page as dynamic so that it renders at runtime only.
+export const dynamic = 'force-dynamic';
+
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Loader2, AlertCircle, CheckCircle2, ArrowLeft } from 'lucide-react';
