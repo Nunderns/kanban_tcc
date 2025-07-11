@@ -1,67 +1,78 @@
 import { Resend } from 'resend';
 
-console.log('=== INICIALIZANDO MÓDULO RESEND ===');
-console.log('NODE_ENV:', process.env.NODE_ENV);
-console.log('RESEND_API_KEY:', process.env.RESEND_API_KEY ? '*** (presente)' : 'Ausente!');
-console.log('RESEND_FROM_EMAIL:', process.env.RESEND_FROM_EMAIL || 'Não definido');
+// Environment variables
+const RESEND_API_KEY = process.env.RESEND_API_KEY;
+const RESEND_FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'noreply@kanbantcc.com';
+const NODE_ENV = process.env.NODE_ENV || 'development';
+
+// Log environment status
+console.log('=== RESEND EMAIL MODULE INITIALIZATION ===');
+console.log('NODE_ENV:', NODE_ENV);
+console.log('RESEND_API_KEY:', RESEND_API_KEY ? '*** (presente)' : 'Ausente!');
+console.log('RESEND_FROM_EMAIL:', RESEND_FROM_EMAIL);
 console.log('NEXTAUTH_URL:', process.env.NEXTAUTH_URL || 'Não definido');
 
-if (!process.env.RESEND_API_KEY) {
-  console.error('ERRO: RESEND_API_KEY não está definida nas variáveis de ambiente');
-  // Não lançamos erro aqui para permitir que o aplicativo inicie
-  // em ambientes de desenvolvimento sem a chave
+// Initialize Resend client
+let resendClient: Resend | null = null;
+
+try {
+  if (!RESEND_API_KEY) {
+    throw new Error('RESEND_API_KEY is not defined in environment variables');
+  }
+  
+  resendClient = new Resend(RESEND_API_KEY);
+  console.log('Resend client initialized successfully');
+} catch (error) {
+  console.error('Failed to initialize Resend client:', error);
+  if (NODE_ENV === 'production') {
+    // In production, we want to fail fast if email service is not available
+    throw new Error('Failed to initialize email service');
+  }
+  // In development, we can continue without email functionality
+  console.warn('Running without email functionality in development mode');
 }
 
-if (!process.env.RESEND_FROM_EMAIL) {
-  console.warn('AVISO: RESEND_FROM_EMAIL não está definida. Usando e-mail padrão.');
-}
-
-export const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
+export const resend = resendClient;
 
 export const sendInvitationEmail = async (params: {
   to: string | string[];
   token: string;
   workspaceName: string;
 }) => {
-  console.log('=== INICIANDO ENVIO DE E-MAIL ===');
-  console.log('Variáveis de ambiente no momento do envio:');
-  console.log('NODE_ENV:', process.env.NODE_ENV);
-  console.log('RESEND_API_KEY:', process.env.RESEND_API_KEY ? '*** (presente)' : 'Ausente!');
-  console.log('RESEND_FROM_EMAIL:', process.env.RESEND_FROM_EMAIL || 'Não definido');
-  console.log('NEXTAUTH_URL:', process.env.NEXTAUTH_URL || 'Não definido');
+  console.log('=== STARTING EMAIL SEND PROCESS ===');
   
   const { to, token, workspaceName } = params;
-  console.log('Parâmetros recebidos:', { to, token: '***', workspaceName });
+  const recipients = Array.isArray(to) ? to : [to];
   
-  // Usa o e-mail verificado do ambiente ou um fallback
-  const fromEmail = process.env.RESEND_FROM_EMAIL || 'noreply@kanbantcc.com';
-  console.log('E-mail remetente:', fromEmail);
+  // Use environment email or fallback
+  const fromEmail = RESEND_FROM_EMAIL;
+  const inviteLink = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/invite?token=${token}`;
   
-  // Se estiver em desenvolvimento ou sem chave da API, apenas loga o link
-  if (process.env.NODE_ENV === 'development' || !process.env.RESEND_API_KEY) {
-    const inviteLink = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/invite?token=${token}`;
-    console.log('=== MODO SIMULAÇÃO (DEV/SEM API KEY) ===');
-    console.log('E-mail NÃO enviado (modo simulação)');
-    console.log('De:', `Kanban TCC <${fromEmail}>`);
-    console.log('Para:', to);
-    console.log('Assunto:', `Você foi convidado para o workspace ${workspaceName}`);
-    console.log('Link de convite:', inviteLink);
-    console.log('======================================');
+  // Log email details
+  console.log('Email details:', {
+    to: recipients,
+    from: fromEmail,
+    subject: `Você foi convidado para o workspace ${workspaceName}`,
+    inviteLink: inviteLink,
+    environment: NODE_ENV
+  });
+  
+  // If in development or no API key, just log the link
+  if (NODE_ENV !== 'production' || !resend) {
+    console.log('=== DEVELOPMENT MODE: EMAIL NOT SENT ===');
+    console.log('Simulated invite link:', inviteLink);
+    console.log('To:', recipients);
+    console.log('Subject:', `Você foi convidado para o workspace ${workspaceName}`);
     return { id: 'local-dev-simulated' };
   }
 
   try {
-    const inviteLink = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/invite?token=${token}`;
-    console.log('Preparando para enviar e-mail via Resend...');
-    console.log('Link de convite:', inviteLink);
+    console.log('Sending email via Resend...');
     
     if (!resend) {
-      throw new Error('Cliente Resend não inicializado corretamente');
+      throw new Error('Resend client is not initialized');
     }
-    
-    // Ensure 'to' is an array
-    const recipients = Array.isArray(to) ? to : [to];
-    
+
     const { data, error } = await resend.emails.send({
       from: `Kanban TCC <${fromEmail}>`,
       to: recipients,
@@ -81,14 +92,14 @@ export const sendInvitationEmail = async (params: {
     });
 
     if (error) {
-      console.error('Erro ao enviar e-mail:', JSON.stringify(error, null, 2));
-      throw new Error('Falha ao enviar o e-mail de convite: ' + (error.message || 'Erro desconhecido'));
+      console.error('Error sending email:', error);
+      throw new Error(`Failed to send email: ${error.message}`);
     }
 
-    console.log('E-mail enviado com sucesso!', { emailId: data?.id });
+    console.log('Email sent successfully:', data);
     return data;
   } catch (error) {
-    console.error('Erro no serviço de e-mail:', error);
-    throw new Error('Erro ao processar o envio do e-mail: ' + (error instanceof Error ? error.message : String(error)));
+    console.error('Unexpected error while sending email:', error);
+    throw error;
   }
 };
