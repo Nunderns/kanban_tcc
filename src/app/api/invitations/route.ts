@@ -5,8 +5,23 @@ import { prisma } from '@/lib/prisma';
 import { Resend } from 'resend';
 import { randomBytes } from 'crypto';
 
-
+// Initialize Resend with API key
 const resend = new Resend(process.env.RESEND_API_KEY);
+
+// Type augmentation for Resend
+declare module 'resend' {
+  interface Resend {
+    emails: {
+      send(payload: {
+        from: string;
+        to: string[];
+        subject: string;
+        html: string;
+        reply_to?: string;
+      }): Promise<{ data?: any; error?: any }>;
+    };
+  }
+}
 
 export async function POST(req: Request) {
   try {
@@ -74,9 +89,9 @@ export async function POST(req: Request) {
     // Use a verified email address from your Resend account
     const fromEmail = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
     
-    const { error } = await resend.emails.send({
+    const emailData = {
       from: `Kanban TCC <${fromEmail}>`,
-      to: email,
+      to: [email],
       reply_to: fromEmail,
       subject: `Você foi convidado para o workspace ${workspace.name}`,
       html: `
@@ -90,20 +105,27 @@ export async function POST(req: Request) {
           <p style="background-color: #f3f4f6; padding: 10px; border-radius: 4px; font-family: monospace; word-break: break-all; font-size: 14px;">${inviteLink}</p>
           <p style="color: #6b7280; font-size: 14px; margin-top: 20px;">Este link expirará em 7 dias.</p>
         </div>
-      `,
-    });
+      `
+    };
 
-    if (error) {
-      console.error('Error sending email:', error);
-      return NextResponse.json(
-        { error: 'Falha ao enviar o email de convite' },
-        { status: 500 }
-      );
+    try {
+      const { data, error } = await resend.emails.send(emailData);
+
+      if (error) {
+        console.error('Error sending email:', error);
+        return NextResponse.json(
+          { error: 'Falha ao enviar o email de convite' },
+          { status: 500 }
+        );
+      }
+
+      return NextResponse.json({ success: true });
+    } catch (error) {
+      console.error('Error sending invitation:', error);
+      return new NextResponse('Internal server error', { status: 500 });
     }
-
-    return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Error sending invitation:', error);
+    console.error('Unexpected error:', error);
     return new NextResponse('Internal server error', { status: 500 });
   }
 }
