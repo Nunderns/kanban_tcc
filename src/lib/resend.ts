@@ -19,7 +19,7 @@ if (!process.env.RESEND_FROM_EMAIL) {
 export const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
 export const sendInvitationEmail = async (params: {
-  to: string;
+  to: string | string[];
   token: string;
   workspaceName: string;
 }) => {
@@ -59,9 +59,12 @@ export const sendInvitationEmail = async (params: {
       throw new Error('Cliente Resend não inicializado corretamente');
     }
     
+    // Ensure 'to' is an array
+    const recipients = Array.isArray(to) ? to : [to];
+    
     const { data, error } = await resend.emails.send({
       from: `Kanban TCC <${fromEmail}>`,
-      to,
+      to: recipients,
       subject: `Você foi convidado para o workspace ${workspaceName}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e5e7eb; border-radius: 8px;">
