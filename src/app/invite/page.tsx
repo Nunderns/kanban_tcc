@@ -7,12 +7,12 @@
 export const dynamic = 'force-dynamic';
 
 import { useSearchParams, useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { Loader2, AlertCircle, CheckCircle2, ArrowLeft } from 'lucide-react';
 
 type InvitationStatus = 'loading' | 'verified' | 'expired' | 'invalid' | 'accepted' | 'error';
 
-export default function InvitePage() {
+function InvitePageContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [status, setStatus] = useState<InvitationStatus>('loading');
@@ -224,11 +224,19 @@ export default function InvitePage() {
             {status === 'verified' ? 'Bem-vindo(a) ao' : 'Convite para o'} Kanban
           </h1>
         </div>
-        
+
         <div className="mt-8">
           {renderContent()}
         </div>
       </div>
     </div>
+  );
+}
+
+export default function InvitePage() {
+  return (
+    <Suspense fallback={null}>
+      <InvitePageContent />
+    </Suspense>
   );
 }
