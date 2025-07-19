@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Sidebar } from "@/components/Sidebar";
+import NotificationsDropdown from "@/components/NotificationsDropdown";
 import Link from "next/link";
 import axios from "axios";
 import { 
@@ -15,7 +16,6 @@ import {
   FiUser, 
   FiPlus, 
   FiSearch, 
-  FiBell, 
   FiMenu 
 } from "react-icons/fi";
 import { motion } from "framer-motion";
@@ -179,9 +179,12 @@ export default function Dashboard() {
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-            <button className="p-2 rounded-full bg-white shadow-sm hover:bg-gray-50 transition-colors">
-              <FiBell className="w-5 h-5 text-gray-600" />
-            </button>
+            
+            {/* Botão de notificações */}
+            <div className="relative">
+              <NotificationsDropdown />
+            </div>
+            
             <button className="md:hidden p-2 rounded-full bg-white shadow-sm hover:bg-gray-50 transition-colors">
               <FiMenu className="w-5 h-5 text-gray-600" />
             </button>
