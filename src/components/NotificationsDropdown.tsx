@@ -22,7 +22,7 @@ const NotificationsDropdown = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isPolling, setIsPolling] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const pollInterval = useRef<NodeJS.Timeout>();
+  const pollInterval = useRef<NodeJS.Timeout | null>(null);
 
   const fetchTasks = useCallback(async (): Promise<Task[]> => {
     try {
@@ -113,12 +113,13 @@ const NotificationsDropdown = () => {
     };
 
     // Verifica a cada 5 minutos
-    pollInterval.current = setInterval(checkForUpdates, 5 * 60 * 1000);
+    pollInterval.current = setInterval(checkForUpdates, 5 * 60 * 1000) as unknown as NodeJS.Timeout;
     
     // Limpa o intervalo quando o componente é desmontado
     return () => {
       if (pollInterval.current) {
         clearInterval(pollInterval.current);
+        pollInterval.current = null;
       }
     };
   }, [fetchTasks, isPolling]);
