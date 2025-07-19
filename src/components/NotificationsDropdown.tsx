@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Bell, Check, X, AlertTriangle, Info, CheckCircle, Clock } from 'lucide-react';
+import { Bell, X, AlertTriangle, Info, CheckCircle, Clock } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { checkTasksForNotifications, mergeAndDeduplicateNotifications, Task } from '@/lib/notifications';
 
@@ -13,7 +13,7 @@ export interface Notification {
   read: boolean;
   createdAt: Date;
   link?: string;
-  [key: string]: any; // Allow additional properties
+  [key: string]: unknown; // Allow additional properties with unknown type
 }
 
 const NotificationsDropdown = () => {
@@ -38,18 +38,8 @@ const NotificationsDropdown = () => {
         throw new Error('Falha ao buscar tarefas');
       }
       
-      const data: unknown = await response.json();
-      if (!data || !Array.isArray(data)) return [];
-      
-      // Type guard to ensure data is Task[]
-      const tasks = data.filter((item): item is Task => 
-        typeof item === 'object' && 
-        item !== null && 
-        'id' in item && 
-        'title' in item
-      );
-      
-      return tasks;
+      const data = await response.json() as Task[];
+      return Array.isArray(data) ? data : [];
     } catch (error) {
       console.error('Erro ao buscar tarefas:', error);
       return [];
