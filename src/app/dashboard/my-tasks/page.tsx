@@ -8,6 +8,7 @@ import WorkItemSidebar from "@/components/WorkItemSidebar";
 import { useSession } from "next-auth/react";
 import { useCallback, useEffect, useState, useRef, useMemo } from "react";
 import { format } from "date-fns";
+import { parseLocalDate } from "@/lib/utils";
 import {
   FaPlus,
   FaChevronDown,
@@ -37,6 +38,7 @@ export type WorkItem = {
   labels?: string[];
   creator?: string;
 };
+
 
 export default function KanbanPage() {
   const { data: session, status } = useSession();
@@ -366,16 +368,16 @@ export default function KanbanPage() {
         <div className="flex items-center gap-1 border border-gray-300 rounded-full px-2 py-1">
           {getPriorityIcon(item.priority)}
         </div>
-        {item.startDate && !isNaN(new Date(item.startDate).getTime()) && (
+        {item.startDate && !isNaN(parseLocalDate(item.startDate).getTime()) && (
           <div className="flex items-center gap-1 border border-gray-300 rounded-full px-2 py-1">
             <FaCalendarAlt className="text-gray-500" />
-            <span>Início: {format(new Date(item.startDate), "MMM dd, yyyy")}</span>
+            <span>Início: {format(parseLocalDate(item.startDate), "MMM dd, yyyy")}</span>
           </div>
         )}
         {item.dueDate && (
           <div className="flex items-center gap-1 border border-red-400 text-red-500 rounded-full px-2 py-1">
             <FaCalendarAlt />
-            <span>Prazo: {format(new Date(item.dueDate), "MMM dd, yyyy")}</span>
+            <span>Prazo: {format(parseLocalDate(item.dueDate), "MMM dd, yyyy")}</span>
           </div>
         )}
         {item.creator && (
