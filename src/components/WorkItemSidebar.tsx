@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import "react-datepicker/dist/react-datepicker.css";
 import { FormattedDateInput } from "./FormattedDateInput";
 import type { WorkItem } from "@/app/dashboard/my-tasks/page";
+import { parseLocalDate } from "@/lib/utils";
 import { 
   XMarkIcon, 
   UserCircleIcon, 
@@ -44,7 +45,7 @@ export default function WorkItemSidebar({ item, onClose, onUpdate }: Props) {
   const formatDate = (dateString: string): string => {
     if (!dateString) return 'não definida';
     try {
-      const date = new Date(dateString);
+      const date = parseLocalDate(dateString);
       return date.toLocaleDateString('pt-BR');
     } catch (error) {
       console.error('Error formatting date:', error);

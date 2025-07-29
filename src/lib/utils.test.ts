@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { cn } from './utils'
+import { cn, parseLocalDate } from './utils'
 
 describe('cn', () => {
   it('combines class names', () => {
@@ -12,5 +12,14 @@ describe('cn', () => {
 
   it('handles conditional values and arrays', () => {
     expect(cn({ hidden: false, block: true }, ['text-sm', 'text-lg'])).toBe('block text-lg')
+  })
+})
+
+describe('parseLocalDate', () => {
+  it('parses ISO date strings as local dates', () => {
+    const d = parseLocalDate('2024-05-21T00:00:00.000Z')
+    expect(d.getFullYear()).toBe(2024)
+    expect(d.getMonth()).toBe(4)
+    expect(d.getDate()).toBe(21)
   })
 })

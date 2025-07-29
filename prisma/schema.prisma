@@ -41,6 +41,19 @@ model Project {
   tasks       Task[]
 }
 
+model Invitation {
+  id         Int      @id @default(autoincrement())
+  email      String
+  role       String   @default("Membro")
+  token      String   @unique
+  workspaceId Int
+  workspace  Workspace @relation(fields: [workspaceId], references: [id])
+  expiresAt  DateTime
+  status     String   @default("pending") // pending, accepted, expired
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
 model Task {
   id          Int            @id @default(autoincrement())
   title       String
@@ -115,6 +128,7 @@ model Workspace {
   updatedAt   DateTime          @updatedAt
   user        User              @relation(fields: [userId], references: [id])
   members     WorkspaceMember[]
+  invitations Invitation[]
 }
 
 model WorkspaceMember {

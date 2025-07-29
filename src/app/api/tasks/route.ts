@@ -4,6 +4,7 @@ import { Prisma, Status } from "@prisma/client";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { NextRequest } from "next/server";
+import { parseLocalDate } from "@/lib/utils";
 
 const handleServerError = (error: unknown) => {
   // console.error("Server error:", error);
@@ -79,8 +80,8 @@ export async function POST(req: NextRequest) {
         projectId: body.projectId ? Number(body.projectId) : null,
         assignees: body.assignees ?? [],
         labels: body.labels ?? [],
-        startDate: body.startDate || null,
-        dueDate: body.dueDate || null
+        startDate: body.startDate ? parseLocalDate(body.startDate) : null,
+        dueDate: body.dueDate ? parseLocalDate(body.dueDate) : null
       }
     });
 
@@ -153,13 +154,13 @@ export async function PATCH(req: NextRequest) {
 
     // Handle date fields separately to ensure they're proper Date objects
     if (body.startDate) {
-      updateData.startDate = new Date(body.startDate);
+      updateData.startDate = parseLocalDate(body.startDate);
     } else if ('startDate' in body) {
       updateData.startDate = null;
     }
 
     if (body.dueDate) {
-      updateData.dueDate = new Date(body.dueDate);
+      updateData.dueDate = parseLocalDate(body.dueDate);
     } else if ('dueDate' in body) {
       updateData.dueDate = null;
     }
