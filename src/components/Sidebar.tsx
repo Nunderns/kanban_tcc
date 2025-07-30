@@ -63,6 +63,9 @@ export const Sidebar = () => {
         companySize: ws.tamanhoEmpresa,
       })
     );
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('workspaceChanged'));
+    }
     setShowPopover(false);
   };
 

@@ -72,10 +72,13 @@ model Task {
   user        User           @relation(fields: [userId], references: [id])
   projectId   Int?
   project     Project?       @relation(fields: [projectId], references: [id])
+  workspaceId Int?
+  workspace   Workspace?     @relation(fields: [workspaceId], references: [id])
   activities  TaskActivity[]
   
   @@index([userId])
   @@index([projectId])
+  @@index([workspaceId])
 }
 
 enum Status {

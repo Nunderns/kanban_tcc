@@ -29,10 +29,13 @@ export async function GET(req: NextRequest) {
     const status = statusParam && ["BACKLOG", "TODO", "IN_PROGRESS", "DONE"].includes(statusParam)
       ? (statusParam as Status)
       : undefined;
+    const workspaceIdParam = req.nextUrl.searchParams.get("workspaceId");
+    const workspaceId = workspaceIdParam ? parseInt(workspaceIdParam) : undefined;
 
     const where: Prisma.TaskWhereInput = {
       userId: Number(session.user.id),
-      ...(status ? { status } : {})
+      ...(status ? { status } : {}),
+      ...(workspaceId ? { workspaceId } : {})
     };
 
     const tasks = await prisma.task.findMany({
@@ -78,6 +81,7 @@ export async function POST(req: NextRequest) {
         priority: body.priority || "NONE",
         userId: Number(session.user.id),
         projectId: body.projectId ? Number(body.projectId) : null,
+        workspaceId: body.workspaceId ? Number(body.workspaceId) : null,
         assignees: body.assignees ?? [],
         labels: body.labels ?? [],
         startDate: body.startDate ? parseLocalDate(body.startDate) : null,
@@ -142,14 +146,14 @@ export async function PATCH(req: NextRequest) {
     }
     
     // Define other updatable fields (non-relation fields)
-    type UpdatableField = keyof Pick<Prisma.TaskUpdateInput, 
-      'title' | 'description' | 'status' | 'priority' | 'startDate' | 
-      'dueDate' | 'module' | 'cycle' | 'assignees' | 'labels'
+    type UpdatableField = keyof Pick<Prisma.TaskUpdateInput,
+      'title' | 'description' | 'status' | 'priority' | 'startDate' |
+      'dueDate' | 'module' | 'cycle' | 'assignees' | 'labels' | 'workspaceId'
     >;
     
     const updatableFields: UpdatableField[] = [
-      'title', 'description', 'status', 'priority', 
-      'module', 'cycle', 'assignees', 'labels'
+      'title', 'description', 'status', 'priority',
+      'module', 'cycle', 'assignees', 'labels', 'workspaceId'
     ];
 
     // Handle date fields separately to ensure they're proper Date objects
@@ -170,8 +174,11 @@ export async function PATCH(req: NextRequest) {
     
     updatableFields.forEach((field: UpdatableField) => {
       if (field in safeBody && safeBody[field] !== undefined) {
-        // We know the field is in UpdatableField and safeBody
-        (updateData as Record<string, unknown>)[field] = safeBody[field];
+        if (field === 'workspaceId') {
+          (updateData as Record<string, unknown>)[field] = safeBody[field] ? Number(safeBody[field]) : null;
+        } else {
+          (updateData as Record<string, unknown>)[field] = safeBody[field];
+        }
       }
     });
     
