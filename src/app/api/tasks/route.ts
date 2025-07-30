@@ -47,8 +47,13 @@ export async function GET(req: NextRequest) {
       orderBy: { createdAt: "desc" }
     });
 
+    type TaskResult = {
+      user?: { name: string | null } | null;
+      [key: string]: unknown;
+    };
+
     return NextResponse.json(
-      tasks.map((task: any) => ({
+      (tasks as TaskResult[]).map((task) => ({
         ...task,
         creator: task.user?.name || "Desconhecido"
       }))
