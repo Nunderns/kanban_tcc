@@ -29,5 +29,13 @@ export async function POST(req: Request) {
     },
   });
 
+  await prisma.workspaceMember.create({
+    data: {
+      userId: user.id,
+      workspaceId: workspace.id,
+      role: "ADMIN",
+    },
+  });
+
   return NextResponse.json(workspace, { status: 201 });
 }
