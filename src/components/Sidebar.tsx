@@ -23,6 +23,14 @@ export const Sidebar = () => {
   const [email, setEmail] = useState("");
   const [funcao, setFuncao] = useState("");
   const [membros, setMembros] = useState(0);
+  const [workspacesList, setWorkspacesList] = useState<Array<{
+    id: number;
+    nome: string;
+    slug: string;
+    tamanhoEmpresa: number;
+    funcao: string;
+    membros: number;
+  }>>([]);
   const [mounted, setMounted] = useState(false);
   const [showPopover, setShowPopover] = useState(false);
 
@@ -35,17 +43,60 @@ export const Sidebar = () => {
     setShowPopover((prev) => !prev);
   };
 
+  const selectWorkspace = (ws: {
+    id: number;
+    nome: string;
+    slug: string;
+    tamanhoEmpresa: number;
+    funcao: string;
+    membros: number;
+  }) => {
+    setWorkspace(ws.nome);
+    setFuncao(ws.funcao);
+    setMembros(ws.membros);
+    localStorage.setItem(
+      "workspaceSelecionado",
+      JSON.stringify({
+        id: ws.id,
+        nome: ws.nome,
+        slug: ws.slug,
+        companySize: ws.tamanhoEmpresa,
+      })
+    );
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('workspaceChanged'));
+    }
+    setShowPopover(false);
+  };
+
   useEffect(() => {
     async function fetchWorkspaceData() {
       try {
-        const res = await fetch("/api/workspaces/current");
-        if (res.ok) {
-          const data = await res.json();
+        const [currentRes, listRes] = await Promise.all([
+          fetch("/api/workspaces/current"),
+          fetch("/api/workspaces/all"),
+        ]);
+
+        if (currentRes.ok) {
+          const data = await currentRes.json();
           setWorkspace(data.nome);
           setEmail(data.email);
           setFuncao(data.funcao);
           setMembros(data.membros);
-          localStorage.setItem("workspaceSelecionado", JSON.stringify({ nome: data.nome }));
+          localStorage.setItem(
+            "workspaceSelecionado",
+            JSON.stringify({
+              id: data.id,
+              nome: data.nome,
+              slug: data.slug,
+              companySize: data.tamanhoEmpresa,
+            })
+          );
+        }
+
+        if (listRes.ok) {
+          const data = await listRes.json();
+          setWorkspacesList(data.workspaces);
         }
       } catch (err) {
         console.error("Erro ao buscar workspace:", err);
@@ -149,6 +200,32 @@ export const Sidebar = () => {
                 <Mail size={16} className="text-gray-500 mr-3" />
                 Convites Recebidos
               </button>
+
+              {workspacesList.length > 1 && (
+                <div className="mt-2">
+                  <p className="text-xs font-medium text-gray-500 px-3 mb-1">
+                    Trocar de workspace
+                  </p>
+                  <div className="space-y-1">
+                    {workspacesList.map((ws) => (
+                      <button
+                        key={ws.id}
+                        onClick={() => selectWorkspace(ws)}
+                        className={`flex items-center w-full text-sm px-3 py-2.5 rounded-lg transition-colors ${
+                          ws.nome === workspace
+                            ? "bg-indigo-50 text-indigo-600"
+                            : "text-gray-700 hover:bg-gray-50"
+                        }`}
+                      >
+                        <span className="truncate flex-1">{ws.nome}</span>
+                        {ws.nome === workspace && (
+                          <Check size={16} className="ml-2 text-indigo-600" />
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               <div className="border-t border-gray-100 my-1"></div>
 

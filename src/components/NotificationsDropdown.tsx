@@ -26,7 +26,10 @@ const NotificationsDropdown = () => {
 
   const fetchTasks = useCallback(async (): Promise<Task[]> => {
     try {
-      const response = await fetch('/api/tasks', {
+      const stored = typeof window !== 'undefined' ? localStorage.getItem('workspaceSelecionado') : null;
+      const wsId = stored ? JSON.parse(stored).id : null;
+      const url = wsId ? `/api/tasks?workspaceId=${wsId}` : '/api/tasks';
+      const response = await fetch(url, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -81,6 +84,14 @@ const NotificationsDropdown = () => {
   // Carregar notificações iniciais
   useEffect(() => {
     fetchInitialNotifications();
+  }, [fetchInitialNotifications]);
+
+  useEffect(() => {
+    const handler = () => {
+      fetchInitialNotifications();
+    };
+    window.addEventListener('workspaceChanged', handler);
+    return () => window.removeEventListener('workspaceChanged', handler);
   }, [fetchInitialNotifications]);
 
   // Configurar polling para verificar tarefas

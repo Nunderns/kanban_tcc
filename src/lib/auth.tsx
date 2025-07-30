@@ -1,11 +1,10 @@
 // src/lib/auth.ts
 import type { NextAuthOptions, DefaultSession, Session } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "./prisma";
 import bcrypt from "bcryptjs";
 import { getServerSession } from "next-auth";
 
-const prisma = new PrismaClient();
 
 declare module "next-auth" {
   interface Session {

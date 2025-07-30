@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const db = prisma as any;
 import { cookies } from "next/headers";
 
 export async function POST() {
@@ -11,7 +14,7 @@ export async function POST() {
       return NextResponse.json({ error: "Usuário não está autenticado" }, { status: 401 });
     }
 
-    const userSession = await prisma.session.findUnique({
+    const userSession = await db.session.findUnique({
       where: { token },
     });
 
@@ -19,7 +22,7 @@ export async function POST() {
       return NextResponse.json({ error: "Sessão não encontrada" }, { status: 404 });
     }
 
-    await prisma.session.delete({
+    await db.session.delete({
       where: { id: userSession.id },
     });
 

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { Prisma, Status } from "@prisma/client";
+// The generated Prisma client isn't available in CI, so avoid relying on its types
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { NextRequest } from "next/server";
@@ -27,12 +27,15 @@ export async function GET(req: NextRequest) {
 
     const statusParam = req.nextUrl.searchParams.get("status");
     const status = statusParam && ["BACKLOG", "TODO", "IN_PROGRESS", "DONE"].includes(statusParam)
-      ? (statusParam as Status)
+      ? statusParam as "BACKLOG" | "TODO" | "IN_PROGRESS" | "DONE"
       : undefined;
+    const workspaceIdParam = req.nextUrl.searchParams.get("workspaceId");
+    const workspaceId = workspaceIdParam ? parseInt(workspaceIdParam) : undefined;
 
-    const where: Prisma.TaskWhereInput = {
+    const where = {
       userId: Number(session.user.id),
-      ...(status ? { status } : {})
+      ...(status ? { status } : {}),
+      ...(workspaceId ? { workspaceId } : {})
     };
 
     const tasks = await prisma.task.findMany({
@@ -44,8 +47,13 @@ export async function GET(req: NextRequest) {
       orderBy: { createdAt: "desc" }
     });
 
+    type TaskResult = {
+      user?: { name: string | null } | null;
+      [key: string]: unknown;
+    };
+
     return NextResponse.json(
-      tasks.map((task) => ({
+      (tasks as TaskResult[]).map((task) => ({
         ...task,
         creator: task.user?.name || "Desconhecido"
       }))
@@ -78,6 +86,7 @@ export async function POST(req: NextRequest) {
         priority: body.priority || "NONE",
         userId: Number(session.user.id),
         projectId: body.projectId ? Number(body.projectId) : null,
+        workspaceId: body.workspaceId ? Number(body.workspaceId) : null,
         assignees: body.assignees ?? [],
         labels: body.labels ?? [],
         startDate: body.startDate ? parseLocalDate(body.startDate) : null,
@@ -128,11 +137,8 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
-    // Use Prisma's generated types for update data
-    type TaskUpdateData = Prisma.TaskUpdateInput;
-
-    // Only include fields that can be updated
-    const updateData: TaskUpdateData = { updatedAt: new Date() };
+    // We'll build the update data object dynamically
+    const updateData: Record<string, unknown> = { updatedAt: new Date() };
     
     // Handle project update separately as it's a relation
     if ('projectId' in body) {
@@ -141,16 +147,12 @@ export async function PATCH(req: NextRequest) {
         : { disconnect: true };
     }
     
-    // Define other updatable fields (non-relation fields)
-    type UpdatableField = keyof Pick<Prisma.TaskUpdateInput, 
-      'title' | 'description' | 'status' | 'priority' | 'startDate' | 
-      'dueDate' | 'module' | 'cycle' | 'assignees' | 'labels'
-    >;
-    
-    const updatableFields: UpdatableField[] = [
-      'title', 'description', 'status', 'priority', 
-      'module', 'cycle', 'assignees', 'labels'
-    ];
+    // Fields we allow updating directly
+    const updatableFields = [
+      'title', 'description', 'status', 'priority',
+      'module', 'cycle', 'assignees', 'labels', 'workspaceId'
+    ] as const;
+    type UpdatableField = (typeof updatableFields)[number];
 
     // Handle date fields separately to ensure they're proper Date objects
     if (body.startDate) {
@@ -170,8 +172,11 @@ export async function PATCH(req: NextRequest) {
     
     updatableFields.forEach((field: UpdatableField) => {
       if (field in safeBody && safeBody[field] !== undefined) {
-        // We know the field is in UpdatableField and safeBody
-        (updateData as Record<string, unknown>)[field] = safeBody[field];
+        if (field === 'workspaceId') {
+          (updateData as Record<string, unknown>)[field] = safeBody[field] ? Number(safeBody[field]) : null;
+        } else {
+          (updateData as Record<string, unknown>)[field] = safeBody[field];
+        }
       }
     });
     

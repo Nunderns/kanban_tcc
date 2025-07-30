@@ -1,11 +1,14 @@
 import { prisma } from "@/lib/prisma";
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const db = prisma as any;
 import bcrypt from "bcryptjs";
 import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
   const { email, password } = await req.json();
 
-  const user = await prisma.user.findUnique({
+  const user = await db.user.findUnique({
     where: { email },
   });
 

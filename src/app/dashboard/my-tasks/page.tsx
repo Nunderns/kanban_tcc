@@ -286,7 +286,10 @@ export default function KanbanPage() {
   const fetchWorkItems = useCallback(async () => {
     if (status !== "authenticated") return;
     try {
-      const res = await fetch("/api/tasks", {
+      const stored = localStorage.getItem("workspaceSelecionado");
+      const wsId = stored ? JSON.parse(stored).id : null;
+      const url = wsId ? `/api/tasks?workspaceId=${wsId}` : "/api/tasks";
+      const res = await fetch(url, {
         credentials: "include",
       });
       if (!res.ok) {
@@ -304,9 +307,19 @@ export default function KanbanPage() {
     fetchWorkItems();
   }, [fetchWorkItems]);
 
+  useEffect(() => {
+    const handler = () => {
+      fetchWorkItems();
+    };
+    window.addEventListener('workspaceChanged', handler);
+    return () => window.removeEventListener('workspaceChanged', handler);
+  }, [fetchWorkItems]);
+
   const handleCreateTask = async ({ title, description }: { title: string; description: string }) => {
     if (status !== "authenticated" || !userId) return;
     try {
+      const stored = localStorage.getItem("workspaceSelecionado");
+      const wsId = stored ? JSON.parse(stored).id : null;
       const res = await fetch("/api/tasks", {
         method: "POST",
         credentials: "include",
@@ -319,7 +332,8 @@ export default function KanbanPage() {
           status: targetStatus,
           priority: "NONE",
           assignees: [],
-          labels: []
+          labels: [],
+          workspaceId: wsId
         })
       });
 
