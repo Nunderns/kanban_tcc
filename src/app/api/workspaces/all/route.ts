@@ -25,8 +25,19 @@ export async function GET() {
       return NextResponse.json({ error: "Usuário não encontrado" }, { status: 404 });
     }
 
+    type MemberWithWorkspace = {
+      workspaceId: number;
+      role: string;
+      workspace: {
+        id: number;
+        name: string;
+        slug: string;
+        companySize: number;
+      };
+    };
+
     const workspaces = await Promise.all(
-      user.workspaceMembers.map(async (member: any) => {
+      (user.workspaceMembers as MemberWithWorkspace[]).map(async (member) => {
         const count = await prisma.workspaceMember.count({
           where: { workspaceId: member.workspaceId },
         });
