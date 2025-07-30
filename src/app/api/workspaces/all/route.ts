@@ -26,7 +26,7 @@ export async function GET() {
     }
 
     const workspaces = await Promise.all(
-      user.workspaceMembers.map(async (member) => {
+      user.workspaceMembers.map(async (member: any) => {
         const count = await prisma.workspaceMember.count({
           where: { workspaceId: member.workspaceId },
         });

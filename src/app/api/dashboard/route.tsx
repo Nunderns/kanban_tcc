@@ -24,7 +24,7 @@ export async function GET() {
       include: { user: { select: { id: true, name: true, email: true } } },
     });
 
-    const memberIds = membersData.map((m) => m.userId);
+    const memberIds = membersData.map((m: any) => m.userId);
 
     const totalProjects = await prisma.project.count({
       where: { ownerId: { in: memberIds } },
@@ -52,7 +52,7 @@ export async function GET() {
       select: { id: true, title: true, description: true },
     });
 
-    const members = membersData.map((m) => ({
+    const members = membersData.map((m: any) => ({
       id: m.user.id,
       name: m.user.name,
       email: m.user.email,

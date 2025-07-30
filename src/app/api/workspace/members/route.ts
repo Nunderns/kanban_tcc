@@ -50,7 +50,7 @@ export async function GET() {
     });
 
     // Formatar a resposta
-    const formattedMembers = workspaceMembers.map(member => ({
+    const formattedMembers = workspaceMembers.map((member: any) => ({
       id: member.userId.toString(),
       fullName: member.user.name || 'Usuário sem nome',
       displayName: member.user.email?.split('@')[0] || 'usuario',
