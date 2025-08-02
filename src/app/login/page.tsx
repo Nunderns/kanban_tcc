@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { useSession, signIn } from "next-auth/react";
 import { toast } from "react-hot-toast";
 import { FaSpinner, FaGoogle } from "react-icons/fa";
-import Image from "next/image";
 
 export default function LoginPage() {
   const router = useRouter();
