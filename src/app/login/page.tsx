@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSession, signIn } from "next-auth/react";
 import { toast } from "react-hot-toast";
-import { FaSpinner } from "react-icons/fa";
+import { FaSpinner, FaGoogle } from "react-icons/fa";
+import Image from "next/image";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -70,6 +71,10 @@ export default function LoginPage() {
     }
   };
 
+  const handleGoogleSignIn = () => {
+    signIn('google', { callbackUrl: '/dashboard' });
+  };
+
   if (status === "loading") {
     return <p className="p-10 text-lg">Carregando...</p>;
   }
@@ -78,6 +83,26 @@ export default function LoginPage() {
     <div className="flex h-screen">
       <div className="w-1/2 flex flex-col items-center justify-center bg-white p-10">
         <h1 className="text-4xl font-semibold mb-6 text-black">TaskFlow</h1>
+        
+        {/* Google Sign In Button */}
+        <button
+          onClick={handleGoogleSignIn}
+          disabled={isLoading}
+          className="w-80 flex items-center justify-center gap-3 bg-white border border-gray-300 rounded-md px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed mb-6"
+        >
+          <FaGoogle className="h-5 w-5 text-red-500" />
+          {isLoading ? 'Entrando com Google...' : 'Entrar com Google'}
+        </button>
+        
+        <div className="relative w-80 my-4">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-gray-300"></div>
+          </div>
+          <div className="relative flex justify-center text-sm">
+            <span className="px-2 bg-white text-gray-500">ou</span>
+          </div>
+        </div>
+        
         <form className="w-80" onSubmit={handleLogin}>
           <label className="block mb-2 text-black font-medium">Email</label>
           <input 
@@ -98,45 +123,63 @@ export default function LoginPage() {
             disabled={isLoading}
           />
           {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password}</p>}
-
-          <button 
+          
+          <button
             type="submit"
             disabled={isLoading}
-            className={`w-full py-2 mt-4 bg-blue-500 text-white rounded-md flex items-center justify-center gap-2 ${
-              isLoading ? "opacity-80" : "hover:bg-blue-600"
-            } transition-colors`}
+            className="w-full bg-blue-600 text-white py-2 px-4 rounded-md mt-6 hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {isLoading ? (
               <>
                 <FaSpinner className="animate-spin" />
-                Processando...
+                Entrando...
               </>
             ) : (
-              "Entrar"
+              "Entrar com Email"
             )}
           </button>
+          
+          <div className="mt-4 text-center">
+            <p className="text-sm text-gray-600">
+              Não tem uma conta?{" "}
+              <a href="/register" className="text-blue-600 hover:underline">
+                Cadastre-se
+              </a>
+            </p>
+          </div>
         </form>
-
-        <p className="mt-4 text-black">
-          Não tem uma conta? <a href="/register" className="text-blue-500 hover:underline">Criar conta</a>
-        </p>
       </div>
-
-      <div className="w-1/2 bg-gray-200 p-8">
-        <h2 className="text-lg font-semibold">Últimas atualizações</h2>
-        <div className="bg-gray-400 text-white p-2 mt-4 rounded-md">
-          <p className="font-medium">Título da atualização</p>
+      
+      <div className="w-1/2 bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center">
+        <div className="text-center text-white p-10">
+          <h2 className="text-3xl font-bold mb-4">Bem-vindo ao TaskFlow</h2>
+          <p className="text-lg mb-8">Gerencie suas tarefas de forma simples e eficiente.</p>
+          <div className="flex justify-center">
+            <div className="bg-white/20 backdrop-blur-md p-6 rounded-lg max-w-md">
+              <h3 className="text-xl font-semibold mb-4">Por que usar o TaskFlow?</h3>
+              <ul className="space-y-2 text-left">
+                <li className="flex items-start">
+                  <svg className="h-5 w-5 text-green-300 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                  <span>Organize suas tarefas em quadros visuais</span>
+                </li>
+                <li className="flex items-start">
+                  <svg className="h-5 w-5 text-green-300 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                  <span>Colabore com sua equipe em tempo real</span>
+                </li>
+                <li className="flex items-start">
+                  <svg className="h-5 w-5 text-green-300 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                  <span>Acompanhe o progresso de seus projetos</span>
+                </li>
+              </ul>
+            </div>
+          </div>
         </div>
-        <div className="flex justify-between text-sm text-gray-600 mt-2">
-          <p>🔘 Postado por [Nome da equipe do site]</p>
-          <p>📅 Data: 00/00/0000 00:00</p>
-        </div>
-        <div className="bg-white p-10 mt-4 rounded-md shadow-md h-48 flex items-center justify-center">
-          <p className="text-xl font-medium">Corpo do texto</p>
-        </div>
-        <button className="w-full mt-6 bg-gray-300 py-2 rounded-md text-gray-700 font-medium hover:bg-gray-400 transition-colors">
-          Ver outras postagens
-        </button>
       </div>
     </div>
   );

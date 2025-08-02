@@ -1,83 +1,77 @@
 // src/lib/auth.ts
-import type { NextAuthOptions, DefaultSession, Session } from "next-auth";
+import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { prisma } from "./prisma";
+import GoogleProvider from "next-auth/providers/google";
+import { PrismaAdapter } from "@auth/prisma-adapter";
+import { PrismaClient } from "@prisma/client";
+import type { Adapter } from "next-auth/adapters";
 import bcrypt from "bcryptjs";
-import { getServerSession } from "next-auth";
 
+const prisma = new PrismaClient();
 
-declare module "next-auth" {
-  interface Session {
-    user: {
-      id: string;
-    } & DefaultSession["user"];
-  }
-
-  interface JWT {
-    id: string;
-  }
-}
-
-export const authOptions: NextAuthOptions = {
+export const authOptions = {
+  adapter: PrismaAdapter(prisma) as Adapter,
   providers: [
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+    }),
     CredentialsProvider({
       name: "Credentials",
       credentials: {
         email: { label: "E-mail", type: "email" },
-        password: { label: "Senha", type: "password" },
+        password: { label: "Senha", type: "password" }
       },
-      async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
-          throw new Error("Credenciais inválidas");
-        }
+// No seu auth.tsx, modifique a parte do authorize para:
+async authorize(credentials) {
+  if (!credentials?.email || !credentials?.password) {
+    throw new Error("E-mail e senha são obrigatórios");
+  }
 
-        const user = await prisma.user.findUnique({
-          where: { email: credentials.email },
-        });
+  const user = await prisma.user.findUnique({
+    where: { email: credentials.email },
+    select: {
+      id: true,
+      email: true,
+      name: true,
+      password: true
+    }
+  });
 
-        if (!user || !(await bcrypt.compare(credentials.password, user.password))) {
-          throw new Error("Usuário ou senha inválidos");
-        }
+  if (!user || !user.password) {
+    throw new Error("Usuário não encontrado");
+  }
 
-        return {
-          id: String(user.id),
-          email: user.email,
-          name: user.name ?? "",
-        };
-      },
-    }),
+  // Verifica se a senha é uma string válida
+  if (typeof user.password !== 'string') {
+    console.error('Password is not a string:', user.password);
+    throw new Error("Formato de senha inválido");
+  }
+
+  const isValid = await bcrypt.compare(credentials.password, user.password);
+
+  if (!isValid) {
+    throw new Error("Senha incorreta");
+  }
+
+  return {
+    id: String(user.id), // Garante que o ID é uma string
+    email: user.email,
+    name: user.name
+  };
+}
+    })
   ],
-  secret: process.env.NEXTAUTH_SECRET,
-  pages: { signIn: "/login" },
   session: {
-    strategy: "jwt",
-    maxAge: 30 * 24 * 60 * 60,
-    updateAge: 24 * 60 * 60,
+    strategy: "jwt" as const, // Adicione 'as const' para o tipo literal
   },
-  callbacks: {
-    async jwt({ token, user }) {
-      if (user) {
-        token.id = user.id;
-        token.email = user.email;
-        token.name = user.name;
-      }
-      return token;
-    },
-    async session({ session, token }) {
-      return {
-        ...session,
-        user: {
-          ...session.user,
-          id: token.id,
-          email: token.email,
-          name: token.name,
-        },
-      } as Session;
-    },
-  },
+  secret: process.env.NEXTAUTH_SECRET,
+  debug: process.env.NODE_ENV === "development",
+  pages: {
+    signIn: "/login",
+    error: "/login"
+  }
 };
 
-// Útil para API routes no App Router
-export async function getAuthSession() {
-  return await getServerSession(authOptions);
-}
+const handler = NextAuth(authOptions);
+export { handler as GET, handler as POST };
