@@ -18,33 +18,68 @@ const handleServerError = (error: unknown) => {
 
 export async function GET(req: NextRequest) {
   try {
+    console.log('Tasks API: GET request received');
     const session = await auth();
+    console.log('Session:', session ? 'Authenticated' : 'Not authenticated');
 
-    if (!session || !session.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!session?.user?.id) {
+      console.error('Unauthorized: No session or user ID');
+      return NextResponse.json({ 
+        error: "Unauthorized",
+        details: "No active session or user ID found" 
+      }, { status: 401 });
     }
 
+    // Parse query parameters
     const statusParam = req.nextUrl.searchParams.get("status");
     const status = statusParam && ["BACKLOG", "TODO", "IN_PROGRESS", "DONE"].includes(statusParam)
       ? statusParam as "BACKLOG" | "TODO" | "IN_PROGRESS" | "DONE"
       : undefined;
+      
     const workspaceIdParam = req.nextUrl.searchParams.get("workspaceId");
     const workspaceId = workspaceIdParam ? parseInt(workspaceIdParam) : undefined;
+    
+    console.log('Query params:', { status, workspaceId });
 
-    const where = {
-      userId: Number(session.user.id),
-      ...(status ? { status } : {}),
-      ...(workspaceId ? { workspaceId } : {})
-    };
+    // Convert session user ID to number if it's a string
+    const userId = typeof session.user.id === 'string' 
+      ? parseInt(session.user.id, 10) 
+      : session.user.id;
+      
+    if (isNaN(userId)) {
+      console.error('Invalid user ID:', session.user.id);
+      return NextResponse.json(
+        { error: "Internal server error", details: "Invalid user ID format" },
+        { status: 500 }
+      );
+    }
+    
+    // Simplified where clause that works with current database schema
+    const where: any = { userId };
+    
+    // Only add status if provided
+    if (status) {
+      where.status = status;
+    }
+    
+    // Skip workspace filtering since the column doesn't exist in the database
+    // This is a temporary fix - you should run database migrations to add the column
+    console.warn('workspaceId filtering is disabled because the column does not exist in the database');
+    
+    console.log('Database query:', JSON.stringify(where, null, 2));
 
+    console.log('Querying database for tasks...');
     const tasks = await prisma.task.findMany({
       where,
       include: {
         user: { select: { id: true, name: true, email: true } },
         project: { select: { id: true, name: true } }
       },
-      orderBy: { createdAt: "desc" }
+      orderBy: { createdAt: "desc" },
+      take: 100 // Limit number of results for safety
     });
+    
+    console.log(`Found ${tasks.length} tasks`);
 
     type TaskResult = {
       user?: { name: string | null } | null;
@@ -83,7 +118,7 @@ export async function POST(req: NextRequest) {
         description: body.description || null,
         status: body.status || "BACKLOG",
         priority: body.priority || "NONE",
-        userId: Number(session.user.id),
+        userId: typeof session.user.id === 'string' ? parseInt(session.user.id, 10) : session.user.id,
         projectId: body.projectId ? Number(body.projectId) : null,
         workspaceId: body.workspaceId ? Number(body.workspaceId) : null,
         assignees: body.assignees ?? [],
