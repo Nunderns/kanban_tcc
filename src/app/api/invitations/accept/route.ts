@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { auth } from "@/lib/auth";
 import { prisma } from '@/lib/prisma';
 
 // Tipagem para a sessão do usuário
@@ -29,7 +28,7 @@ export async function POST(req: Request) {
     log(`[${requestId}] Request URL:`, req.url);
     log(`[${requestId}] Request method:`, req.method);
     
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     log(`[${requestId}] Session:`, session ? 'Found' : 'Not found');
     
     // Registrar headers úteis para depuração
