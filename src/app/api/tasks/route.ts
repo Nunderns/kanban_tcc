@@ -54,8 +54,14 @@ export async function GET(req: NextRequest) {
       );
     }
     
-    // Simplified where clause that works with current database schema
-    const where: any = { userId };
+    // Define proper type for the where clause
+    interface TaskWhere {
+      userId: number;
+      status?: "BACKLOG" | "TODO" | "IN_PROGRESS" | "DONE";
+    }
+    
+    // Build the where clause with proper typing
+    const where: TaskWhere = { userId };
     
     // Only add status if provided
     if (status) {
