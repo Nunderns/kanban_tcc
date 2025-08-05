@@ -23,44 +23,40 @@ const config = {
         password: { label: "Senha", type: "password" }
       },
       async authorize(credentials) {
-        try {
-          if (!credentials?.email || !credentials?.password) {
-            throw new Error("E-mail e senha são obrigatórios");
-          }
+        if (!credentials?.email || !credentials?.password) {
+          return null;
+        }
 
-          const { email, password } = credentials as { email: string; password: string };
+        const { email, password } = credentials as { email: string; password: string };
+        
+        try {
+          await prisma.$connect();
           
           const user = await prisma.user.findUnique({
             where: { email },
-            select: {
-              id: true,
-              email: true,
-              name: true,
-              password: true
-            }
+            select: { id: true, email: true, name: true, password: true }
           });
 
-          if (!user || !user.password) {
-            throw new Error("Usuário não encontrado");
+          if (!user?.password) {
+            return null;
           }
 
-          // Ensure password is a string
-          const userPassword = String(user.password);
+          const isValid = await bcrypt.compare(password, String(user.password));
           
-          const isValid = await bcrypt.compare(password, userPassword);
-
           if (!isValid) {
-            throw new Error("Senha incorreta");
+            return null;
           }
 
           return {
             id: String(user.id),
             email: user.email,
-            name: user.name
+            name: user.name || ''
           };
+          
         } catch (error) {
-          console.error('Error in authorize:', error);
-          throw error;
+          return null;
+        } finally {
+          await prisma.$disconnect().catch(() => {});
         }
       }
     })
@@ -94,7 +90,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth(config);
 
 export const authConfig = {
   ...config,
-  // Export the auth configuration for use in API routes
   getServerSession: async () => {
     const session = await auth();
     return session;
