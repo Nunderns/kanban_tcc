@@ -58,14 +58,14 @@ export default function LoginPage() {
       });
 
       if (res?.error) {
-        toast.error(res.error || "Erro ao fazer login");
+        toast.error('Email ou senha inválidos');
       } else {
         toast.success("Login bem-sucedido!");
         router.push("/dashboard");
       }
-      } catch {
-        toast.error("Ocorreu um erro durante o login");
-      } finally {
+    } catch {
+      toast.error('Ocorreu um erro ao tentar fazer login');
+    } finally {
       setIsLoading(false);
     }
   };
