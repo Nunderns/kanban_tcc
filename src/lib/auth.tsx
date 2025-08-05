@@ -53,7 +53,7 @@ const config = {
             name: user.name || ''
           };
           
-        } catch (error) {
+        } catch {
           return null;
         } finally {
           await prisma.$disconnect().catch(() => {});
