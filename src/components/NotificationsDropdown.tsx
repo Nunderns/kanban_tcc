@@ -26,22 +26,38 @@ const NotificationsDropdown = () => {
 
   const fetchTasks = useCallback(async (): Promise<Task[]> => {
     try {
-      const response = await fetch('/api/tasks', {
+      console.log('Fetching tasks...');
+      
+      // For now, we'll fetch all tasks without workspace filtering
+      // since the workspaceId column doesn't exist in the database yet
+      const url = '/api/tasks';
+      console.log('Fetching tasks from URL:', url);
+      
+      const response = await fetch(url, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          // Add any required authentication headers here
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
         },
+        credentials: 'include' // Ensure cookies are sent with the request
       });
       
+      console.log('Response status:', response.status);
+      
       if (!response.ok) {
-        throw new Error('Falha ao buscar tarefas');
+        const errorText = await response.text();
+        console.error('Error response:', errorText);
+        throw new Error(`Falha ao buscar tarefas: ${response.status} ${response.statusText}`);
       }
       
       const data = await response.json() as Task[];
+      console.log('Tasks fetched successfully, count:', data?.length || 0);
+      
       return Array.isArray(data) ? data : [];
     } catch (error) {
       console.error('Erro ao buscar tarefas:', error);
+      // Return empty array on error to prevent UI from breaking
       return [];
     }
   }, []);
@@ -81,6 +97,14 @@ const NotificationsDropdown = () => {
   // Carregar notificações iniciais
   useEffect(() => {
     fetchInitialNotifications();
+  }, [fetchInitialNotifications]);
+
+  useEffect(() => {
+    const handler = () => {
+      fetchInitialNotifications();
+    };
+    window.addEventListener('workspaceChanged', handler);
+    return () => window.removeEventListener('workspaceChanged', handler);
   }, [fetchInitialNotifications]);
 
   // Configurar polling para verificar tarefas

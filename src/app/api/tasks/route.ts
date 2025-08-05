@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { Prisma, Status } from "@prisma/client";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+// The generated Prisma client isn't available in CI, so avoid relying on its types
+import { auth } from "@/lib/auth";
 import { NextRequest } from "next/server";
 import { parseLocalDate } from "@/lib/utils";
 
@@ -19,33 +18,82 @@ const handleServerError = (error: unknown) => {
 
 export async function GET(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    console.log('Tasks API: GET request received');
+    const session = await auth();
+    console.log('Session:', session ? 'Authenticated' : 'Not authenticated');
 
-    if (!session || !session.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!session?.user?.id) {
+      console.error('Unauthorized: No session or user ID');
+      return NextResponse.json({ 
+        error: "Unauthorized",
+        details: "No active session or user ID found" 
+      }, { status: 401 });
     }
 
+    // Parse query parameters
     const statusParam = req.nextUrl.searchParams.get("status");
     const status = statusParam && ["BACKLOG", "TODO", "IN_PROGRESS", "DONE"].includes(statusParam)
-      ? (statusParam as Status)
+      ? statusParam as "BACKLOG" | "TODO" | "IN_PROGRESS" | "DONE"
       : undefined;
+      
+    const workspaceIdParam = req.nextUrl.searchParams.get("workspaceId");
+    const workspaceId = workspaceIdParam ? parseInt(workspaceIdParam) : undefined;
+    
+    console.log('Query params:', { status, workspaceId });
 
-    const where: Prisma.TaskWhereInput = {
-      userId: Number(session.user.id),
-      ...(status ? { status } : {})
-    };
+    // Convert session user ID to number if it's a string
+    const userId = typeof session.user.id === 'string' 
+      ? parseInt(session.user.id, 10) 
+      : session.user.id;
+      
+    if (isNaN(userId)) {
+      console.error('Invalid user ID:', session.user.id);
+      return NextResponse.json(
+        { error: "Internal server error", details: "Invalid user ID format" },
+        { status: 500 }
+      );
+    }
+    
+    // Define proper type for the where clause
+    interface TaskWhere {
+      userId: number;
+      status?: "BACKLOG" | "TODO" | "IN_PROGRESS" | "DONE";
+    }
+    
+    // Build the where clause with proper typing
+    const where: TaskWhere = { userId };
+    
+    // Only add status if provided
+    if (status) {
+      where.status = status;
+    }
+    
+    // Skip workspace filtering since the column doesn't exist in the database
+    // This is a temporary fix - you should run database migrations to add the column
+    console.warn('workspaceId filtering is disabled because the column does not exist in the database');
+    
+    console.log('Database query:', JSON.stringify(where, null, 2));
 
+    console.log('Querying database for tasks...');
     const tasks = await prisma.task.findMany({
       where,
       include: {
         user: { select: { id: true, name: true, email: true } },
         project: { select: { id: true, name: true } }
       },
-      orderBy: { createdAt: "desc" }
+      orderBy: { createdAt: "desc" },
+      take: 100 // Limit number of results for safety
     });
+    
+    console.log(`Found ${tasks.length} tasks`);
+
+    type TaskResult = {
+      user?: { name: string | null } | null;
+      [key: string]: unknown;
+    };
 
     return NextResponse.json(
-      tasks.map((task) => ({
+      (tasks as TaskResult[]).map((task) => ({
         ...task,
         creator: task.user?.name || "Desconhecido"
       }))
@@ -58,7 +106,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
 
     if (!session || !session.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -76,8 +124,9 @@ export async function POST(req: NextRequest) {
         description: body.description || null,
         status: body.status || "BACKLOG",
         priority: body.priority || "NONE",
-        userId: Number(session.user.id),
+        userId: typeof session.user.id === 'string' ? parseInt(session.user.id, 10) : session.user.id,
         projectId: body.projectId ? Number(body.projectId) : null,
+        workspaceId: body.workspaceId ? Number(body.workspaceId) : null,
         assignees: body.assignees ?? [],
         labels: body.labels ?? [],
         startDate: body.startDate ? parseLocalDate(body.startDate) : null,
@@ -94,7 +143,7 @@ export async function POST(req: NextRequest) {
 export async function PATCH(req: NextRequest) {
   try {
     console.log('PATCH /api/tasks - Starting request');
-    const session = await getServerSession(authOptions);
+    const session = await auth();
 
     if (!session || !session.user?.id) {
       console.log('Unauthorized: No valid session or user ID');
@@ -128,11 +177,8 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
-    // Use Prisma's generated types for update data
-    type TaskUpdateData = Prisma.TaskUpdateInput;
-
-    // Only include fields that can be updated
-    const updateData: TaskUpdateData = { updatedAt: new Date() };
+    // We'll build the update data object dynamically
+    const updateData: Record<string, unknown> = { updatedAt: new Date() };
     
     // Handle project update separately as it's a relation
     if ('projectId' in body) {
@@ -141,16 +187,12 @@ export async function PATCH(req: NextRequest) {
         : { disconnect: true };
     }
     
-    // Define other updatable fields (non-relation fields)
-    type UpdatableField = keyof Pick<Prisma.TaskUpdateInput, 
-      'title' | 'description' | 'status' | 'priority' | 'startDate' | 
-      'dueDate' | 'module' | 'cycle' | 'assignees' | 'labels'
-    >;
-    
-    const updatableFields: UpdatableField[] = [
-      'title', 'description', 'status', 'priority', 
-      'module', 'cycle', 'assignees', 'labels'
-    ];
+    // Fields we allow updating directly
+    const updatableFields = [
+      'title', 'description', 'status', 'priority',
+      'module', 'cycle', 'assignees', 'labels', 'workspaceId'
+    ] as const;
+    type UpdatableField = (typeof updatableFields)[number];
 
     // Handle date fields separately to ensure they're proper Date objects
     if (body.startDate) {
@@ -170,8 +212,11 @@ export async function PATCH(req: NextRequest) {
     
     updatableFields.forEach((field: UpdatableField) => {
       if (field in safeBody && safeBody[field] !== undefined) {
-        // We know the field is in UpdatableField and safeBody
-        (updateData as Record<string, unknown>)[field] = safeBody[field];
+        if (field === 'workspaceId') {
+          (updateData as Record<string, unknown>)[field] = safeBody[field] ? Number(safeBody[field]) : null;
+        } else {
+          (updateData as Record<string, unknown>)[field] = safeBody[field];
+        }
       }
     });
     

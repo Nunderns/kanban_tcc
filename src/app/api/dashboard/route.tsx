@@ -1,11 +1,10 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { auth } from "@/lib/auth";
 
 export async function GET() {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
 
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -24,7 +23,12 @@ export async function GET() {
       include: { user: { select: { id: true, name: true, email: true } } },
     });
 
-    const memberIds = membersData.map((m) => m.userId);
+    type MemberWithUser = {
+      userId: number;
+      user: { id: number; name: string | null; email: string | null };
+    };
+
+    const memberIds = (membersData as MemberWithUser[]).map((m) => m.userId);
 
     const totalProjects = await prisma.project.count({
       where: { ownerId: { in: memberIds } },
@@ -52,7 +56,7 @@ export async function GET() {
       select: { id: true, title: true, description: true },
     });
 
-    const members = membersData.map((m) => ({
+    const members = (membersData as MemberWithUser[]).map((m) => ({
       id: m.user.id,
       name: m.user.name,
       email: m.user.email,

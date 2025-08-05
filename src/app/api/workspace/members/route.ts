@@ -1,11 +1,10 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { auth } from "@/lib/auth";
 import { prisma } from '@/lib/prisma';
 
 export async function GET() {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     
     if (!session?.user?.email) {
       return NextResponse.json(
@@ -43,14 +42,20 @@ export async function GET() {
           select: {
             id: true,
             name: true,
-            email: true
-          }
-        }
-      }
+            email: true,
+          },
+        },
+      },
     });
 
     // Formatar a resposta
-    const formattedMembers = workspaceMembers.map(member => ({
+    type MemberWithUser = {
+      userId: number;
+      role: string;
+      user: { id: number; name: string | null; email: string | null };
+    };
+
+    const formattedMembers = (workspaceMembers as MemberWithUser[]).map((member) => ({
       id: member.userId.toString(),
       fullName: member.user.name || 'Usuário sem nome',
       displayName: member.user.email?.split('@')[0] || 'usuario',

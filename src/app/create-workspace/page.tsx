@@ -3,11 +3,14 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
+import { useSession } from "next-auth/react";
 
 export default function CriarEspacoTrabalho() {
   const [nomeEspaco, setNomeEspaco] = useState("");
   const [urlEspaco, setUrlEspaco] = useState("");
   const [usuarios, setUsuarios] = useState("");
+
+  const { data: session } = useSession();
 
   const [erros, setErros] = useState({
     nome: false,
@@ -86,7 +89,9 @@ export default function CriarEspacoTrabalho() {
     <div className="min-h-screen bg-white text-gray-900 flex flex-col">
       <header className="flex justify-between items-center px-8 py-6">
         <h1 className="text-xl font-bold">TaskFlow</h1>
-        <span className="text-sm text-gray-600">henri.okayama@gmail.com</span>
+        <span className="text-sm text-gray-600">
+          {session?.user?.email || ""}
+        </span>
       </header>
 
       <main className="flex flex-1 items-center">
