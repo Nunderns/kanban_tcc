@@ -141,14 +141,18 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
+  console.log('PATCH /api/tasks - Starting request');
+  
   try {
-    console.log('PATCH /api/tasks - Starting request');
+    console.log('1. Authenticating session...');
     const session = await auth();
 
     if (!session || !session.user?.id) {
       console.log('Unauthorized: No valid session or user ID');
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+    
+    console.log('2. Session authenticated for user ID:', session.user.id);
 
     const searchParams = req.nextUrl.searchParams;
     const taskId = searchParams.get('id');
@@ -187,10 +191,17 @@ export async function PATCH(req: NextRequest) {
         : { disconnect: true };
     }
     
-    // Fields we allow updating directly
+    // Handle workspace update separately as it's a relation
+    if ('workspaceId' in body) {
+      updateData.workspace = body.workspaceId
+        ? { connect: { id: Number(body.workspaceId) } }
+        : { disconnect: true };
+    }
+    
+    // Fields we allow updating directly (exclude relational workspaceId)
     const updatableFields = [
       'title', 'description', 'status', 'priority',
-      'module', 'cycle', 'assignees', 'labels', 'workspaceId'
+      'module', 'cycle', 'assignees', 'labels'
     ] as const;
     type UpdatableField = (typeof updatableFields)[number];
 
@@ -212,33 +223,71 @@ export async function PATCH(req: NextRequest) {
     
     updatableFields.forEach((field: UpdatableField) => {
       if (field in safeBody && safeBody[field] !== undefined) {
-        if (field === 'workspaceId') {
-          (updateData as Record<string, unknown>)[field] = safeBody[field] ? Number(safeBody[field]) : null;
-        } else {
-          (updateData as Record<string, unknown>)[field] = safeBody[field];
-        }
+        (updateData as Record<string, unknown>)[field] = safeBody[field];
       }
     });
     
     // Always update the updatedAt field
     updateData.updatedAt = new Date();
 
-    console.log('Update data prepared:', JSON.stringify(updateData, null, 2));
+    console.log('5. Update data prepared:', JSON.stringify(updateData, null, 2));
 
-    // Update the task
-    const updatedTask = await prisma.task.update({
-      where: { id: Number(taskId) },
-      data: updateData
-    });
+    try {
+      console.log('6. Attempting to update task in database...');
+      const updatedTask = await prisma.task.update({
+        where: { id: Number(taskId) },
+        data: updateData,
+        include: {
+          user: { select: { id: true } },
+          project: { select: { id: true } }
+        }
+      });
 
-    console.log('Task updated successfully:', updatedTask.id);
-    return NextResponse.json(updatedTask);
+      console.log('7. Task updated successfully:', {
+        id: updatedTask.id,
+        title: updatedTask.title,
+        status: updatedTask.status,
+        updatedAt: updatedTask.updatedAt
+      });
+      
+      return NextResponse.json(updatedTask);
+    } catch (dbError) {
+      console.error('Database update error:', dbError);
+      if (dbError instanceof Error) {
+        console.error('Error details:', {
+          name: dbError.name,
+          message: dbError.message,
+          stack: dbError.stack
+        });
+      }
+      throw dbError;
+    }
   } catch (error) {
     console.error('Error in PATCH /api/tasks:', error);
+    
+    // Enhanced error details
+    let errorDetails: Record<string, unknown> = {
+      message: error instanceof Error ? error.message : String(error),
+      name: error instanceof Error ? error.name : 'UnknownError',
+    };
+
+    // Add Prisma error details if available
+    if (error instanceof Error && 'code' in error) {
+      errorDetails.code = (error as any).code;
+      errorDetails.meta = (error as any).meta;
+    }
+
+    // Add stack trace in development
+    if (process.env.NODE_ENV !== 'production') {
+      errorDetails.stack = error instanceof Error ? error.stack : undefined;
+    }
+
+    console.error('Full error details:', JSON.stringify(errorDetails, null, 2));
+    
     return NextResponse.json(
       { 
         error: "Internal server error",
-        details: error instanceof Error ? error.message : String(error)
+        details: errorDetails
       },
       { status: 500 }
     );
