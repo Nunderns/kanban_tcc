@@ -34,7 +34,6 @@ export default function ImportSettings() {
     { href: "/dashboard/settings/general", label: "Geral" },
     { href: "/dashboard/settings/members", label: "Membros" },
     { href: "/dashboard/settings/project-states", label: "Estados do Projeto" },
-    { href: "/dashboard/settings/billing-and-plans", label: "Faturamento e Planos" },
     { href: "/dashboard/settings/integrations", label: "Integrações" },
     { href: "/dashboard/settings/imports", label: "Importações" },
     { href: "/dashboard/settings/exports", label: "Exportações" },
