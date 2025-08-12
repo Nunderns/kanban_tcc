@@ -1,12 +1,10 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-// The generated Prisma client isn't available in CI, so avoid relying on its types
 import { auth } from "@/lib/auth";
 import { NextRequest } from "next/server";
 import { parseLocalDate } from "@/lib/utils";
 
 const handleServerError = (error: unknown) => {
-  // console.error("Server error:", error);
   return NextResponse.json(
     {
       error: "Internal server error",
@@ -265,19 +263,20 @@ export async function PATCH(req: NextRequest) {
   } catch (error) {
     console.error('Error in PATCH /api/tasks:', error);
     
-    // Enhanced error details
-    let errorDetails: Record<string, unknown> = {
+    const errorDetails: Record<string, unknown> = {
       message: error instanceof Error ? error.message : String(error),
       name: error instanceof Error ? error.name : 'UnknownError',
     };
 
-    // Add Prisma error details if available
-    if (error instanceof Error && 'code' in error) {
-      errorDetails.code = (error as any).code;
-      errorDetails.meta = (error as any).meta;
+    if (typeof error === 'object' && error !== null && 'code' in error) {
+      const errObj = error as { code: unknown; meta?: unknown };
+      if (typeof errObj.code === 'string') {
+        (errorDetails as Record<string, unknown>).code = errObj.code;
+        if ('meta' in errObj) {
+          (errorDetails as Record<string, unknown>).meta = errObj.meta;
+        }
+      }
     }
-
-    // Add stack trace in development
     if (process.env.NODE_ENV !== 'production') {
       errorDetails.stack = error instanceof Error ? error.stack : undefined;
     }
