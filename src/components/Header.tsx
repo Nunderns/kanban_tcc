@@ -8,7 +8,7 @@ export default function Header() {
     const [isScrolled, setIsScrolled] = useState(false);
     const pathname = usePathname();
 
-    const pagesWithHeader = ["/funcionalidades", "/planos", "/cases", "/"];
+    const pagesWithHeader = ["/funcionalidades", "/cases", "/"];
 
     // A lógica para verificar se a página deve renderizar o header
     const shouldRenderHeader = pagesWithHeader.includes(pathname);
@@ -47,15 +47,6 @@ export default function Header() {
                                 }`}
                         >
                             Funcionalidades
-                        </Link>
-                    </li>
-                    <li>
-                        <Link
-                            href="/planos"
-                            className={`transition-colors duration-300 ${isScrolled ? "text-blue-600 hover:text-blue-800" : "text-white hover:text-gray-200"
-                                }`}
-                        >
-                            Planos
                         </Link>
                     </li>
                     <li>

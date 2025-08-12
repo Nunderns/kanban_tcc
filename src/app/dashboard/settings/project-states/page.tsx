@@ -216,7 +216,6 @@ export default function ProjectStatesPage() {
               { href: "general", label: "Geral" },
               { href: "members", label: "Membros" },
               { href: "project-states", label: "Estados do Projeto" },
-              { href: "billing-and-plans", label: "Faturamento e Planos" },
               { href: "integrations", label: "Integrações" },
               { href: "imports", label: "Importações" },
               { href: "exports", label: "Exportações" },
