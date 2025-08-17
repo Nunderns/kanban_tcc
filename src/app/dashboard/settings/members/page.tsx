@@ -207,10 +207,8 @@ export default function MembersPage() {
   const [workspaceName, setWorkspaceName] = useState("");
   const [members, setMembers] = useState<Member[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [search, setSearch] = useState("");
-  const [slug, setSlug] = useState("");
 
   const links = [
     { href: "/dashboard/settings/general", label: "Geral" },
@@ -233,7 +231,6 @@ export default function MembersPage() {
     if (stored) {
       const parsed = JSON.parse(stored);
       setWorkspaceName(parsed.nome || "");
-      setSlug(parsed.slug || "");
     }
   }, []);
 
@@ -248,7 +245,6 @@ export default function MembersPage() {
         setMembers(data.members);
       } catch (err) {
         console.error('Error fetching members:', err);
-        setError('Falha ao carregar membros do workspace');
         toast.error('Falha ao carregar membros do workspace', {
           position: 'bottom-center',
           duration: 5000,
