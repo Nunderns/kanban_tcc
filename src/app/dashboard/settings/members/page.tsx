@@ -18,7 +18,6 @@ function InviteModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-  // Removida sessão não utilizada
 
   const handleChange = <K extends keyof InviteField>(
     index: number,
@@ -203,13 +202,40 @@ type Member = {
 };
 
 export default function MembersPage() {
-  const { status } = useSession();
   const pathname = usePathname();
-  const [search, setSearch] = useState("");
-  const [showModal, setShowModal] = useState(false);
+  const { data: session } = useSession();
+  const [workspaceName, setWorkspaceName] = useState("");
   const [members, setMembers] = useState<Member[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showModal, setShowModal] = useState(false);
+  const [search, setSearch] = useState("");
+  const [slug, setSlug] = useState("");
+
+  const links = [
+    { href: "/dashboard/settings/general", label: "Geral" },
+    { href: "/dashboard/settings/members", label: "Membros" },
+    { href: "/dashboard/settings/project-states", label: "Estados do Projeto" },
+    { href: "/dashboard/settings/integrations", label: "Integrações" },
+    { href: "/dashboard/settings/imports", label: "Importações" },
+    { href: "/dashboard/settings/exports", label: "Exportações" },
+    { href: "/dashboard/settings/webhooks", label: "Webhooks" },
+    { href: "/dashboard/settings/api-tokens", label: "Tokens de API" },
+    { href: "/dashboard/settings/worklogs", label: "Registros de Trabalho" },
+    { href: "/dashboard/settings/teamspaces", label: "Espaços de Equipe" },
+    { href: "/dashboard/settings/initiatives", label: "Iniciativas" },
+    { href: "/dashboard/settings/customers", label: "Clientes" },
+    { href: "/dashboard/settings/templates", label: "Modelos" },
+  ];
+
+  useEffect(() => {
+    const stored = localStorage.getItem("workspaceSelecionado");
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      setWorkspaceName(parsed.nome || "");
+      setSlug(parsed.slug || "");
+    }
+  }, []);
 
   useEffect(() => {
     async function fetchMembers() {
@@ -223,8 +249,6 @@ export default function MembersPage() {
       } catch (err) {
         console.error('Error fetching members:', err);
         setError('Falha ao carregar membros do workspace');
-        
-        // Mostrar notificação de erro
         toast.error('Falha ao carregar membros do workspace', {
           position: 'bottom-center',
           duration: 5000,
@@ -234,16 +258,33 @@ export default function MembersPage() {
       }
     }
 
-    if (status === 'authenticated') {
+    if (session) {
       fetchMembers();
     }
-  }, [status]);
+  }, [session]);
 
-  if (status === "loading") return <div className="p-4 text-gray-900">Carregando sessão...</div>;
-  if (status === "unauthenticated") {
-    // Redirecionar para a página de login
-    window.location.href = '/login';
-    return null;
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-white text-gray-900 flex">
+        <Sidebar />
+        <aside className="w-64 border-r border-gray-200 p-4 space-y-2 text-sm">
+          <h2 className="text-gray-500 font-semibold uppercase mb-2">Configurações</h2>
+          {links.map(({ href, label }) => (
+            <div
+              key={href}
+              className="block w-full text-left px-3 py-2 rounded-md text-gray-700"
+            >
+              {label}
+            </div>
+          ))}
+        </aside>
+        <main className="flex-1 p-10">
+          <div className="flex items-center justify-center h-full">
+            <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+          </div>
+        </main>
+      </div>
+    );
   }
 
   const filteredMembers = members.filter((member) => {
@@ -256,76 +297,42 @@ export default function MembersPage() {
     );
   });
 
-  const selected = pathname?.split("/").pop();
-
-  if (isLoading) {
-    return (
-      <div className="flex h-screen bg-gray-100">
-        <Sidebar />
-        <div className="flex-1 flex items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex h-screen bg-gray-100">
-        <Sidebar />
-        <div className="flex-1 p-6">
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-            {error}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="flex h-screen bg-gray-100">
+    <div className="min-h-screen bg-white text-gray-900 flex">
       <Sidebar />
-      <div className="flex flex-1 overflow-hidden">
-        {/* Sidebar de configurações */}
-        <aside className="w-64 bg-white border-r border-gray-200 overflow-y-auto">
-          <div className="p-4">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Configurações</h2>
-            <nav>
-              <ul className="space-y-1">
-                {[
-                  { href: "general", label: "Geral" },
-                  { href: "members", label: "Membros" },
-                  { href: "project-states", label: "Estados do Projeto" },
-                  { href: "billing", label: "Cobrança" },
-                  { href: "integrations", label: "Integrações" },
-                ].map((item) => (
-                  <li key={item.href}>
-                    <Link
-                      href={`/dashboard/settings/${item.href}`}
-                      className={`block px-4 py-2 rounded-md ${
-                        selected === item.href
-                          ? 'bg-blue-50 text-blue-700 font-medium'
-                          : 'text-gray-700 hover:bg-gray-100'
-                      }`}
-                    >
-                      {item.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </nav>
-          </div>
-        </aside>
 
-        {/* Conteúdo principal */}
-        <div className="flex-1 overflow-y-auto p-6">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h1 className="text-2xl font-semibold text-gray-900">Membros da Equipe</h1>
-              <p className="text-sm text-gray-500 mt-1">
-                Gerencie os membros do seu workspace
-              </p>
-            </div>
+      {/* Sidebar de Configurações */}
+      <aside className="w-64 border-r border-gray-200 p-4 space-y-2 text-sm">
+        <h2 className="text-gray-500 font-semibold uppercase mb-2">Configurações</h2>
+        {links.map(({ href, label }) => (
+          <Link
+            key={href}
+            href={href}
+            className={`block w-full text-left px-3 py-2 rounded-md transition ${
+              pathname === href
+                ? "bg-blue-100 text-blue-600 font-semibold"
+                : "hover:bg-gray-100 text-gray-700"
+            }`}
+          >
+            {label}
+          </Link>
+        ))}
+      </aside>
+
+      {/* Conteúdo */}
+      <main className="flex-1 p-10">
+        {/* Breadcrumb */}
+        <div className="mb-8 text-sm text-gray-600">
+          <span className="text-gray-800 font-medium">{workspaceName}</span> &gt; Configurações &gt; Membros
+        </div>
+        
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-2xl font-semibold text-gray-900">Membros da Equipe</h1>
+            <p className="text-sm text-gray-500 mt-1">
+              Gerencie os membros do seu workspace
+            </p>
+          </div>
             <button
               onClick={() => setShowModal(true)}
               className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
@@ -426,9 +433,7 @@ export default function MembersPage() {
               </table>
             </div>
           </div>
-        </div>
-      </div>
-
+      </main>
       <InviteModal isOpen={showModal} onClose={() => setShowModal(false)} />
     </div>
   );
