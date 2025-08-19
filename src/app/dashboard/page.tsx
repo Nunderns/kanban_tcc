@@ -35,7 +35,7 @@ interface Task {
   id: string;
   title: string;
   description: string;
-  remainingDays: number;
+  remainingDays: number | null;
 }
 
 interface Project {
@@ -335,10 +335,14 @@ export default function Dashboard() {
                           <div className="flex-1 min-w-0">
                             <p className="font-medium text-gray-900 truncate">{task.title}</p>
                             <p className="text-sm text-gray-500 mt-1 line-clamp-2">{task.description}</p>
-                            <div className="flex items-center mt-2 text-xs text-gray-500">
-                              <FiClock className="mr-1" />
-                              <span>{task.remainingDays} {task.remainingDays === 1 ? 'dia restante' : 'dias restantes'}</span>
-                            </div>
+                            {task.remainingDays !== null && task.remainingDays !== undefined && (
+                              <div className="flex items-center mt-2 text-xs text-gray-500">
+                                <FiClock className="mr-1" />
+                                <span>
+                                  {task.remainingDays} {task.remainingDays === 1 ? 'dia restante' : 'dias restantes'}
+                                </span>
+                              </div>
+                            )}
                           </div>
                           <div className="ml-4 flex-shrink-0">
                             <div className="h-2.5 w-2.5 rounded-full bg-blue-500"></div>

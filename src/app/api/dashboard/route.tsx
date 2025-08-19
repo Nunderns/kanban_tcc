@@ -2,6 +2,13 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 
+interface Task {
+  id: number;
+  title: string;
+  description: string | null;
+  dueDate: Date | null;
+}
+
 export async function GET() {
   try {
     const session = await auth();
@@ -51,10 +58,25 @@ export async function GET() {
       select: { id: true, name: true },
     });
 
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
     const tasks = await prisma.task.findMany({
       where: { userId: { in: memberIds } },
-      select: { id: true, title: true, description: true },
+      select: { 
+        id: true, 
+        title: true, 
+        description: true,
+        dueDate: true 
+      },
     });
+
+    const tasksWithRemainingDays = tasks.map((task: Task) => ({
+      ...task,
+      remainingDays: task.dueDate ? 
+        Math.ceil((new Date(task.dueDate).getTime() - today.getTime()) / (1000 * 60 * 60 * 24)) :
+        null
+    }));
 
     const members = (membersData as MemberWithUser[]).map((m) => ({
       id: m.user.id,
@@ -68,7 +90,7 @@ export async function GET() {
       assignedTasks,
       completedTasks,
       projects,
-      tasks,
+      tasks: tasksWithRemainingDays,
       members,
     });
   } catch (error) {
