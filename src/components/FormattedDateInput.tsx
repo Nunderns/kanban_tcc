@@ -19,9 +19,7 @@ export function FormattedDateInput({
   placeholder = 'dd/mm/yyyy',
   className = ''
 }: FormattedDateInputProps) {
-  const [displayValue, setDisplayValue] = useState('');
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -37,41 +35,6 @@ export function FormattedDateInput({
     };
   }, []);
 
-  useEffect(() => {
-    if (!value) {
-      setDisplayValue('');
-      return;
-    }
-    
-    try {
-      let date: Date;
-      
-      if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
-        const [year, month, day] = value.split('-').map(Number);
-        date = new Date(year, month - 1, day);
-      } 
-      else if (/^\d{2}\/\d{2}\/\d{4}$/.test(value)) {
-        const [day, month, year] = value.split('/').map(Number);
-        date = new Date(year, month - 1, day);
-      } 
-      else {
-        date = new Date(value);
-      }
-      
-      if (!isNaN(date.getTime())) {
-        const formattedDay = String(date.getDate()).padStart(2, '0');
-        const formattedMonth = String(date.getMonth() + 1).padStart(2, '0');
-        const formattedYear = date.getFullYear();
-        setDisplayValue(`${formattedDay}/${formattedMonth}/${formattedYear}`);
-      } else {
-        setDisplayValue('');
-      }
-    } catch (e) {
-      console.error('Error parsing date:', e);
-      setDisplayValue('');
-    }
-  }, [value]);
-
   const handleDateChange = (date: Date | null) => {
     if (date && !isNaN(date.getTime())) {
       const formattedDate = [
@@ -79,81 +42,17 @@ export function FormattedDateInput({
         String(date.getMonth() + 1).padStart(2, '0'),
         String(date.getDate()).padStart(2, '0')
       ].join('-')
-      
-      const formattedDisplay = [
-        String(date.getDate()).padStart(2, '0'),
-        String(date.getMonth() + 1).padStart(2, '0'),
-        date.getFullYear()
-      ].join('/')
-      
-      setDisplayValue(formattedDisplay);
       onChange(formattedDate);
     } else {
-      setDisplayValue('');
       onChange('');
     }
     setShowDatePicker(false);
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let input = e.target.value.replace(/\D/g, '');
-    
-    if (input.length > 8) {
-      input = input.substring(0, 8);
-    }
-    
-    let formatted = '';
-    for (let i = 0; i < input.length; i++) {
-      if (i === 2 || i === 4) {
-        formatted += '/';
-      }
-      formatted += input[i];
-    }
-    
-    setDisplayValue(formatted);
-    
-    if (input.length === 8) {
-      const day = parseInt(input.substring(0, 2), 10);
-      const month = parseInt(input.substring(2, 4), 10) - 1;
-      const year = parseInt(input.substring(4, 8), 10);
-      
-      const date = new Date(year, month, day);
-      if (!isNaN(date.getTime())) {
-        const formattedDate = [
-          date.getFullYear(),
-          String(date.getMonth() + 1).padStart(2, '0'),
-          String(date.getDate()).padStart(2, '0')
-        ].join('-')
-        
-        onChange(formattedDate);
-      }
-    } else if (input.length === 0) {
-      onChange('');
-    }
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (['Backspace', 'Delete', 'Tab', 'Escape', 'Enter', '.', 'Decimal'].includes(e.key) ||
-        (e.key === 'a' && e.ctrlKey === true) ||
-        ['Home', 'End', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) {
-      return;
-    }
-    
-    if ((e.shiftKey || !/^[0-9]$/.test(e.key)) && !/^Numpad[0-9]$/.test(e.key)) {
-      e.preventDefault();
-    }
-  };
-
-  const handleFocus = () => {
-    setShowDatePicker(true);
-  };
-
-  const handleBlur = () => {
-    setShowDatePicker(false);
-  };
-
-  const selectedDate = value ? (() => {
+  const selectedDate = (() => {
     try {
+      if (!value) return null;
+      
       if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
         const [year, month, day] = value.split('-').map(Number);
         return new Date(year, month - 1, day);
@@ -162,11 +61,12 @@ export function FormattedDateInput({
         const [day, month, year] = value.split('/').map(Number);
         return new Date(year, month - 1, day);
       }
+      return new Date(value);
     } catch (e) {
       console.error('Error parsing date:', e);
+      return null;
     }
-    return null;
-  })() : null;
+  })();
 
   return (
     <div className={`relative ${className}`} ref={wrapperRef}>
