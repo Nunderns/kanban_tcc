@@ -160,9 +160,25 @@ export default function WorkItemSidebar({ item, onClose, onUpdate }: Props) {
       });
 
       if (!updateResponse.ok) {
-        const errorData = await updateResponse.json().catch(() => ({}));
+        let errorData;
+        try {
+          const responseText = await updateResponse.text();
+          errorData = responseText ? JSON.parse(responseText) : {};
+        } catch (e) {
+          console.error('Failed to parse error response:', e);
+          errorData = {};
+        }
+        
         console.error('Update failed with status:', updateResponse.status, 'Details:', errorData);
-        throw new Error(errorData.error || 'Failed to update task');
+        
+        // Create a more detailed error message
+        const errorMessage = [
+          `Failed to update task (Status: ${updateResponse.status})`,
+          errorData.error && `Error: ${errorData.error}`,
+          errorData.details?.message && `Details: ${errorData.details.message}`
+        ].filter(Boolean).join(' - ');
+        
+        throw new Error(errorMessage || 'Failed to update task');
       }
 
       // Log activity for changed fields
