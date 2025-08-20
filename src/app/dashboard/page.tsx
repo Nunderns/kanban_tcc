@@ -241,9 +241,19 @@ export default function Dashboard() {
                       variant="ghost"
                       size="sm"
                       className="w-full justify-start text-red-600 hover:text-red-700"
-                      onClick={() => signOut({ callbackUrl: "/login" })}
+                      onClick={async () => {
+                        try {
+                          await signOut({ 
+                            redirect: true,
+                            callbackUrl: "/login" 
+                          });
+                        } catch (error) {
+                          console.error('Erro ao fazer logout:', error);
+                        }
+                      }}
+                      disabled={isLoading}
                     >
-                      Sair
+                      {isLoading ? 'Saindo...' : 'Sair'}
                     </Button>
                   </div>
                 </PopoverContent>
