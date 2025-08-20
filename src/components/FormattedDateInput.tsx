@@ -1,10 +1,9 @@
-import { useState, useEffect, useRef } from 'react';
-import DatePicker from 'react-datepicker';
-import { registerLocale } from 'react-datepicker';
+import { useState } from 'react';
+import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import 'react-datepicker/dist/react-datepicker.css';
-
-registerLocale('pt-BR', ptBR);
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
 
 interface FormattedDateInputProps {
   value: string;
@@ -19,21 +18,7 @@ export function FormattedDateInput({
   placeholder = 'dd/mm/yyyy',
   className = ''
 }: FormattedDateInputProps) {
-  const [showDatePicker, setShowDatePicker] = useState(false);
-  const wrapperRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
-        setShowDatePicker(false);
-      }
-    }
-    
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []);
+  const [open, setOpen] = useState(false);
 
   const handleDateChange = (date: Date | null) => {
     if (date && !isNaN(date.getTime())) {
@@ -46,7 +31,7 @@ export function FormattedDateInput({
     } else {
       onChange('');
     }
-    setShowDatePicker(false);
+    setOpen(false);
   };
 
   const selectedDate = (() => {
@@ -69,39 +54,30 @@ export function FormattedDateInput({
   })();
 
   return (
-    <div className={`relative ${className}`} ref={wrapperRef}>
-      <div 
-        className="w-full p-2 border border-gray-300 rounded-md cursor-pointer hover:border-blue-500 transition-colors"
-        onClick={() => setShowDatePicker(!showDatePicker)}
-      >
-        {selectedDate ? (
-          <span className="text-gray-900">
-            {selectedDate.toLocaleDateString('pt-BR')}
-          </span>
-        ) : (
-          <span className="text-gray-400">{placeholder}</span>
-        )}
-      </div>
-      
-      {showDatePicker && (
-        <div className="absolute z-10 mt-1 bg-white border border-gray-200 rounded-md shadow-lg">
-          <DatePicker
-            selected={selectedDate}
-            onChange={handleDateChange}
-            inline
-            showPopperArrow={false}
-            calendarClassName="border-0"
-            dateFormat="dd/MM/yyyy"
-            locale="pt-BR"
-            formatWeekDay={nameOfDay => nameOfDay.substring(0, 1).toUpperCase() + nameOfDay.substring(1, 3)}
-            showWeekNumbers
-            weekLabel="Sem"
-            showMonthDropdown
-            showYearDropdown
-            dropdownMode="select"
-          />
-        </div>
-      )}
-    </div>
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          type="button"
+          variant="outline"
+          className={`w-full justify-start text-left font-normal ${className}`}
+          onClick={() => setOpen(true)}
+        >
+          {selectedDate ? (
+            format(selectedDate, 'dd/MM/yyyy', { locale: ptBR })
+          ) : (
+            <span className="text-gray-400">{placeholder}</span>
+          )}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-0" align="center">
+        <Calendar
+          mode="single"
+          selected={selectedDate ?? undefined}
+          onSelect={(d) => handleDateChange(d ?? null)}
+          initialFocus
+          locale={ptBR}
+        />
+      </PopoverContent>
+    </Popover>
   );
 }

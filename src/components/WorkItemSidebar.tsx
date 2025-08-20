@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import "react-datepicker/dist/react-datepicker.css";
 import { FormattedDateInput } from "./FormattedDateInput";
 import type { WorkItem } from "@/app/dashboard/my-tasks/page";
 import { parseLocalDate } from "@/lib/utils";
