@@ -11,15 +11,15 @@ type Section = 'profile' | 'preferences' | 'notifications' | 'security' | 'activ
 export default function SettingsPage() {
   const [activeSection, setActiveSection] = useState<Section>('profile');
   const { data: session } = useSession();
-  const name = session?.user?.name || "User";
+  const name = session?.user?.name || "Usuário";
   const email = session?.user?.email || "";
   
   const getInitials = (value?: string | null) => {
-    if (!value) return "UN";
+    if (!value) return "US";
     const parts = value.trim().split(/\s+/);
     if (parts.length > 1) return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
     const at = value.indexOf("@");
-    if (at > 0) return `${value[0]}${value[at + 1] || "N"}`.toUpperCase();
+    if (at > 0) return `${value[0]}${value[at + 1] || "S"}`.toUpperCase();
     return value.slice(0, 2).toUpperCase();
   };
 
@@ -30,8 +30,8 @@ export default function SettingsPage() {
           <div className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Your Profile</CardTitle>
-                <CardDescription>Update your personal information</CardDescription>
+                <CardTitle>Seu Perfil</CardTitle>
+                <CardDescription>Atualize suas informações pessoais</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="flex items-center gap-4 mb-6">
@@ -47,7 +47,7 @@ export default function SettingsPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">
-                      First name
+                      Nome
                     </label>
                     <input
                       id="firstName"
@@ -57,7 +57,7 @@ export default function SettingsPage() {
                   </div>
                   <div>
                     <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1">
-                      Last name
+                      Sobrenome
                     </label>
                     <input
                       id="lastName"
@@ -67,7 +67,7 @@ export default function SettingsPage() {
                   </div>
                   <div className="md:col-span-2">
                     <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                      Email
+                      E-mail
                     </label>
                     <input
                       id="email"
@@ -79,9 +79,9 @@ export default function SettingsPage() {
                   </div>
                 </div>
                 <div className="mt-6 flex gap-3">
-                  <Button>Save changes</Button>
+                  <Button>Salvar alterações</Button>
                   <Button variant="outline" className="text-red-600 hover:text-red-700">
-                    Deactivate account
+                    Desativar conta
                   </Button>
                 </div>
               </CardContent>
@@ -94,33 +94,33 @@ export default function SettingsPage() {
           <div className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Preferences</CardTitle>
-                <CardDescription>Customize your app experience</CardDescription>
+                <CardTitle>Preferências</CardTitle>
+                <CardDescription>Personalize sua experiência no aplicativo</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div>
-                  <h3 className="font-medium mb-2">Theme</h3>
-                  <p className="text-sm text-gray-600 mb-3">Select your preferred theme.</p>
+                  <h3 className="font-medium mb-2">Tema</h3>
+                  <p className="text-sm text-gray-600 mb-3">Selecione seu tema preferido.</p>
                   <select className="w-full rounded-md border border-gray-200 px-3 py-2">
-                    <option value="light">Light</option>
-                    <option value="dark">Dark</option>
-                    <option value="system">System</option>
+                    <option value="light">Claro</option>
+                    <option value="dark">Escuro</option>
+                    <option value="system">Sistema</option>
                   </select>
                 </div>
 
                 <div>
-                  <h3 className="font-medium mb-2">First day of the week</h3>
-                  <p className="text-sm text-gray-600 mb-3">This will change how all calendars in your app look.</p>
+                  <h3 className="font-medium mb-2">Primeiro dia da semana</h3>
+                  <p className="text-sm text-gray-600 mb-3">Isso alterará como todos os calendários no aplicativo são exibidos.</p>
                   <select className="w-full rounded-md border border-gray-200 px-3 py-2">
-                    <option value="sunday">Sunday</option>
-                    <option value="monday">Monday</option>
+                    <option value="sunday">Domingo</option>
+                    <option value="monday">Segunda-feira</option>
                   </select>
                 </div>
 
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="font-medium">Smooth Cursor</h3>
-                    <p className="text-sm text-gray-600">Enable smooth cursor animation</p>
+                    <h3 className="font-medium">Cursor Suave</h3>
+                    <p className="text-sm text-gray-600">Ativar animação suave do cursor</p>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input type="checkbox" className="sr-only peer" defaultChecked />
@@ -137,21 +137,21 @@ export default function SettingsPage() {
           <Card>
             <CardHeader>
               <CardTitle>{activeSection.charAt(0).toUpperCase() + activeSection.slice(1)}</CardTitle>
-              <CardDescription>This section is under development.</CardDescription>
+              <CardDescription>Esta seção está em desenvolvimento.</CardDescription>
             </CardHeader>
           </Card>
         );
     }
   };
 
-  const sections: { id: Section; name: string }[] = [
-    { id: 'profile', name: 'Profile' },
-    { id: 'preferences', name: 'Preferences' },
-    { id: 'notifications', name: 'Notifications' },
-    { id: 'security', name: 'Security' },
-    { id: 'activity', name: 'Activity' },
-    { id: 'connections', name: 'Connections' },
-    { id: 'developer', name: 'Developer' },
+  const sections: { id: Section; name: string; ptName: string }[] = [
+    { id: 'profile', name: 'Perfil', ptName: 'Perfil' },
+    { id: 'preferences', name: 'Preferências', ptName: 'Preferências' },
+    { id: 'notifications', name: 'Notificações', ptName: 'Notificações' },
+    { id: 'security', name: 'Segurança', ptName: 'Segurança' },
+    { id: 'activity', name: 'Atividade', ptName: 'Atividade' },
+    { id: 'connections', name: 'Conexões', ptName: 'Conexões' },
+    { id: 'developer', name: 'Desenvolvedor', ptName: 'Desenvolvedor' },
   ];
 
   return (
@@ -182,7 +182,7 @@ export default function SettingsPage() {
                   : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
               }`}
             >
-              {section.name}
+              {section.ptName}
             </button>
           ))}
         </nav>
@@ -193,7 +193,7 @@ export default function SettingsPage() {
         <div className="max-w-3xl mx-auto">
           <div className="flex justify-between items-center mb-8">
             <h1 className="text-2xl font-bold text-gray-900">
-              {sections.find(s => s.id === activeSection)?.name}
+              {sections.find(s => s.id === activeSection)?.ptName}
             </h1>
             <a 
               href="/dashboard" 
@@ -202,7 +202,7 @@ export default function SettingsPage() {
               <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
               </svg>
-              Back to Dashboard
+              Voltar para o Painel
             </a>
           </div>
           {renderSection()}
