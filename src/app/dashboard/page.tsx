@@ -20,6 +20,10 @@ import {
 } from "react-icons/fi";
 import { motion } from "framer-motion";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import { Button } from "@/components/ui/button";
+import { useSession, signOut } from "next-auth/react";
 
 // Progress component
 const Progress = ({ value, className = "" }: { value: number; className?: string }) => (
@@ -50,6 +54,7 @@ interface Member {
 }
 
 export default function Dashboard() {
+  const { data: session } = useSession();
   const [isLoading, setIsLoading] = useState(true);
   const [isClient, setIsClient] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
@@ -135,6 +140,25 @@ export default function Dashboard() {
     }, 1000);
   };
 
+  const getInitials = (nameOrEmail?: string | null) => {
+    if (!nameOrEmail) return "UN";
+    const name = nameOrEmail.trim();
+    if (name.includes(" ")) {
+      const parts = name.split(/\s+/).filter(Boolean);
+      const first = parts[0]?.[0];
+      const last = parts[parts.length - 1]?.[0];
+      return `${(first || "U").toUpperCase()}${(last || "N").toUpperCase()}`;
+    }
+    // fallback: if it's an email, take first letter and domain letter
+    const emailParts = name.split("@");
+    if (emailParts.length === 2) {
+      const a = emailParts[0]?.[0] || "U";
+      const b = emailParts[1]?.[0] || "N";
+      return `${a.toUpperCase()}${b.toUpperCase()}`;
+    }
+    return name.slice(0, 2).toUpperCase();
+  };
+
   const handleAddProject = () => {
     setIsAddingProject(true);
     console.log('Opening new project form...');
@@ -183,6 +207,47 @@ export default function Dashboard() {
             {/* Botão de notificações */}
             <div className="relative">
               <NotificationsDropdown />
+            </div>
+            {/* Avatar do usuário */}
+            <div className="relative">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button aria-label="Abrir menu do usuário" className="rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <Avatar className="h-10 w-10 border border-gray-200">
+                      <AvatarImage
+                        src={session?.user?.image ?? undefined}
+                        alt={session?.user?.name || session?.user?.email || "Avatar do usuário"}
+                      />
+                      <AvatarFallback className="text-xs">
+                        {getInitials(session?.user?.name || session?.user?.email)}
+                      </AvatarFallback>
+                    </Avatar>
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent align="end" className="w-56 p-2">
+                  <div className="px-2 py-2">
+                    <p className="text-sm font-medium text-gray-900 truncate">{session?.user?.name || "Usuário"}</p>
+                    <p className="text-xs text-gray-500 truncate">{session?.user?.email}</p>
+                  </div>
+                  <div className="mt-2 grid gap-2">
+                    <Link href="/dashboard/settings">
+                      <Button variant="outline" size="sm" className="w-full justify-start">Perfil</Button>
+                    </Link>
+                    <Link href="/dashboard/settings#preferences">
+                      <Button variant="outline" size="sm" className="w-full justify-start">Preferências</Button>
+                    </Link>
+                    <div className="my-1 h-px bg-gray-200" />
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-full justify-start text-red-600 hover:text-red-700"
+                      onClick={() => signOut({ callbackUrl: "/login" })}
+                    >
+                      Sair
+                    </Button>
+                  </div>
+                </PopoverContent>
+              </Popover>
             </div>
             
             <button className="md:hidden p-2 rounded-full bg-white shadow-sm hover:bg-gray-50 transition-colors">
