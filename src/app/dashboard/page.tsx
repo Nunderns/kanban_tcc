@@ -25,7 +25,7 @@ import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover
 import { Button } from "@/components/ui/button";
 import { useSession, signOut } from "next-auth/react";
 import { useTheme } from "next-themes";
-import { Moon, Sun, Monitor } from "lucide-react";
+import { Sun, Moon, Monitor } from "lucide-react";
 
 const Progress = ({ value, className = "" }: { value: number; className?: string }) => (
   <div className={`w-full bg-gray-200 rounded-full h-2.5 ${className}`}>
@@ -52,39 +52,6 @@ interface Member {
   id: string;
   name: string;
   email: string;
-}
-
-function ThemeSwitcher() {
-  const { theme, setTheme } = useTheme();
-  
-  return (
-    <div className="px-2 py-2">
-      <p className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">Tema</p>
-      <div className="flex items-center space-x-2 p-2 bg-gray-100 dark:bg-gray-800 rounded-lg">
-        <button
-          onClick={() => setTheme('light')}
-          className={`p-2 rounded-md ${theme === 'light' ? 'bg-white shadow' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'}`}
-          aria-label="Light mode"
-        >
-          <Sun className="h-4 w-4" />
-        </button>
-        <button
-          onClick={() => setTheme('dark')}
-          className={`p-2 rounded-md ${theme === 'dark' ? 'bg-gray-800 text-white' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'}`}
-          aria-label="Dark mode"
-        >
-          <Moon className="h-4 w-4" />
-        </button>
-        <button
-          onClick={() => setTheme('system')}
-          className={`p-2 rounded-md ${theme === 'system' ? 'bg-gray-200 dark:bg-gray-700' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'}`}
-          aria-label="System preference"
-        >
-          <Monitor className="h-4 w-4" />
-        </button>
-      </div>
-    </div>
-  );
 }
 
 export default function Dashboard() {

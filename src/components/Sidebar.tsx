@@ -14,16 +14,13 @@ import {
   ChevronDown, 
   LayoutGrid, 
   Users, 
-  FolderPlus,
-  Moon,
-  Sun,
-  Monitor
+  FolderPlus
 } from "lucide-react";
 import { Navigation } from "@/components/Navigation";
 
 export const Sidebar = () => {
-  const { theme, setTheme } = useTheme();
-  const { data: session } = useSession();
+  const {} = useTheme();
+  const {} = useSession();
   const [workspace, setWorkspace] = useState("Espaço de trabalho");
   const [email, setEmail] = useState("");
   const [funcao, setFuncao] = useState("");
