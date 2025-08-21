@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "react-hot-toast";
+import { ThemeProvider } from "@/components/ThemeProvider";
 import Header from "@/components/Header";
 import LayoutWrapper from "@/components/LayoutWrapper";
 import "./globals.css";
@@ -24,16 +25,18 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="pt-br">
+    <html lang="pt-br" suppressHydrationWarning>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <SessionWrapper>
-          <TopProgressBar />
-          <Toaster position="top-right" />
-          <Header />
-          <LayoutWrapper>
-            <main>{children}</main>
-          </LayoutWrapper>
-        </SessionWrapper>
+        <ThemeProvider>
+          <SessionWrapper>
+            <TopProgressBar />
+            <Toaster position="top-right" />
+            <Header />
+            <LayoutWrapper>
+              <main>{children}</main>
+            </LayoutWrapper>
+          </SessionWrapper>
+        </ThemeProvider>
       </body>
     </html>
   );

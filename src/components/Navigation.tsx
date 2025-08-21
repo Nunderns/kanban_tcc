@@ -78,8 +78,10 @@ export const Navigation = () => {
                     <div key={item.href} className="space-y-1">
                         <div 
                             className={cn(
-                                "flex items-center justify-between p-2.5 rounded-md font-medium hover:text-primary transition cursor-pointer",
-                                isActive ? "bg-white shadow-sm text-primary" : "text-neutral-500 hover:bg-gray-50"
+                                "flex items-center justify-between p-2.5 rounded-md font-medium transition cursor-pointer",
+                                isActive 
+                                    ? "bg-white dark:bg-gray-800 shadow-sm text-primary dark:text-white" 
+                                    : "text-neutral-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
                             )}
                             onClick={() => hasSubItems ? toggleSubmenu(item.label) : null}
                         >
@@ -87,8 +89,8 @@ export const Navigation = () => {
                                 href={!hasSubItems ? item.href : '#'} 
                                 className={cn("flex items-center gap-2.5 flex-1")}
                             >
-                                <Icon className={cn("size-5", isActive ? "text-primary" : "text-neutral-500")} />
-                                <span>{item.label}</span>
+                                <Icon className={cn("size-5", isActive ? "text-primary dark:text-white" : "text-neutral-500 dark:text-gray-300")} />
+                                <span className="dark:text-white">{item.label}</span>
                             </Link>
                             
                             {hasSubItems && (
@@ -111,10 +113,10 @@ export const Navigation = () => {
                                             key={subItem.href} 
                                             href={subItem.href}
                                             className={cn(
-                                                "block px-2.5 py-1.5 text-sm rounded-md transition-colors",
-                                                isSubItemActive 
-                                                    ? "text-primary font-medium bg-primary/10" 
-                                                    : "text-neutral-600 hover:bg-gray-50"
+                                                "flex items-center w-full px-3 py-2.5 text-sm rounded-lg transition-colors dark:text-white",
+                                                isSubItemActive
+                                                    ? "text-indigo-600 dark:text-white bg-indigo-50 dark:bg-gray-800 font-medium"
+                                                    : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
                                             )}
                                         >
                                             {subItem.label}

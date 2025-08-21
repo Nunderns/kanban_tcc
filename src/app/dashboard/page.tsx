@@ -20,8 +20,13 @@ import {
 } from "react-icons/fi";
 import { motion } from "framer-motion";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import { Button } from "@/components/ui/button";
+import { useSession, signOut } from "next-auth/react";
+import { useTheme } from "next-themes";
+import { Sun, Moon, Monitor } from "lucide-react";
 
-// Progress component
 const Progress = ({ value, className = "" }: { value: number; className?: string }) => (
   <div className={`w-full bg-gray-200 rounded-full h-2.5 ${className}`}>
     <div 
@@ -50,6 +55,8 @@ interface Member {
 }
 
 export default function Dashboard() {
+  const { data: session } = useSession();
+  const { theme, setTheme } = useTheme();
   const [isLoading, setIsLoading] = useState(true);
   const [isClient, setIsClient] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
@@ -84,7 +91,6 @@ export default function Dashboard() {
     async function fetchData() {
       try {
         setIsLoading(true);
-        // Simulando carregamento
         await new Promise(resolve => setTimeout(resolve, 1000));
         const { data } = await axios.get("/api/dashboard");
         setStats(data);
@@ -100,7 +106,6 @@ export default function Dashboard() {
     }
   }, [isClient]);
 
-  // Filter tasks based on search query
   useEffect(() => {
     if (searchQuery.trim() === '') {
       setFilteredTasks(stats.tasks);
@@ -116,42 +121,51 @@ export default function Dashboard() {
     }
   }, [searchQuery, stats.tasks]);
 
-  // Scroll to first task when tasks change
   useEffect(() => {
     if (filteredTasks.length > 0 && firstTaskRef.current) {
       firstTaskRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
     }
   }, [filteredTasks]);
 
-  // Handler functions
   const handleAddTask = () => {
     setIsAddingTask(true);
-    // In a real app, you would open a modal or navigate to a new task page
     console.log('Opening new task form...');
-    // Simulate API call
     setTimeout(() => {
       setIsAddingTask(false);
-      // Add your task creation logic here
     }, 1000);
+  };
+
+  const getInitials = (nameOrEmail?: string | null) => {
+    if (!nameOrEmail) return "UN";
+    const name = nameOrEmail.trim();
+    if (name.includes(" ")) {
+      const parts = name.split(/\s+/).filter(Boolean);
+      const first = parts[0]?.[0];
+      const last = parts[parts.length - 1]?.[0];
+      return `${(first || "U").toUpperCase()}${(last || "N").toUpperCase()}`;
+    }
+    const emailParts = name.split("@");
+    if (emailParts.length === 2) {
+      const a = emailParts[0]?.[0] || "U";
+      const b = emailParts[1]?.[0] || "N";
+      return `${a.toUpperCase()}${b.toUpperCase()}`;
+    }
+    return name.slice(0, 2).toUpperCase();
   };
 
   const handleAddProject = () => {
     setIsAddingProject(true);
     console.log('Opening new project form...');
-    // Simulate API call
     setTimeout(() => {
       setIsAddingProject(false);
-      // Add your project creation logic here
     }, 1000);
   };
 
   const handleAddMember = () => {
     setIsAddingMember(true);
     console.log('Opening add member form...');
-    // Simulate API call
     setTimeout(() => {
       setIsAddingMember(false);
-      // Add your member addition logic here
     }, 1000);
   };
 
@@ -162,10 +176,10 @@ export default function Dashboard() {
         {/* Header */}
         <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
           <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 dark:from-white dark:to-gray-200 bg-clip-text text-transparent">
               Dashboard
             </h1>
-            <p className="text-gray-500">Bem-vindo de volta! Aqui está seu resumo diário.</p>
+            <p className="text-gray-500 dark:text-white">Bem-vindo de volta! Aqui está seu resumo diário.</p>
           </div>
           
           <div className="flex items-center gap-4 w-full md:w-auto">
@@ -183,6 +197,84 @@ export default function Dashboard() {
             {/* Botão de notificações */}
             <div className="relative">
               <NotificationsDropdown />
+            </div>
+            {/* Avatar do usuário */}
+            <div className="relative">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button aria-label="Abrir menu do usuário" className="rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <Avatar className="h-10 w-10 border border-gray-200">
+                      <AvatarImage
+                        src={session?.user?.image ?? undefined}
+                        alt={session?.user?.name || session?.user?.email || "Avatar do usuário"}
+                      />
+                      <AvatarFallback className="text-xs">
+                        {getInitials(session?.user?.name || session?.user?.email)}
+                      </AvatarFallback>
+                    </Avatar>
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent align="end" className="w-56 p-2">
+                  <div className="px-2 py-2">
+                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{session?.user?.name || "Usuário"}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{session?.user?.email}</p>
+                  </div>
+                  <div className="mt-2 grid gap-2">
+                    <Link href="/dashboard/settings">
+                      <Button variant="outline" size="sm" className="w-full justify-start">Perfil</Button>
+                    </Link>
+                    <Link href="/dashboard/settings#preferences">
+                      <Button variant="outline" size="sm" className="w-full justify-start">Preferências</Button>
+                    </Link>
+                    <div className="my-1 h-px bg-gray-200 dark:bg-gray-700" />
+                  <div className="px-2 py-2">
+                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">Tema</p>
+                    <div className="flex items-center space-x-2 p-2 bg-gray-100 dark:bg-gray-800 rounded-lg">
+                      <button
+                        onClick={() => setTheme('light')}
+                        className={`p-2 rounded-md ${theme === 'light' ? 'bg-white shadow' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'}`}
+                        aria-label="Light mode"
+                      >
+                        <Sun className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => setTheme('dark')}
+                        className={`p-2 rounded-md ${theme === 'dark' ? 'bg-gray-800 text-white' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'}`}
+                        aria-label="Dark mode"
+                      >
+                        <Moon className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => setTheme('system')}
+                        className={`p-2 rounded-md ${theme === 'system' ? 'bg-gray-200 dark:bg-gray-700' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'}`}
+                        aria-label="System preference"
+                      >
+                        <Monitor className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                  <div className="my-1 h-px bg-gray-200 dark:bg-gray-700" />
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-full justify-start text-red-600 hover:text-red-700"
+                      onClick={async () => {
+                        try {
+                          await signOut({ 
+                            redirect: true,
+                            callbackUrl: "/login" 
+                          });
+                        } catch (error) {
+                          console.error('Erro ao fazer logout:', error);
+                        }
+                      }}
+                      disabled={isLoading}
+                    >
+                      {isLoading ? 'Saindo...' : 'Sair'}
+                    </Button>
+                  </div>
+                </PopoverContent>
+              </Popover>
             </div>
             
             <button className="md:hidden p-2 rounded-full bg-white shadow-sm hover:bg-gray-50 transition-colors">
@@ -231,26 +323,26 @@ export default function Dashboard() {
               { 
                 title: "Total de Projetos", 
                 value: stats.totalProjects,
-                icon: <FiFolder className="w-6 h-6 text-blue-500" />,
-                color: "bg-blue-100 text-blue-600"
+                icon: <FiFolder className="w-6 h-6 text-blue-500 dark:text-blue-400" />,
+                color: "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-white"
               },
               { 
                 title: "Total de Tarefas", 
                 value: stats.totalTasks,
-                icon: <FiClipboard className="w-6 h-6 text-green-500" />,
-                color: "bg-green-100 text-green-600"
+                icon: <FiClipboard className="w-6 h-6 text-green-500 dark:text-green-400" />,
+                color: "bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-white"
               },
               { 
                 title: "Tarefas Atribuídas", 
                 value: stats.assignedTasks,
-                icon: <FiUsers className="w-6 h-6 text-yellow-500" />,
-                color: "bg-yellow-100 text-yellow-600"
+                icon: <FiUsers className="w-6 h-6 text-yellow-500 dark:text-yellow-400" />,
+                color: "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-white"
               },
               { 
                 title: "Tarefas Concluídas", 
                 value: stats.completedTasks,
-                icon: <FiCheckSquare className="w-6 h-6 text-purple-500" />,
-                color: "bg-purple-100 text-purple-600"
+                icon: <FiCheckSquare className="w-6 h-6 text-purple-500 dark:text-purple-400" />,
+                color: "bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-white"
               },
             ].map((item, index) => (
               <motion.div
@@ -259,12 +351,12 @@ export default function Dashboard() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3, delay: index * 0.1 }}
               >
-                <Card className="overflow-hidden transition-all duration-300 hover:shadow-lg h-full">
+                <Card className="overflow-hidden transition-all duration-300 hover:shadow-lg h-full dark:bg-gray-800">
                   <CardContent className="p-6">
                     <div className="flex justify-between items-start">
                       <div>
-                        <p className="text-sm font-medium text-gray-500">{item.title}</p>
-                        <p className="text-3xl font-bold mt-1">{item.value}</p>
+                        <p className="text-sm font-medium text-gray-500 dark:text-gray-300">{item.title}</p>
+                        <p className="text-3xl font-bold mt-1 dark:text-white">{item.value}</p>
                       </div>
                       <div className={`p-3 rounded-lg ${item.color} bg-opacity-20`}>
                         {item.icon}
@@ -411,8 +503,8 @@ export default function Dashboard() {
             ) : (
               <>
                 <CardHeader>
-                  <CardTitle className="text-lg">Meus Projetos</CardTitle>
-                  <CardDescription>{stats.projects.length} projetos ativos</CardDescription>
+                  <CardTitle className="text-lg dark:text-white">Meus Projetos</CardTitle>
+                  <CardDescription className="dark:text-gray-300">{stats.projects.length} projetos ativos</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
@@ -420,17 +512,17 @@ export default function Dashboard() {
                       <Link 
                         key={project.id}
                         href={`/projects/${project.id}`}
-                        className="block p-3 rounded-lg border border-gray-100 hover:border-blue-200 hover:bg-blue-50 transition-colors duration-200 group"
+                        className="block p-3 rounded-lg border border-gray-100 dark:border-gray-700 hover:border-blue-200 dark:hover:border-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors duration-200 group"
                       >
                         <div className="flex items-center">
                           <div className="p-2 rounded-lg bg-blue-100 text-blue-600 mr-3 group-hover:bg-blue-200 transition-colors duration-200">
                             <FiFolder className="w-5 h-5" />
                           </div>
                           <div>
-                            <p className="font-medium text-gray-900 group-hover:text-blue-600">{project.name}</p>
-                            <p className="text-xs text-gray-500">Última atualização: 2 dias atrás</p>
+                            <p className="font-medium text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400">{project.name}</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">Última atualização: 2 dias atrás</p>
                           </div>
-                          <FiChevronRight className="ml-auto text-gray-400 group-hover:text-blue-600 transition-colors duration-200" />
+                          <FiChevronRight className="ml-auto text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-200" />
                         </div>
                       </Link>
                     ))}
@@ -568,8 +660,6 @@ export default function Dashboard() {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => {
-                // Toggle between actions or open a menu
-                // For now, we'll default to adding a task
                 handleAddTask();
               }}
               className="w-14 h-14 rounded-full bg-blue-600 text-white flex items-center justify-center shadow-lg hover:bg-blue-700 transition-colors"
