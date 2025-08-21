@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { useState, useRef, useEffect } from "react";
-import { signOut } from "next-auth/react";
-
+import { signOut, useSession } from "next-auth/react";
+import { useTheme } from "next-themes";
 import { 
   Plus, 
   Settings, 
@@ -14,11 +14,13 @@ import {
   ChevronDown, 
   LayoutGrid, 
   Users, 
-  FolderPlus 
+  FolderPlus
 } from "lucide-react";
 import { Navigation } from "@/components/Navigation";
 
 export const Sidebar = () => {
+  const {} = useTheme();
+  const {} = useSession();
   const [workspace, setWorkspace] = useState("Espaço de trabalho");
   const [email, setEmail] = useState("");
   const [funcao, setFuncao] = useState("");
@@ -129,7 +131,7 @@ export const Sidebar = () => {
   }, [showPopover]);
 
   return (
-    <aside className="h-screen w-72 bg-white p-5 flex flex-col relative border-r border-gray-200 shadow-sm">
+    <div className="flex h-full flex-col bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 shadow-sm">
       {/* Logo */}
       <Link href="/dashboard" className="text-2xl font-bold text-indigo-600 mb-8 flex items-center">
         <LayoutGrid size={24} className="mr-2" />
@@ -141,17 +143,17 @@ export const Sidebar = () => {
         <button
           ref={buttonRef}
           onClick={togglePopover}
-          className="w-full flex justify-between items-center bg-indigo-50 hover:bg-indigo-100 px-4 py-3 rounded-xl transition-all duration-200 border border-indigo-100 hover:border-indigo-200"
+          className="w-full flex justify-between items-center bg-indigo-50 hover:bg-indigo-100 dark:bg-gray-800 dark:hover:bg-gray-750 px-4 py-3 rounded-xl transition-all duration-200 border border-indigo-100 hover:border-indigo-200 dark:border-gray-700 dark:hover:border-gray-600"
         >
           <div className="flex items-center">
-            <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center text-indigo-600 mr-3">
+            <div className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-gray-750 flex items-center justify-center text-indigo-600 dark:text-indigo-400 mr-3">
               <Users size={16} />
             </div>
             <div className="text-left">
-              <p className="text-sm font-medium text-gray-900 truncate max-w-[160px]">
+              <p className="text-sm font-medium text-gray-900 dark:text-white truncate max-w-[160px]">
                 {mounted ? workspace : "Carregando..."}
               </p>
-              <p className="text-xs text-gray-500">{membros} membro{membros !== 1 ? 's' : ''}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">{membros} membro{membros !== 1 ? 's' : ''}</p>
             </div>
           </div>
           <ChevronDown size={18} className="text-gray-500" />
@@ -160,15 +162,15 @@ export const Sidebar = () => {
         {showPopover && mounted && (
           <div
             ref={popoverRef}
-            className="absolute top-16 left-0 z-10 w-72 bg-white border border-gray-100 rounded-xl shadow-xl overflow-hidden"
+            className="absolute top-16 left-0 z-10 w-72 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl shadow-xl overflow-hidden"
           >
             <div className="p-4 border-b border-gray-100">
               <p className="text-xs font-medium text-gray-500 mb-1">Logado como</p>
               <div className="flex items-center justify-between">
-                <p className="font-semibold text-gray-900 truncate">{email}</p>
+                <p className="font-semibold text-gray-900 dark:text-white truncate">{email}</p>
                 <Check size={16} className="text-indigo-600 flex-shrink-0 ml-2" />
               </div>
-              <p className="text-xs text-gray-500 mt-1">{funcao} • {membros} membro{membros !== 1 ? 's' : ''}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{funcao} • {membros} membro{membros !== 1 ? 's' : ''}</p>
             </div>
 
             <div className="p-2">
@@ -276,7 +278,7 @@ export const Sidebar = () => {
           </button>
         </nav>
       </div>
-    </aside>
+    </div>
   );
 };
 
