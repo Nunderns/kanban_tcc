@@ -1,18 +1,26 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useSession } from "next-auth/react";
+import { useTheme } from "next-themes";
 
 type Section = 'profile' | 'preferences' | 'notifications' | 'security' | 'activity' | 'connections' | 'developer';
 
 export default function SettingsPage() {
   const [activeSection, setActiveSection] = useState<Section>('profile');
+  const [mounted, setMounted] = useState(false);
+  const { theme, setTheme } = useTheme();
   const { data: session } = useSession();
   const name = session?.user?.name || "Usuário";
   const email = session?.user?.email || "";
+
+  // Ensure UI is mounted before showing theme selector
+  useEffect(() => {
+    setMounted(true);
+  }, []);
   
   const getInitials = (value?: string | null) => {
     if (!value) return "US";
@@ -98,14 +106,93 @@ export default function SettingsPage() {
                 <CardDescription>Personalize sua experiência no aplicativo</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div>
-                  <h3 className="font-medium mb-2">Tema</h3>
-                  <p className="text-sm text-gray-600 mb-3">Selecione seu tema preferido.</p>
-                  <select className="w-full rounded-md border border-gray-200 px-3 py-2">
-                    <option value="light">Claro</option>
-                    <option value="dark">Escuro</option>
-                    <option value="system">Sistema</option>
-                  </select>
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="font-medium">Tema</h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                      Escolha como o Kanban TCC é exibido para você
+                    </p>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    {mounted && ([
+                      {
+        				    value: 'light',
+        				    label: 'Claro',
+        				    icon: (
+        				      <div className="w-full h-full rounded-lg bg-white border border-gray-200 p-4 flex flex-col items-center justify-center">
+        				        <div className="w-6 h-6 rounded-full bg-yellow-300 mb-2" />
+        				        <div className="w-full h-1 bg-gray-200 my-1" />
+        				        <div className="w-full h-1 bg-gray-200 my-1" />
+        				        <div className="w-3/4 h-1 bg-gray-200 mt-1" />
+        				      </div>
+        				    ),
+        				  },
+        				  {
+        				    value: 'dark',
+        				    label: 'Escuro',
+        				    icon: (
+        				      <div className="w-full h-full rounded-lg bg-gray-900 border border-gray-700 p-4 flex flex-col items-center justify-center">
+        				        <div className="w-6 h-6 rounded-full bg-blue-500 mb-2" />
+        				        <div className="w-full h-1 bg-gray-700 my-1" />
+        				        <div className="w-full h-1 bg-gray-700 my-1" />
+        				        <div className="w-3/4 h-1 bg-gray-700 mt-1" />
+        				      </div>
+        				    ),
+        				  },
+        				  {
+        				    value: 'system',
+        				    label: 'Sistema',
+        				    icon: (
+        				      <div className="w-full h-full rounded-lg bg-gradient-to-br from-white to-gray-900 border border-gray-200 dark:border-gray-700 p-4 flex flex-col items-center justify-center">
+        				        <div className="w-6 h-6 rounded-full bg-gradient-to-r from-yellow-300 to-blue-500 mb-2" />
+        				        <div className="w-full h-1 bg-gray-200 dark:bg-gray-700 my-1" />
+        				        <div className="w-full h-1 bg-gray-200 dark:bg-gray-700 my-1" />
+        				        <div className="w-3/4 h-1 bg-gray-200 dark:bg-gray-700 mt-1" />
+        				      </div>
+        				    ),
+        				  },
+        				] as const).map(({ value, label, icon }) => (
+                      <button
+                        key={value}
+                        type="button"
+                        onClick={() => setTheme(value)}
+                        className={`relative flex flex-col items-center p-3 rounded-lg border-2 transition-all duration-200 ${
+                          theme === value
+                            ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                            : 'border-transparent hover:border-gray-200 dark:hover:border-gray-700'
+                        }`}
+                        aria-pressed={theme === value}
+                      >
+                        <div className="w-full aspect-square max-h-24 mb-2">
+                          {icon}
+                        </div>
+                        <span className="text-sm font-medium text-gray-900 dark:text-white">
+                          {label}
+                        </span>
+                        {theme === value && (
+                          <div className="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-blue-500 flex items-center justify-center">
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              className="h-3.5 w-3.5 text-white"
+                              viewBox="0 0 20 20"
+                              fill="currentColor"
+                            >
+                              <path
+                                fillRule="evenodd"
+                                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                clipRule="evenodd"
+                              />
+                            </svg>
+                          </div>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                  
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                    A configuração do tema será aplicada a todo o site.
+                  </p>
                 </div>
 
                 <div>
