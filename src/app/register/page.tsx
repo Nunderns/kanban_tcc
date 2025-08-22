@@ -68,14 +68,14 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-white flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-white dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4 transition-colors">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Crie sua conta</h1>
-          <p className="text-gray-500">Preencha os dados abaixo para começar</p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Crie sua conta</h1>
+          <p className="text-gray-500 dark:text-gray-400">Preencha os dados abaixo para começar</p>
         </div>
 
-        <div className="bg-white p-8 rounded-2xl shadow-xl border border-gray-100">
+        <div className="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 transition-colors">
           <form onSubmit={handleRegister} className="space-y-5">
             <div>
               <div className="relative">
@@ -86,8 +86,8 @@ export default function RegisterPage() {
                   type="text"
                   placeholder="Nome completo"
                   className={`pl-10 w-full p-3 border ${
-                    errors.name ? 'border-red-300' : 'border-gray-200'
-                  } rounded-xl text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all`}
+                    errors.name ? 'border-red-500' : 'border-gray-200 dark:border-gray-600'
+                  } rounded-xl text-gray-800 dark:text-white bg-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all`}
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                 />
@@ -108,8 +108,8 @@ export default function RegisterPage() {
                   type="email"
                   placeholder="Seu email"
                   className={`pl-10 w-full p-3 border ${
-                    errors.email ? 'border-red-300' : 'border-gray-200'
-                  } rounded-xl text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all`}
+                    errors.email ? 'border-red-500' : 'border-gray-200 dark:border-gray-600'
+                  } rounded-xl text-gray-800 dark:text-white bg-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all`}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                 />
@@ -130,8 +130,8 @@ export default function RegisterPage() {
                   type="password"
                   placeholder="Sua senha"
                   className={`pl-10 w-full p-3 border ${
-                    errors.password ? 'border-red-300' : 'border-gray-200'
-                  } rounded-xl text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all`}
+                    errors.password ? 'border-red-500' : 'border-gray-200 dark:border-gray-600'
+                  } rounded-xl text-gray-800 dark:text-white bg-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all`}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                 />
@@ -146,7 +146,7 @@ export default function RegisterPage() {
             <div className="pt-2">
               <button
                 type="submit"
-                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-3 px-4 rounded-xl transition-all duration-200 flex items-center justify-center space-x-2"
+                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-3 px-4 rounded-xl transition-all duration-200 flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <span>Criar conta</span>
                 <ArrowRight size={18} className="text-white" />
@@ -155,11 +155,11 @@ export default function RegisterPage() {
           </form>
 
           <div className="mt-6 text-center">
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-gray-600 dark:text-gray-400">
               Já possui uma conta?{" "}
               <Link 
                 href="/login" 
-                className="font-medium text-indigo-600 hover:text-indigo-500 transition-colors"
+                className="font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300 transition-colors"
               >
                 Fazer login
               </Link>
@@ -168,12 +168,12 @@ export default function RegisterPage() {
         </div>
 
         <div className="mt-6 text-center">
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-gray-500 dark:text-gray-400">
             Ao se registrar, você concorda com nossos{" "}
-            <a href="#" className="text-indigo-600 hover:underline">
+            <a href="#" className="text-indigo-600 dark:text-indigo-400 hover:underline">
               Termos de Serviço
             </a>{" "}e{" "}
-            <a href="#" className="text-indigo-600 hover:underline">
+            <a href="#" className="text-indigo-600 dark:text-indigo-400 hover:underline">
               Política de Privacidade
             </a>.
           </p>

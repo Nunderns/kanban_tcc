@@ -79,15 +79,15 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex h-screen">
-      <div className="w-1/2 flex flex-col items-center justify-center bg-white p-10">
-        <h1 className="text-4xl font-semibold mb-6 text-black">TaskFlow</h1>
+    <div className="flex h-screen bg-white dark:bg-gray-900">
+      <div className="w-1/2 flex flex-col items-center justify-center bg-white dark:bg-gray-900 p-10 transition-colors">
+        <h1 className="text-4xl font-semibold mb-6 text-black dark:text-white">TaskFlow</h1>
         
         {/* Google Sign In Button */}
         <button
           onClick={handleGoogleSignIn}
           disabled={isLoading}
-          className="w-80 flex items-center justify-center gap-3 bg-white border border-gray-300 rounded-md px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed mb-6"
+          className="w-80 flex items-center justify-center gap-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed mb-6 transition-colors"
         >
           <FaGoogle className="h-5 w-5 text-red-500" />
           {isLoading ? 'Entrando com Google...' : 'Entrar com Google'}
@@ -95,28 +95,30 @@ export default function LoginPage() {
         
         <div className="relative w-80 my-4">
           <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-gray-300"></div>
+            <div className="w-full border-t border-gray-300 dark:border-gray-600"></div>
           </div>
           <div className="relative flex justify-center text-sm">
-            <span className="px-2 bg-white text-gray-500">ou</span>
+            <span className="px-2 bg-white dark:bg-gray-900 text-gray-500 dark:text-gray-400 transition-colors">ou</span>
           </div>
         </div>
         
         <form className="w-80" onSubmit={handleLogin}>
-          <label className="block mb-2 text-black font-medium">Email</label>
+          <label className="block mb-2 text-gray-800 dark:text-gray-200 font-medium">Email</label>
           <input 
             type="email" 
-            className={`w-full p-2 border ${errors.email ? "border-red-500" : "border-gray-300"} rounded-md text-black`}
+            className={`w-full p-2 border ${errors.email ? "border-red-500" : "border-gray-300 dark:border-gray-600"} rounded-md text-black dark:text-white bg-white dark:bg-gray-800 placeholder-gray-500 dark:placeholder-gray-400 transition-colors`}
+            placeholder="Digite seu email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             disabled={isLoading}
           />
           {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
           
-          <label className="block mt-4 mb-2 text-black font-medium">Senha</label>
+          <label className="block mt-4 mb-2 text-gray-800 dark:text-gray-200 font-medium">Senha</label>
           <input 
             type="password" 
-            className={`w-full p-2 border ${errors.password ? "border-red-500" : "border-gray-300"} rounded-md text-black`}
+            className={`w-full p-2 border ${errors.password ? "border-red-500" : "border-gray-300 dark:border-gray-600"} rounded-md text-black dark:text-white bg-white dark:bg-gray-800 placeholder-gray-500 dark:placeholder-gray-400 transition-colors`}
+            placeholder="Digite sua senha"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             disabled={isLoading}
@@ -139,9 +141,9 @@ export default function LoginPage() {
           </button>
           
           <div className="mt-4 text-center">
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-gray-600 dark:text-gray-400">
               Não tem uma conta?{" "}
-              <a href="/register" className="text-blue-600 hover:underline">
+              <a href="/register" className="text-blue-600 dark:text-blue-400 hover:underline">
                 Cadastre-se
               </a>
             </p>
@@ -149,12 +151,12 @@ export default function LoginPage() {
         </form>
       </div>
       
-      <div className="w-1/2 bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center">
+      <div className="w-1/2 bg-gradient-to-br from-blue-600 to-blue-800 dark:from-blue-700 dark:to-blue-900 flex items-center justify-center transition-colors">
         <div className="text-center text-white p-10">
           <h2 className="text-3xl font-bold mb-4">Bem-vindo ao TaskFlow</h2>
           <p className="text-lg mb-8">Gerencie suas tarefas de forma simples e eficiente.</p>
           <div className="flex justify-center">
-            <div className="bg-white/20 backdrop-blur-md p-6 rounded-lg max-w-md">
+            <div className="bg-white/20 dark:bg-black/30 backdrop-blur-md p-6 rounded-lg max-w-md">
               <h3 className="text-xl font-semibold mb-4">Por que usar o TaskFlow?</h3>
               <ul className="space-y-2 text-left">
                 <li className="flex items-start">
