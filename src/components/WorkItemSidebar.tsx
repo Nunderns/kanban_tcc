@@ -11,14 +11,13 @@ import {
   CalendarIcon, 
   ClockIcon, 
   CheckCircleIcon,
-  UserGroupIcon,
   FlagIcon,
   CubeIcon,
   ArrowsPointingOutIcon,
   ListBulletIcon,
   ArrowPathIcon
 } from '@heroicons/react/24/outline';
-import { statusColors, priorityColors } from "@/lib/constants";
+import { priorityColors } from "@/lib/constants";
 
 interface Activity {
   id: string;
