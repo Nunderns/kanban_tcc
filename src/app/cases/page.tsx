@@ -3,7 +3,6 @@
 import { useState } from 'react';
 
 export default function Cases() {
-  const [imageErrors] = useState<Record<string, boolean>>({});
   return (
     <main className="bg-[#f5f8fc] dark:bg-gray-900 text-gray-800 dark:text-gray-100 transition-colors">
 
