@@ -65,17 +65,17 @@ export default function HomePage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-12">
           <div className="relative p-8 bg-gradient-to-br from-primary to-primary/90 text-primary-foreground rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300">
             <h3 className="text-lg font-bold">compasso coolab</h3>
-            <p className="mt-4 italic">"TaskFlow se destaca com todas as funcionalidades, fácil inserção e relatórios completos."</p>
+            <p className="mt-4 italic">&quot;TaskFlow se destaca com todas as funcionalidades, fácil inserção e relatórios completos.&quot;</p>
             <p className="mt-6 font-medium border-t border-primary-foreground/20 pt-4">Amanda Ronconi - Head de Marketing</p>
           </div>
           <div className="p-8 bg-card rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 border border-border/50">
             <h3 className="text-lg font-bold text-foreground">agência 3xceler</h3>
-            <p className="mt-4 italic text-muted-foreground">"Aumentamos nossa produtividade em 40% após a implementação do TaskFlow. A gestão de projetos nunca foi tão simples."</p>
+            <p className="mt-4 italic text-muted-foreground">&quot;Aumentamos nossa produtividade em 40% após a implementação do TaskFlow. A gestão de projetos nunca foi tão simples.&quot;</p>
             <p className="mt-6 font-medium text-muted-foreground border-t border-border/50 pt-4">Carlos Eduardo - CEO</p>
           </div>
           <div className="p-8 bg-gradient-to-br from-primary/90 to-primary text-primary-foreground rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300">
             <h3 className="text-lg font-bold">Aproxima</h3>
-            <p className="mt-4 italic">"A automação dos fluxos de trabalho e relatórios inteligentes foram decisivos."</p>
+            <p className="mt-4 italic">&quot;A automação dos fluxos de trabalho e relatórios inteligentes foram decisivos.&quot;</p>
             <p className="mt-6 font-medium border-t border-primary-foreground/20 pt-4">Lucas Resende - Sócio Fundador</p>
           </div>
         </div>
