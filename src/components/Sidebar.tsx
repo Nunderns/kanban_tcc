@@ -165,18 +165,18 @@ export const Sidebar = () => {
             className="absolute top-16 left-0 z-10 w-72 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl shadow-xl overflow-hidden"
           >
             <div className="p-4 border-b border-gray-100">
-              <p className="text-xs font-medium text-gray-500 mb-1">Logado como</p>
+              <p className="text-xs font-medium text-gray-500 dark:text-gray-300 mb-1">Logado como</p>
               <div className="flex items-center justify-between">
                 <p className="font-semibold text-gray-900 dark:text-white truncate">{email}</p>
-                <Check size={16} className="text-indigo-600 flex-shrink-0 ml-2" />
+                <Check size={16} className="text-indigo-600 dark:text-indigo-400 flex-shrink-0 ml-2" />
               </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{funcao} • {membros} membro{membros !== 1 ? 's' : ''}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-300 mt-1">{funcao} • {membros} membro{membros !== 1 ? 's' : ''}</p>
             </div>
 
             <div className="p-2">
               <Link
                 href="/dashboard/settings/general"
-                className="flex items-center w-full text-sm text-gray-700 hover:bg-gray-50 px-3 py-2.5 rounded-lg transition-colors"
+                className="flex items-center w-full text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 px-3 py-2.5 rounded-lg transition-colors"
               >
                 <Settings size={16} className="text-gray-500 mr-3" />
                 Configurações
@@ -184,7 +184,7 @@ export const Sidebar = () => {
 
               <Link
                 href="/dashboard/settings/members"
-                className="flex items-center w-full text-sm text-gray-700 hover:bg-gray-50 px-3 py-2.5 rounded-lg transition-colors"
+                className="flex items-center w-full text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 px-3 py-2.5 rounded-lg transition-colors"
               >
                 <UserPlus size={16} className="text-gray-500 mr-3" />
                 Convidar Membros
@@ -192,13 +192,13 @@ export const Sidebar = () => {
 
               <Link
                 href="/create-workspace"
-                className="flex items-center w-full text-sm text-gray-700 hover:bg-gray-50 px-3 py-2.5 rounded-lg transition-colors"
+                className="flex items-center w-full text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 px-3 py-2.5 rounded-lg transition-colors"
               >
                 <Plus size={16} className="text-gray-500 mr-3" />
                 Criar Espaço
               </Link>
 
-              <button className="flex items-center w-full text-sm text-gray-700 hover:bg-gray-50 px-3 py-2.5 rounded-lg transition-colors">
+              <button className="flex items-center w-full text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 px-3 py-2.5 rounded-lg transition-colors">
                 <Mail size={16} className="text-gray-500 mr-3" />
                 Convites Recebidos
               </button>

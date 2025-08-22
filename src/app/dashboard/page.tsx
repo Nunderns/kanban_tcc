@@ -425,7 +425,7 @@ export default function Dashboard() {
                       >
                         <div className="flex items-start">
                           <div className="flex-1 min-w-0">
-                            <p className="font-medium text-gray-900 truncate">{task.title}</p>
+                            <p className="font-medium text-gray-900 dark:text-white truncate">{task.title}</p>
                             <p className="text-sm text-gray-500 mt-1 line-clamp-2">{task.description}</p>
                             {task.remainingDays !== null && task.remainingDays !== undefined && (
                               <div className="flex items-center mt-2 text-xs text-gray-500">

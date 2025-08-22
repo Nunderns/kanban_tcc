@@ -369,21 +369,21 @@ export default function KanbanPage() {
   const renderCard = (item: WorkItem) => (
     <div
       key={item.id}
-      className="bg-white text-black p-4 rounded-lg border border-gray-300 shadow-sm hover:bg-gray-50 transition cursor-pointer"
+      className="bg-white dark:bg-gray-800 text-black dark:text-white p-4 rounded-lg border border-gray-300 dark:border-gray-700 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition cursor-pointer"
       onClick={() => setSelectedItem(item)}
     >
-      <div className="text-xs text-gray-500 mb-1 font-semibold">PRIME-{item.id}</div>
-      <h3 className="text-base font-semibold mb-3">{item.title}</h3>
+      <div className="text-xs text-gray-500 dark:text-gray-400 mb-1 font-semibold">PRIME-{item.id}</div>
+      <h3 className="text-base font-semibold mb-3 text-gray-900 dark:text-white">{item.title}</h3>
       <div className="flex flex-wrap gap-2 text-xs">
-        <div className="flex items-center gap-1 border border-gray-300 rounded-full px-2 py-1">
+        <div className="flex items-center gap-1 border border-gray-300 dark:border-gray-600 rounded-full px-2 py-1 text-gray-800 dark:text-gray-200">
           <FaSyncAlt className="text-gray-500" />
           <span className="capitalize">{item.status.toLowerCase()}</span>
         </div>
-        <div className="flex items-center gap-1 border border-gray-300 rounded-full px-2 py-1">
+        <div className="flex items-center gap-1 border border-gray-300 dark:border-gray-600 rounded-full px-2 py-1 text-gray-800 dark:text-gray-200">
           {getPriorityIcon(item.priority)}
         </div>
         {item.startDate && !isNaN(parseLocalDate(item.startDate).getTime()) && (
-          <div className="flex items-center gap-1 border border-gray-300 rounded-full px-2 py-1">
+          <div className="flex items-center gap-1 border border-gray-300 dark:border-gray-600 rounded-full px-2 py-1 text-gray-800 dark:text-gray-200">
             <FaCalendarAlt className="text-gray-500" />
             <span>Início: {format(parseLocalDate(item.startDate), "MMM dd, yyyy")}</span>
           </div>
@@ -395,25 +395,25 @@ export default function KanbanPage() {
           </div>
         )}
         {item.creator && (
-          <div className="flex items-center gap-1 border border-gray-300 rounded-full px-2 py-1">
+          <div className="flex items-center gap-1 border border-gray-300 dark:border-gray-600 rounded-full px-2 py-1 text-gray-800 dark:text-gray-200">
             <FaUser className="text-gray-500" />
             <span>{item.creator}</span>
           </div>
         )}
         {item.module && (
-          <div className="flex items-center gap-1 border border-gray-300 rounded-full px-2 py-1">
+          <div className="flex items-center gap-1 border border-gray-300 dark:border-gray-600 rounded-full px-2 py-1 text-gray-800 dark:text-gray-200">
             <span>{item.module}</span>
           </div>
         )}
         {item.cycle && (
-          <div className="flex items-center gap-1 border border-gray-300 rounded-full px-2 py-1">
+          <div className="flex items-center gap-1 border border-gray-300 dark:border-gray-600 rounded-full px-2 py-1 text-gray-800 dark:text-gray-200">
             <span>{item.cycle}</span>
           </div>
         )}
         {item.labels && item.labels.length > 0 && (
-          <div className="flex items-center gap-1 border border-gray-300 rounded-full px-2 py-1">
+          <div className="flex items-center gap-1 border border-gray-300 dark:border-gray-600 rounded-full px-2 py-1 text-gray-800 dark:text-gray-200">
             <FaTag className="text-gray-500" />
-            <span>{item.labels.join(", ")}</span>
+            <span className="dark:text-gray-200">{item.labels.join(", ")}</span>
           </div>
         )}
       </div>
@@ -424,10 +424,10 @@ export default function KanbanPage() {
   if (!session) return <div className="p-4 text-red-500">Sessão inválida</div>;
 
   return (
-    <div className="flex min-h-screen bg-white text-gray-900">
+    <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white">
       <Sidebar />
       <div className="flex-1 flex flex-col">
-        <div className="flex justify-between items-center p-4 border-b border-gray-300 bg-white">
+        <div className="flex justify-between items-center p-4 border-b border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800">
           <h1 className="text-xl font-bold">{workspaceName} &gt; Item de Trabalho</h1>
           <div className="flex gap-2">
             <div className="relative">
@@ -469,7 +469,7 @@ export default function KanbanPage() {
               return (
                 <div key={typedStatus} className="w-72 flex-shrink-0">
                   <div
-                    className="flex justify-between items-center bg-gray-100 p-2 rounded-t cursor-pointer"
+                    className="flex justify-between items-center bg-gray-100 dark:bg-gray-800 p-2 rounded-t cursor-pointer"
                     onClick={() => toggleColumnCollapse(typedStatus)}
                   >
                     <div className="flex items-center gap-2">
@@ -494,7 +494,7 @@ export default function KanbanPage() {
                   </div>
                   {/* Conteúdo da coluna com animação */}
                   <div 
-                    className={`bg-white rounded-b overflow-hidden transition-all duration-300 ease-in-out ${
+                    className={`bg-white dark:bg-gray-800 rounded-b overflow-hidden transition-all duration-300 ease-in-out ${
                       isCollapsed ? 'max-h-0 opacity-0' : 'max-h-[calc(100vh-220px)] opacity-100'
                     }`}
                   >
