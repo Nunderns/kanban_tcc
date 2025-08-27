@@ -24,6 +24,14 @@ export default function SettingsPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   
+  // Notifications section state - all initialized with default values
+  const [emailNotifications, setEmailNotifications] = useState<boolean>(true);
+  const [notifyPropertyChanges, setNotifyPropertyChanges] = useState<boolean>(true);
+  const [notifyStateChange, setNotifyStateChange] = useState<boolean>(true);
+  const [notifyWorkItemCompleted, setNotifyWorkItemCompleted] = useState<boolean>(false);
+  const [notifyComments, setNotifyComments] = useState<boolean>(true);
+  const [notifyMentions, setNotifyMentions] = useState<boolean>(true);
+  
   const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -266,6 +274,126 @@ export default function SettingsPage() {
                     <input type="checkbox" className="sr-only peer" defaultChecked />
                     <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                   </label>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        );
+
+      case 'notifications':
+        return (
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Notificações por e-mail</CardTitle>
+                <CardDescription>Mantenha-se informado sobre itens de trabalho que você acompanha. Ative para ser notificado.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="font-medium">Notificações por e-mail</h3>
+                    <p className="text-sm text-gray-600">Mantenha-se atualizado sobre os itens de trabalho que você acompanha. Ative para receber notificações.</p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      className="sr-only peer"
+                      checked={emailNotifications ?? false}
+                      onChange={() => setEmailNotifications(v => !v)}
+                    />
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                  </label>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="font-medium">Mudanças nas propriedades</h3>
+                    <p className="text-sm text-gray-600">Me notifique quando as propriedades dos itens de trabalho, como responsáveis, prioridade, estimativas ou qualquer outra coisa, forem alteradas.</p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      className="sr-only peer"
+                      checked={notifyPropertyChanges ?? false}
+                      onChange={() => setNotifyPropertyChanges(v => !v)}
+                      disabled={!emailNotifications}
+                    />
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                  </label>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="font-medium">Mudança de estado</h3>
+                    <p className="text-sm text-gray-600">Me notifique quando o item de trabalho mudar para um estado diferente.</p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      className="sr-only peer"
+                      checked={notifyStateChange ?? false}
+                      onChange={() => setNotifyStateChange(v => !v)}
+                      disabled={!emailNotifications}
+                    />
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                  </label>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="font-medium">Item concluído</h3>
+                    <p className="text-sm text-gray-600">Me notifique apenas quando um item de trabalho for concluído.</p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      className="sr-only peer"
+                      checked={notifyWorkItemCompleted ?? false}
+                      onChange={() => setNotifyWorkItemCompleted(v => !v)}
+                      disabled={!emailNotifications}
+                    />
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                  </label>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="font-medium">Comentários</h3>
+                    <p className="text-sm text-gray-600">Me notifique quando alguém deixar um comentário no item de trabalho.</p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      className="sr-only peer"
+                      checked={notifyComments ?? false}
+                      onChange={() => setNotifyComments(v => !v)}
+                      disabled={!emailNotifications}
+                    />
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                  </label>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="font-medium">Menções</h3>
+                    <p className="text-sm text-gray-600">Me notifique apenas quando alguém me mencionar nos comentários ou descrição.</p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      className="sr-only peer"
+                      checked={notifyMentions ?? false}
+                      onChange={() => setNotifyMentions(v => !v)}
+                      disabled={!emailNotifications}
+                    />
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                  </label>
+                </div>
+
+                <div className="pt-2">
+                  <Button type="button" variant="outline" onClick={() => { /* TODO: persist settings */ }}>
+                    Salvar preferências
+                  </Button>
                 </div>
               </CardContent>
             </Card>
