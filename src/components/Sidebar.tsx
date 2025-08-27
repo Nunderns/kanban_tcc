@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState, useRef, useEffect } from "react";
+import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
 import { useTheme } from "next-themes";
 import { 
@@ -14,8 +15,10 @@ import {
   ChevronDown, 
   LayoutGrid, 
   Users, 
-  FolderPlus
+  FolderPlus,
+  Star
 } from "lucide-react";
+import { AddProjectModal } from "./AddProjectModal";
 import { Navigation } from "@/components/Navigation";
 
 export const Sidebar = () => {
@@ -25,6 +28,15 @@ export const Sidebar = () => {
   const [email, setEmail] = useState("");
   const [funcao, setFuncao] = useState("");
   const [membros, setMembros] = useState(0);
+  const [userProjects, setUserProjects] = useState<Array<{
+    id: string;
+    name: string;
+    description: string | null;
+    color: string;
+    isFavorite: boolean;
+    status: string;
+  }>>([]);
+  const [loading, setLoading] = useState(true);
   const [workspacesList, setWorkspacesList] = useState<Array<{
     id: number;
     nome: string;
@@ -35,11 +47,12 @@ export const Sidebar = () => {
   }>>([]);
   const [mounted, setMounted] = useState(false);
   const [showPopover, setShowPopover] = useState(false);
+  const [showAddProjectModal, setShowAddProjectModal] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const popoverRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
 
-  const projects = ["Projeto 1", "Projeto 2"];
 
   const togglePopover = () => {
     setShowPopover((prev) => !prev);
@@ -105,9 +118,57 @@ export const Sidebar = () => {
       }
     }
 
-    fetchWorkspaceData();
-    setMounted(true);
+    const fetchData = async () => {
+      try {
+        await fetchWorkspaceData();
+        await fetchProjects();
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      } finally {
+        setMounted(true);
+        setLoading(false);
+      }
+    };
+
+    fetchData();
   }, []);
+
+  const { data: session } = useSession();
+
+  const fetchProjects = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const response = await fetch('/api/projects', {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        const text = await response.text();
+        let message = 'Failed to fetch projects';
+        try {
+          const json = JSON.parse(text);
+          message = json.message || message;
+        } catch {}
+        throw new Error(message + (text && typeof text === 'string' ? ` (${text})` : ''));
+      }
+      
+      const data = await response.json();
+      setUserProjects(data);
+    } catch (error) {
+      console.error('Error fetching projects:', error);
+      setError(error instanceof Error ? error.message : 'Failed to load projects.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleProjectAdded = () => {
+    fetchProjects();
+  };
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -129,6 +190,8 @@ export const Sidebar = () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [showPopover]);
+
+  const pathname = usePathname();
 
   return (
     <div className="flex h-full flex-col bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 shadow-sm">
@@ -253,31 +316,99 @@ export const Sidebar = () => {
       </div>
 
       {/* Lista de Projetos */}
-      <div className="mt-6">
+      <div className="mt-6 px-4">
         <div className="flex justify-between items-center mb-3">
           <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Meus Projetos</h3>
-          <button className="text-gray-400 hover:text-indigo-600 p-1 rounded-full hover:bg-indigo-50 transition-colors">
-            <Plus size={16} />
+          <button 
+            onClick={() => setShowAddProjectModal(true)}
+            className="text-gray-400 hover:text-indigo-600 p-1 rounded-full hover:bg-indigo-50 dark:hover:bg-gray-700 transition-colors"
+            title="Novo Projeto"
+            disabled={loading}
+          >
+            {loading ? (
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-indigo-500"></div>
+            ) : (
+              <Plus size={16} />
+            )}
           </button>
         </div>
         <nav className="space-y-1">
-          {projects.map((project, index) => (
-            <a
-              key={index}
-              href="#"
-              className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-50 group transition-colors"
-            >
-              <span className="w-1.5 h-1.5 bg-indigo-500 rounded-full mr-3"></span>
-              <span className="truncate">{project}</span>
-              <span className="ml-auto px-2 py-0.5 text-xs font-medium bg-indigo-50 text-indigo-600 rounded-full">3</span>
-            </a>
-          ))}
-          <button className="flex items-center w-full text-sm text-indigo-600 hover:bg-indigo-50 px-3 py-2 rounded-lg transition-colors group">
-            <FolderPlus size={16} className="text-indigo-500 mr-3 group-hover:text-indigo-600" />
-            Adicionar projeto
-          </button>
+          {error ? (
+            <div className="text-center py-2">
+              <p className="text-sm text-red-500 mb-2">{error}</p>
+              <button
+                onClick={fetchProjects}
+                className="text-xs text-indigo-600 hover:text-indigo-700 font-medium"
+              >
+                Tentar novamente
+              </button>
+            </div>
+          ) : loading ? (
+            <div className="flex justify-center py-4">
+              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-indigo-500"></div>
+            </div>
+          ) : userProjects.length === 0 ? (
+            <div className="text-center py-2">
+              <p className="text-sm text-gray-500 mb-2">Nenhum projeto encontrado</p>
+              <button
+                onClick={() => setShowAddProjectModal(true)}
+                className="text-xs text-indigo-600 hover:text-indigo-700 font-medium"
+              >
+                Criar seu primeiro projeto
+              </button>
+            </div>
+          ) : (
+            <>
+              {userProjects.map((project) => {
+                const isActive = pathname === `/projects/${project.id}`;
+                return (
+                  <Link
+                    key={project.id}
+                    href={`/projects/${project.id}`}
+                    className={`flex items-center w-full text-left group rounded-lg px-2 py-1.5 transition-colors border ${
+                      isActive
+                        ? "bg-indigo-50 dark:bg-gray-800 border-indigo-200 dark:border-gray-700"
+                        : "border-transparent hover:bg-gray-50 dark:hover:bg-gray-800"
+                    }`}
+                  >
+                    <div 
+                      className={`w-2 h-2 rounded-full mr-3 flex-shrink-0 ${isActive ? "ring-2 ring-indigo-400" : ""}`} 
+                      style={{ backgroundColor: project.color || '#3b82f6' }}
+                    ></div>
+                    <span className={`truncate ${isActive ? "text-indigo-700 dark:text-indigo-300 font-medium" : "text-gray-700 dark:text-gray-200"}`}>
+                      {project.name}
+                    </span>
+                    <div className="ml-auto flex items-center">
+                      {project.isFavorite && (
+                        <Star 
+                          size={14} 
+                          className="text-yellow-400 fill-yellow-400 flex-shrink-0"
+                        />
+                      )}
+                    </div>
+                  </Link>
+                );
+              })}
+              <button 
+                onClick={() => setShowAddProjectModal(true)}
+                className="flex items-center w-full text-sm text-indigo-600 hover:bg-indigo-50 dark:hover:bg-gray-800 px-3 py-2 rounded-lg transition-colors group"
+              >
+                <FolderPlus size={16} className="text-indigo-500 mr-3 group-hover:text-indigo-600" />
+                Adicionar projeto
+              </button>
+            </>
+          )}
         </nav>
       </div>
+      
+      <AddProjectModal 
+        isOpen={showAddProjectModal}
+        onClose={() => {
+          setShowAddProjectModal(false);
+          setError('');
+        }}
+        onProjectAdded={handleProjectAdded}
+      />
     </div>
   );
 };
