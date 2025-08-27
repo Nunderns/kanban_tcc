@@ -4,13 +4,23 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import ProjectViewClient from "@/components/ProjectViewClient";
 
-export default async function ProjectPage({ params }: { params: { id: string } }) {
+type RouteParams = { id: string };
+
+export default async function ProjectPage({
+  params,
+}: {
+  params: Promise<RouteParams>;
+}) {
+  // Next 15+ (params assíncrono)
+  const { id } = await params;
+
   const session = await auth();
-  if (!session?.user?.email) {
+  const email = session?.user?.email;
+  if (!email) {
     notFound();
   }
 
-  const idNum = Number(params.id);
+  const idNum = Number(id);
   if (!Number.isFinite(idNum)) {
     notFound();
   }
@@ -18,7 +28,7 @@ export default async function ProjectPage({ params }: { params: { id: string } }
   const project = await prisma.project.findFirst({
     where: {
       id: idNum,
-      owner: { email: session!.user!.email! },
+      owner: { email },
     },
     select: {
       id: true,
@@ -43,17 +53,14 @@ export default async function ProjectPage({ params }: { params: { id: string } }
           Voltar ao Dashboard
         </Link>
       </div>
+
       {project.description && (
         <p className="text-gray-600 dark:text-gray-300 mb-6">{project.description}</p>
       )}
 
       <div className="text-xs text-gray-500 dark:text-gray-400">
-        <p>
-          Criado em: {new Date(project.createdAt).toLocaleString()}
-        </p>
-        <p>
-          Atualizado em: {new Date(project.updatedAt).toLocaleString()}
-        </p>
+        <p>Criado em: {new Date(project.createdAt).toLocaleString()}</p>
+        <p>Atualizado em: {new Date(project.updatedAt).toLocaleString()}</p>
       </div>
 
       <ProjectViewClient projectId={project.id} projectName={project.name} />
