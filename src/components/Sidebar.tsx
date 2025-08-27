@@ -133,7 +133,8 @@ export const Sidebar = () => {
     fetchData();
   }, []);
 
-  const { data: session } = useSession();
+  // Session is used for authentication, but we don't need the data here
+  useSession();
 
   const fetchProjects = async () => {
     try {

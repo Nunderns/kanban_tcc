@@ -71,18 +71,12 @@ export default function Dashboard() {
   const [filteredTasks, setFilteredTasks] = useState<Task[]>([]);
   const [isAddingTask, setIsAddingTask] = useState(false);
   const [isAddingMember, setIsAddingMember] = useState(false);
-  const [isNewProjectModalOpen, setIsNewProjectModalOpen] = useState(false);
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' }>({ 
     key: 'lastUpdated', 
     direction: 'desc' 
   });
   const [projectFilter, setProjectFilter] = useState('all');
   const [searchProjectQuery, setSearchProjectQuery] = useState('');
-  const [newProject, setNewProject] = useState({
-    name: '',
-    color: 'blue',
-    description: ''
-  });
   const [stats, setStats] = useState<{
     totalProjects: number;
     totalTasks: number;
@@ -291,35 +285,6 @@ export default function Dashboard() {
   const getSortIndicator = (key: string) => {
     if (sortConfig.key !== key) return null;
     return sortConfig.direction === 'asc' ? '↑' : '↓';
-  };
-
-  const handleAddProject = () => {
-    setIsNewProjectModalOpen(true);
-  };
-
-  const handleCreateProject = () => {
-    if (!newProject.name.trim()) return;
-    
-    const project: Project = {
-      id: Date.now().toString(),
-      name: newProject.name,
-      progress: 0,
-      totalTasks: 0,
-      completedTasks: 0,
-      lastUpdated: 'agora mesmo',
-      color: newProject.color,
-      description: newProject.description,
-      status: 'not-started' as const
-    };
-    
-    setStats(prev => ({
-      ...prev,
-      projects: [...(prev.projects || []), project]
-    }));
-    
-    // Reset form and close modal
-    setNewProject({ name: '', color: 'blue', description: '' });
-    setIsNewProjectModalOpen(false);
   };
 
   const handleAddMember = () => {
@@ -777,7 +742,7 @@ export default function Dashboard() {
                           <FiFolder className="w-12 h-12 text-gray-300 mb-4" />
                           <p className="text-gray-500 mb-4">Nenhum projeto encontrado</p>
                           <button 
-                            onClick={() => setIsNewProjectModalOpen(true)}
+                            onClick={() => console.log('Open project creation modal')}
                             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center"
                           >
                             <FiPlus className="mr-2" /> Criar Projeto

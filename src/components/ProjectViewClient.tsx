@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import ProjectBoard, { Task as BoardTask, Status } from "@/components/ProjectBoard";
 import CreateTaskModal from "@/components/CreateTaskModal";
 
@@ -14,7 +14,7 @@ export default function ProjectViewClient({ projectId, projectName }: { projectI
   const [error, setError] = useState<string | null>(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
 
-  const fetchTasks = async () => {
+  const fetchTasks = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -50,7 +50,7 @@ export default function ProjectViewClient({ projectId, projectName }: { projectI
     } finally {
       setLoading(false);
     }
-  };
+  }, [projectId, statusFilter]);
 
   useEffect(() => {
     fetchTasks();
