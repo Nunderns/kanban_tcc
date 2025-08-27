@@ -27,12 +27,20 @@ export default function ProjectViewClient({ projectId, projectName }: { projectI
       }
       const data = await res.json();
       setTasks(
-        data.map((t: any) => ({
+        data.map((t: {
+          id: string | number;
+          title: string;
+          description: string | null;
+          status: Status;
+          priority?: "NONE" | "LOW" | "MEDIUM" | "HIGH";
+          createdAt: string;
+          updatedAt: string;
+        }) => ({
           id: typeof t.id === "string" ? parseInt(t.id, 10) : t.id,
           title: t.title,
           description: t.description ?? null,
-          status: t.status as Status,
-          priority: t.priority,
+          status: t.status,
+          priority: t.priority || "NONE",
           createdAt: t.createdAt,
           updatedAt: t.updatedAt,
         }))
@@ -46,7 +54,7 @@ export default function ProjectViewClient({ projectId, projectName }: { projectI
 
   useEffect(() => {
     fetchTasks();
-  }, [projectId, statusFilter]);
+  }, [projectId, statusFilter, fetchTasks]);
 
   const filtered = useMemo(() => tasks, [tasks]);
 

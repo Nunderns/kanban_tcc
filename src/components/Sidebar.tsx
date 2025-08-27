@@ -23,7 +23,7 @@ import { Navigation } from "@/components/Navigation";
 
 export const Sidebar = () => {
   const {} = useTheme();
-  const {} = useSession();
+  useSession(); // Session is used for authentication, but we don't need the data here
   const [workspace, setWorkspace] = useState("Espaço de trabalho");
   const [email, setEmail] = useState("");
   const [funcao, setFuncao] = useState("");

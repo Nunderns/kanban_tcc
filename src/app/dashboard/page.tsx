@@ -70,7 +70,6 @@ export default function Dashboard() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredTasks, setFilteredTasks] = useState<Task[]>([]);
   const [isAddingTask, setIsAddingTask] = useState(false);
-  const [isAddingProject, setIsAddingProject] = useState(false);
   const [isAddingMember, setIsAddingMember] = useState(false);
   const [isNewProjectModalOpen, setIsNewProjectModalOpen] = useState(false);
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' }>({ 
@@ -224,9 +223,6 @@ export default function Dashboard() {
     return name.slice(0, 2).toUpperCase();
   };
 
-  const handleAddProject = () => {
-    setIsNewProjectModalOpen(true);
-  };
 
   // Sort projects based on current sort configuration
   const sortedProjects = useMemo(() => {
@@ -297,10 +293,14 @@ export default function Dashboard() {
     return sortConfig.direction === 'asc' ? '↑' : '↓';
   };
 
+  const handleAddProject = () => {
+    setIsNewProjectModalOpen(true);
+  };
+
   const handleCreateProject = () => {
     if (!newProject.name.trim()) return;
     
-    const project = {
+    const project: Project = {
       id: Date.now().toString(),
       name: newProject.name,
       progress: 0,
@@ -308,13 +308,13 @@ export default function Dashboard() {
       completedTasks: 0,
       lastUpdated: 'agora mesmo',
       color: newProject.color,
-      description: newProject.description
+      description: newProject.description,
+      status: 'not-started' as const
     };
     
     setStats(prev => ({
       ...prev,
-      projects: [project, ...prev.projects],
-      totalProjects: prev.totalProjects + 1
+      projects: [...(prev.projects || []), project]
     }));
     
     // Reset form and close modal
@@ -897,7 +897,7 @@ export default function Dashboard() {
               className="w-14 h-14 rounded-full bg-blue-600 text-white flex items-center justify-center shadow-lg hover:bg-blue-700 transition-colors"
               aria-label="Adicionar novo item"
             >
-              {isAddingTask || isAddingProject || isAddingMember ? (
+              {isAddingTask || isAddingMember ? (
                 <svg className="animate-spin h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
