@@ -3,12 +3,6 @@ import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import ProjectViewClient from "@/components/ProjectViewClient";
-import { Metadata } from "next";
-
-type Props = {
-  params: { id: string };
-  searchParams: { [key: string]: string | string[] | undefined };
-};
 
 export default async function ProjectPage({ params }: { params: { id: string } }) {
   const session = await auth();
