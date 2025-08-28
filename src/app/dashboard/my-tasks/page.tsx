@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import Sidebar from "@/components/Sidebar";
 import CreateTaskModal from "@/components/CreateTaskModal";
 import FilterDropdown from "@/components/FilterDropdown";
@@ -7,6 +8,7 @@ import DisplayDropdown from "@/components/DisplayDown";
 import WorkItemSidebar from "@/components/WorkItemSidebar";
 import { useSession } from "next-auth/react";
 import { useCallback, useEffect, useState, useRef, useMemo } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { format } from "date-fns";
 import { parseLocalDate } from "@/lib/utils";
 import {
@@ -21,6 +23,17 @@ import {
   FaSyncAlt
 } from "react-icons/fa";
 import { IoFunnelOutline } from "react-icons/io5";
+
+// Wrapper component to handle Suspense
+function KanbanPageContent() {
+  return (
+    <Suspense fallback={<div>Carregando...</div>}>
+      <KanbanPage />
+    </Suspense>
+  );
+}
+
+export default KanbanPageContent;
 
 export type Priority = "NONE" | "LOW" | "MEDIUM" | "HIGH";
 export type Status = "BACKLOG" | "TODO" | "IN_PROGRESS" | "DONE";
@@ -40,7 +53,7 @@ export type WorkItem = {
 };
 
 
-export default function KanbanPage() {
+function KanbanPage() {
   const { data: session, status } = useSession();
   const userId = session?.user?.id;
 
@@ -54,7 +67,20 @@ export default function KanbanPage() {
   const [selectedItem, setSelectedItem] = useState<WorkItem | null>(null);
   const [workItems, setWorkItems] = useState<WorkItem[]>([]);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const [showFilter, setShowFilter] = useState(false);
+  
+  // Handle task selection from URL
+  useEffect(() => {
+    const taskId = searchParams?.get('task');
+    if (taskId && workItems.length > 0) {
+      const task = workItems.find(item => item.id === taskId);
+      if (task) {
+        setSelectedItem(task);
+      }
+    }
+  }, [searchParams, workItems]);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
   
   // Filter states
@@ -550,7 +576,13 @@ export default function KanbanPage() {
       {selectedItem && (
         <WorkItemSidebar
           item={selectedItem}
-          onClose={() => setSelectedItem(null)}
+          onClose={() => {
+            setSelectedItem(null);
+            // Update URL without the task parameter
+            const params = new URLSearchParams(window.location.search);
+            params.delete('task');
+            router.replace(`/dashboard/my-tasks?${params.toString()}`);
+          }}
           onUpdate={(updated: WorkItem) => {
             setWorkItems(prev => prev.map(i => (i.id === updated.id ? updated : i)));
             setSelectedItem(updated);
