@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useSession } from "next-auth/react";
 import { useTheme } from "next-themes";
+import Sidebar from "@/components/Sidebar";
 
 interface Activity {
   id: number;
@@ -687,6 +688,11 @@ export default function SettingsPage() {
   return (
     <div className="flex min-h-screen bg-white">
       {/* Sidebar */}
+      <div className="w-72">
+        <Sidebar />
+      </div>
+
+      {/* Settings local sidebar */}
       <div className="w-64 border-r border-gray-200 p-6">
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-1">
