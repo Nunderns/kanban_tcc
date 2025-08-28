@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { Sidebar } from "@/components/Sidebar";
 import Link from "next/link";
-
 export default function WorkspaceSettings() {
   const pathname = usePathname();
 
@@ -22,20 +21,20 @@ export default function WorkspaceSettings() {
       setSlug(parsed.slug || "");
       setCompanySize(parsed.companySize || "");
     }
-  
+
     async function fetchWorkspace() {
       try {
         const res = await fetch("/api/workspaces/current", {
           method: "GET",
-          credentials: "include", // 👈 isso é essencial
+          credentials: "include",
         });
         const data = await res.json();
-  
+
         if (res.ok) {
           setWorkspaceName(data.nome);
           setCompanySize(data.tamanhoEmpresa);
           setSlug(data.slug);
-  
+
           localStorage.setItem(
             "workspaceSelecionado",
             JSON.stringify({
@@ -49,10 +48,9 @@ export default function WorkspaceSettings() {
         console.error("Erro ao carregar workspace:", err);
       }
     }
-  
+
     fetchWorkspace();
   }, []);
-  
 
   const links = [
     { href: "/dashboard/settings/general", label: "Geral" },
@@ -71,51 +69,59 @@ export default function WorkspaceSettings() {
   ];
 
   return (
-    <div className="min-h-screen bg-white text-gray-900 flex">
+    <div className="min-h-screen flex bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
       <Sidebar />
 
       {/* Sidebar de Configurações */}
-      <aside className="w-64 border-r border-gray-200 p-4 space-y-2 text-sm">
-        <h2 className="text-gray-500 font-semibold uppercase mb-2">Configurações</h2>
+      <aside className="w-64 border-r border-gray-200 dark:border-gray-700 p-4 space-y-2 text-sm">
+        <h2 className="text-gray-500 dark:text-gray-400 font-semibold uppercase mb-2">
+          Configurações
+        </h2>
         {links.map(({ href, label }) => (
           <Link
             key={href}
             href={href}
             className={`block w-full text-left px-3 py-2 rounded-md transition ${
               pathname === href
-                ? "bg-blue-100 text-blue-600 font-semibold"
-                : "hover:bg-gray-100 text-gray-700"
+                ? "bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 font-semibold"
+                : "hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-200"
             }`}
           >
             {label}
           </Link>
         ))}
+
       </aside>
 
       {/* Conteúdo */}
       <main className="flex-1 p-10">
         {/* Breadcrumb */}
-        <div className="mb-8 text-sm text-gray-600">
-          <span className="text-gray-800 font-medium">{workspaceName}</span> &gt; Configurações
+        <div className="mb-8 text-sm text-gray-600 dark:text-gray-300">
+          <span className="text-gray-800 dark:text-gray-200 font-medium">
+            {workspaceName}
+          </span>{" "}
+          &gt; Configurações
         </div>
 
         {/* Header com ícone da letra inicial */}
         <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4">
             {/* Bloco com letra inicial */}
-            <div className="w-10 h-10 bg-gray-800 text-white flex items-center justify-center rounded-md text-lg font-semibold">
-            {typeof workspaceName === "string" && workspaceName.length > 0
-            ? workspaceName.charAt(0).toUpperCase()
-            : ""}
+            <div className="w-10 h-10 bg-gray-800 dark:bg-gray-600 text-white flex items-center justify-center rounded-md text-lg font-semibold">
+              {typeof workspaceName === "string" && workspaceName.length > 0
+                ? workspaceName.charAt(0).toUpperCase()
+                : ""}
             </div>
 
             {/* Nome e URL */}
             <div>
-            <div className="text-xl font-semibold">{workspaceName}</div>
-            <div className="text-sm text-blue-600">{workspaceUrl}</div>
-            <button className="text-xs text-blue-500 mt-1 hover:underline">Enviar logotipo</button>
+              <div className="text-xl font-semibold">{workspaceName}</div>
+              <div className="text-sm text-blue-600 dark:text-blue-400">{workspaceUrl}</div>
+              <button className="text-xs text-blue-500 dark:text-blue-400 mt-1 hover:underline">
+                Enviar logotipo
+              </button>
             </div>
-        </div>
+          </div>
         </div>
 
         {/* Formulário */}
@@ -124,7 +130,7 @@ export default function WorkspaceSettings() {
             <label className="block text-sm font-medium mb-1">Nome do workspace</label>
             <input
               type="text"
-              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+              className="w-full border border-gray-300 dark:border-gray-700 rounded-md px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
               value={workspaceName}
               onChange={(e) => setWorkspaceName(e.target.value)}
             />
@@ -133,7 +139,7 @@ export default function WorkspaceSettings() {
           <div className="col-span-1">
             <label className="block text-sm font-medium mb-1">Tamanho da empresa</label>
             <select
-              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+              className="w-full border border-gray-300 dark:border-gray-700 rounded-md px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
               value={companySize}
               onChange={(e) => setCompanySize(e.target.value)}
             >
@@ -152,49 +158,50 @@ export default function WorkspaceSettings() {
               type="text"
               readOnly
               value={workspaceUrl}
-              className="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 text-sm text-gray-600"
+              className="w-full bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 text-sm text-gray-600 dark:text-gray-300"
             />
           </div>
         </form>
 
         {/* Botão */}
         <div className="mt-6">
-        <button
+          <button
             onClick={async () => {
-                try {
-                  const res = await fetch("/api/workspaces/current", {
-                    method: "PATCH",
-                    headers: { "Content-Type": "application/json" },
-                    credentials: "include", // 👈 necessário aqui também
-                    body: JSON.stringify({
-                      name: workspaceName,
-                      companySize,
-                      slug,
-                    }),
-                  });
-
+              try {
+                const res = await fetch("/api/workspaces/current", {
+                  method: "PATCH",
+                  headers: { "Content-Type": "application/json" },
+                  credentials: "include",
+                  body: JSON.stringify({
+                    name: workspaceName,
+                    companySize,
+                    slug,
+                  }),
+                });
 
                 const data = await res.json();
                 if (res.ok) {
-                    alert("Workspace atualizado com sucesso!");
+                  alert("Workspace atualizado com sucesso!");
                 } else {
-                    alert("Erro ao atualizar: " + data.error);
+                  alert("Erro ao atualizar: " + data.error);
                 }
-                } catch (err) {
+              } catch (err) {
                 console.error(err);
                 alert("Erro ao atualizar workspace.");
-                }
+              }
             }}
             className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-md"
-            >
+          >
             Atualizar workspace
-            </button>
+          </button>
         </div>
 
         {/* Excluir workspace */}
         <div className="mt-10 border-t pt-6">
-          <p className="text-sm text-red-600 font-medium mb-2">Excluir este workspace</p>
-          <button className="text-sm text-gray-700 hover:text-red-600 transition">
+          <p className="text-sm text-red-600 font-medium mb-2">
+            Excluir este workspace
+          </p>
+          <button className="text-sm text-gray-700 dark:text-gray-300 hover:text-red-600 transition">
             Mostrar opções de exclusão
           </button>
         </div>
