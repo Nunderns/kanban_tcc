@@ -7,6 +7,17 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useSession } from "next-auth/react";
 import { useTheme } from "next-themes";
 
+interface Activity {
+  id: number;
+  user: string;
+  action: string;
+  field?: string;
+  taskTitle: string;
+  createdAt: string;
+  oldValue?: string;
+  newValue?: string;
+}
+
 type Section = 'profile' | 'preferences' | 'notifications' | 'security' | 'activity' | 'connections' | 'developer';
 
 export default function SettingsPage() {
@@ -16,15 +27,127 @@ export default function SettingsPage() {
   const { data: session } = useSession();
   const name = session?.user?.name || "Usuário";
   const email = session?.user?.email || "";
+
+  // Activity state
+  const [activities, setActivities] = useState<Activity[]>([]);
+  const [isLoadingActivities, setIsLoadingActivities] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch activities when the component mounts or when the active section changes to 'activity'
+  useEffect(() => {
+    const fetchActivities = async () => {
+      if (activeSection !== 'activity') return;
+      
+      console.log('Fetching activities...');
+      setIsLoadingActivities(true);
+      try {
+        setError(null);
+        const response = await fetch('/api/activities', {
+          headers: {
+            'Accept': 'application/json',
+            'Cache-Control': 'no-cache'
+          }
+        });
+        
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+          const text = await response.text();
+          throw new Error(`Invalid content type: ${contentType}, Response: ${text}`);
+        }
+        
+        const data = await response.json();
+        
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to fetch activities');
+        }
+        
+        console.log('Activities fetched successfully:', data);
+        setActivities(Array.isArray(data) ? data : []);
+      } catch (err) {
+        let errorMessage = 'Unknown error occurred';
+        if (err instanceof Error) {
+          errorMessage = err.message;
+          console.error('Error details:', {
+            message: err.message,
+            name: err.name,
+            stack: err.stack
+          });
+        } else if (typeof err === 'string') {
+          errorMessage = err;
+        }
+        console.error('Error fetching activities:', errorMessage);
+        setError(`Falha ao carregar atividades. Por favor, tente novamente.`);
+        setActivities([]);
+      } finally {
+        setIsLoadingActivities(false);
+      }
+    };
+
+    fetchActivities();
+  }, [activeSection]);
+
+  // Format date to relative time (e.g., "2 hours ago")
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+    
+    if (diffInSeconds < 60) return 'agora mesmo';
+    if (diffInSeconds < 3600) {
+      const minutes = Math.floor(diffInSeconds / 60);
+      return `há ${minutes} minuto${minutes > 1 ? 's' : ''}`;
+    }
+    if (diffInSeconds < 86400) {
+      const hours = Math.floor(diffInSeconds / 3600);
+      return `há ${hours} hora${hours > 1 ? 's' : ''}`;
+    }
+    if (diffInSeconds < 2592000) {
+      const days = Math.floor(diffInSeconds / 86400);
+      return `há ${days} dia${days > 1 ? 's' : ''}`;
+    }
+    
+    return date.toLocaleDateString('pt-BR', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
+  };
+
+  // Format activity message based on action type
+  const formatActivityMessage = (activity: Activity) => {
+    const { action, field, taskTitle, oldValue, newValue } = activity;
+    
+    switch (action) {
+      case 'create':
+        return `criou a tarefa "${taskTitle}"`;
+      case 'update':
+        if (field === 'status') {
+          return `alterou o status de "${taskTitle}" de "${oldValue}" para "${newValue}"`;
+        } else if (field === 'assignee') {
+          if (newValue) {
+            return `atribuiu "${taskTitle}" para ${newValue}`;
+          } else {
+            return `removeu a atribuição de "${taskTitle}"`;
+          }
+        } else if (field) {
+          return `atualizou ${field} de "${taskTitle}"`;
+        }
+        return `atualizou a tarefa "${taskTitle}"`;
+      case 'delete':
+        return `excluiu a tarefa "${taskTitle}"`;
+      case 'comment':
+        return `comentou em "${taskTitle}"`;
+      default:
+        return `realizou uma ação em "${taskTitle}"`;
+    }
+  };
   
-  // Security section state
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-  
-  // Notifications section state - all initialized with default values
+
   const [emailNotifications, setEmailNotifications] = useState<boolean>(true);
   const [notifyPropertyChanges, setNotifyPropertyChanges] = useState<boolean>(true);
   const [notifyStateChange, setNotifyStateChange] = useState<boolean>(true);
@@ -479,6 +602,61 @@ export default function SettingsPage() {
                     </div>
                   </form>
                 </div>
+              </CardContent>
+            </Card>
+          </div>
+        );
+
+      case 'activity':
+        return (
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Atividades</CardTitle>
+                <CardDescription>Acompanhe suas ações recentes e alterações em todos os projetos e itens de trabalho.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {error ? (
+                  <div className="text-center p-6 bg-red-50 rounded-lg border border-red-200">
+                    <div className="text-red-600 font-medium mb-2">Erro ao carregar atividades</div>
+                    <p className="text-sm text-red-500">{error}</p>
+                    <button 
+                      onClick={() => window.location.reload()}
+                      className="mt-3 px-4 py-2 text-sm bg-white border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                    >
+                      Tentar novamente
+                    </button>
+                  </div>
+                ) : isLoadingActivities ? (
+                  <div className="flex justify-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                  </div>
+                ) : activities.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    Nenhuma atividade recente encontrada.
+                  </div>
+                ) : (
+                  <div className="space-y-6">
+                    {activities.map((activity) => (
+                      <div key={activity.id} className="flex items-start pb-4 border-b border-gray-100 last:border-0 last:pb-0">
+                        <div className="flex-shrink-0 mr-3">
+                          <div className="flex items-center justify-center h-8 w-8 rounded-full bg-gray-100 text-gray-600 font-medium">
+                            {activity.user.charAt(0).toUpperCase()}
+                          </div>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm text-gray-900">
+                            <span className="font-medium">{activity.user}</span>{' '}
+                            {formatActivityMessage(activity)}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {formatDate(activity.createdAt)}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
