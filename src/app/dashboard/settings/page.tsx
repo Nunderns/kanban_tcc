@@ -6,6 +6,18 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useSession } from "next-auth/react";
 import { useTheme } from "next-themes";
+import Sidebar from "@/components/Sidebar";
+
+interface Activity {
+  id: number;
+  user: string;
+  action: string;
+  field?: string;
+  taskTitle: string;
+  createdAt: string;
+  oldValue?: string;
+  newValue?: string;
+}
 
 type Section = 'profile' | 'preferences' | 'notifications' | 'security' | 'activity' | 'connections' | 'developer';
 
@@ -16,6 +28,179 @@ export default function SettingsPage() {
   const { data: session } = useSession();
   const name = session?.user?.name || "Usuário";
   const email = session?.user?.email || "";
+
+  // Activity state
+  const [activities, setActivities] = useState<Activity[]>([]);
+  const [isLoadingActivities, setIsLoadingActivities] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch activities when the component mounts or when the active section changes to 'activity'
+  useEffect(() => {
+    const fetchActivities = async () => {
+      if (activeSection !== 'activity') return;
+      
+      console.log('Fetching activities...');
+      setIsLoadingActivities(true);
+      try {
+        setError(null);
+        const response = await fetch('/api/activities', {
+          headers: {
+            'Accept': 'application/json',
+            'Cache-Control': 'no-cache'
+          }
+        });
+        
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+          const text = await response.text();
+          throw new Error(`Invalid content type: ${contentType}, Response: ${text}`);
+        }
+        
+        const data = await response.json();
+        
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to fetch activities');
+        }
+        
+        console.log('Activities fetched successfully:', data);
+        setActivities(Array.isArray(data) ? data : []);
+      } catch (err) {
+        let errorMessage = 'Unknown error occurred';
+        if (err instanceof Error) {
+          errorMessage = err.message;
+          console.error('Error details:', {
+            message: err.message,
+            name: err.name,
+            stack: err.stack
+          });
+        } else if (typeof err === 'string') {
+          errorMessage = err;
+        }
+        console.error('Error fetching activities:', errorMessage);
+        setError(`Falha ao carregar atividades. Por favor, tente novamente.`);
+        setActivities([]);
+      } finally {
+        setIsLoadingActivities(false);
+      }
+    };
+
+    fetchActivities();
+  }, [activeSection]);
+
+  // Format date to relative time (e.g., "2 hours ago")
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+    
+    if (diffInSeconds < 60) return 'agora mesmo';
+    if (diffInSeconds < 3600) {
+      const minutes = Math.floor(diffInSeconds / 60);
+      return `há ${minutes} minuto${minutes > 1 ? 's' : ''}`;
+    }
+    if (diffInSeconds < 86400) {
+      const hours = Math.floor(diffInSeconds / 3600);
+      return `há ${hours} hora${hours > 1 ? 's' : ''}`;
+    }
+    if (diffInSeconds < 2592000) {
+      const days = Math.floor(diffInSeconds / 86400);
+      return `há ${days} dia${days > 1 ? 's' : ''}`;
+    }
+    
+    return date.toLocaleDateString('pt-BR', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
+  };
+
+  // Format activity message based on action type
+  const formatActivityMessage = (activity: Activity) => {
+    const { action, field, taskTitle, oldValue, newValue } = activity;
+    
+    switch (action) {
+      case 'create':
+        return `criou a tarefa "${taskTitle}"`;
+      case 'update':
+        if (field === 'status') {
+          return `alterou o status de "${taskTitle}" de "${oldValue}" para "${newValue}"`;
+        } else if (field === 'assignee') {
+          if (newValue) {
+            return `atribuiu "${taskTitle}" para ${newValue}`;
+          } else {
+            return `removeu a atribuição de "${taskTitle}"`;
+          }
+        } else if (field) {
+          return `atualizou ${field} de "${taskTitle}"`;
+        }
+        return `atualizou a tarefa "${taskTitle}"`;
+      case 'delete':
+        return `excluiu a tarefa "${taskTitle}"`;
+      case 'comment':
+        return `comentou em "${taskTitle}"`;
+      default:
+        return `realizou uma ação em "${taskTitle}"`;
+    }
+  };
+  
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  const [emailNotifications, setEmailNotifications] = useState<boolean>(true);
+  const [notifyPropertyChanges, setNotifyPropertyChanges] = useState<boolean>(true);
+  const [notifyStateChange, setNotifyStateChange] = useState<boolean>(true);
+  const [notifyWorkItemCompleted, setNotifyWorkItemCompleted] = useState<boolean>(false);
+  const [notifyComments, setNotifyComments] = useState<boolean>(true);
+  const [notifyMentions, setNotifyMentions] = useState<boolean>(true);
+  
+  const handlePasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (newPassword !== confirmPassword) {
+      setMessage({ type: 'error', text: 'As senhas não coincidem' });
+      return;
+    }
+
+    if (newPassword.length < 8) {
+      setMessage({ type: 'error', text: 'A nova senha deve ter pelo menos 8 caracteres' });
+      return;
+    }
+
+    setIsLoading(true);
+    setMessage(null);
+
+    try {
+      const response = await fetch('/api/auth/change-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          currentPassword,
+          newPassword,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setMessage({ type: 'success', text: 'Senha alterada com sucesso!' });
+        setCurrentPassword('');
+        setNewPassword('');
+        setConfirmPassword('');
+      } else {
+        setMessage({ type: 'error', text: data.message || 'Falha ao alterar a senha' });
+      }
+    } catch (error) {
+      console.error('Error changing password:', error);
+      setMessage({ type: 'error', text: 'Ocorreu um erro. Tente novamente mais tarde.' });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Ensure UI is mounted before showing theme selector
   useEffect(() => {
@@ -219,6 +404,265 @@ export default function SettingsPage() {
           </div>
         );
 
+      case 'notifications':
+        return (
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Notificações por e-mail</CardTitle>
+                <CardDescription>Mantenha-se informado sobre itens de trabalho que você acompanha. Ative para ser notificado.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="font-medium">Notificações por e-mail</h3>
+                    <p className="text-sm text-gray-600">Mantenha-se atualizado sobre os itens de trabalho que você acompanha. Ative para receber notificações.</p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      className="sr-only peer"
+                      checked={emailNotifications ?? false}
+                      onChange={() => setEmailNotifications(v => !v)}
+                    />
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                  </label>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="font-medium">Mudanças nas propriedades</h3>
+                    <p className="text-sm text-gray-600">Me notifique quando as propriedades dos itens de trabalho, como responsáveis, prioridade, estimativas ou qualquer outra coisa, forem alteradas.</p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      className="sr-only peer"
+                      checked={notifyPropertyChanges ?? false}
+                      onChange={() => setNotifyPropertyChanges(v => !v)}
+                      disabled={!emailNotifications}
+                    />
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                  </label>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="font-medium">Mudança de estado</h3>
+                    <p className="text-sm text-gray-600">Me notifique quando o item de trabalho mudar para um estado diferente.</p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      className="sr-only peer"
+                      checked={notifyStateChange ?? false}
+                      onChange={() => setNotifyStateChange(v => !v)}
+                      disabled={!emailNotifications}
+                    />
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                  </label>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="font-medium">Item concluído</h3>
+                    <p className="text-sm text-gray-600">Me notifique apenas quando um item de trabalho for concluído.</p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      className="sr-only peer"
+                      checked={notifyWorkItemCompleted ?? false}
+                      onChange={() => setNotifyWorkItemCompleted(v => !v)}
+                      disabled={!emailNotifications}
+                    />
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                  </label>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="font-medium">Comentários</h3>
+                    <p className="text-sm text-gray-600">Me notifique quando alguém deixar um comentário no item de trabalho.</p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      className="sr-only peer"
+                      checked={notifyComments ?? false}
+                      onChange={() => setNotifyComments(v => !v)}
+                      disabled={!emailNotifications}
+                    />
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                  </label>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="font-medium">Menções</h3>
+                    <p className="text-sm text-gray-600">Me notifique apenas quando alguém me mencionar nos comentários ou descrição.</p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      className="sr-only peer"
+                      checked={notifyMentions ?? false}
+                      onChange={() => setNotifyMentions(v => !v)}
+                      disabled={!emailNotifications}
+                    />
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                  </label>
+                </div>
+
+                <div className="pt-2">
+                  <Button type="button" variant="outline" onClick={() => { /* TODO: persist settings */ }}>
+                    Salvar preferências
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        );
+
+      case 'security':
+        return (
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Segurança</CardTitle>
+                <CardDescription>Gerencie suas configurações de segurança e senha</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div>
+                  <h3 className="text-lg font-medium mb-4">Alterar senha</h3>
+                  {message && (
+                    <div className={`mb-4 p-3 rounded-md ${
+                      message.type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                    }`}>
+                      {message.text}
+                    </div>
+                  )}
+                  <form onSubmit={handlePasswordSubmit} className="space-y-4">
+                    <div>
+                      <label htmlFor="current-password" className="block text-sm font-medium text-gray-700 mb-1">
+                        Senha atual
+                      </label>
+                      <input
+                        type="password"
+                        id="current-password"
+                        value={currentPassword}
+                        onChange={(e) => setCurrentPassword(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="Digite sua senha atual"
+                        required
+                      />
+                    </div>
+                    
+                    <div>
+                      <label htmlFor="new-password" className="block text-sm font-medium text-gray-700 mb-1">
+                        Nova senha
+                      </label>
+                      <input
+                        type="password"
+                        id="new-password"
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="Digite a nova senha"
+                        minLength={8}
+                        required
+                      />
+                      <p className="mt-1 text-xs text-gray-500">
+                        A senha deve ter pelo menos 8 caracteres
+                      </p>
+                    </div>
+                    
+                    <div>
+                      <label htmlFor="confirm-password" className="block text-sm font-medium text-gray-700 mb-1">
+                        Confirmar nova senha
+                      </label>
+                      <input
+                        type="password"
+                        id="confirm-password"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="Confirme a nova senha"
+                        required
+                      />
+                    </div>
+                    
+                    <div className="pt-2">
+                      <button
+                        type="submit"
+                        disabled={isLoading}
+                        className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {isLoading ? 'Alterando senha...' : 'Alterar senha'}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        );
+
+      case 'activity':
+        return (
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Atividades</CardTitle>
+                <CardDescription>Acompanhe suas ações recentes e alterações em todos os projetos e itens de trabalho.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {error ? (
+                  <div className="text-center p-6 bg-red-50 rounded-lg border border-red-200">
+                    <div className="text-red-600 font-medium mb-2">Erro ao carregar atividades</div>
+                    <p className="text-sm text-red-500">{error}</p>
+                    <button 
+                      onClick={() => window.location.reload()}
+                      className="mt-3 px-4 py-2 text-sm bg-white border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                    >
+                      Tentar novamente
+                    </button>
+                  </div>
+                ) : isLoadingActivities ? (
+                  <div className="flex justify-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                  </div>
+                ) : activities.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    Nenhuma atividade recente encontrada.
+                  </div>
+                ) : (
+                  <div className="space-y-6">
+                    {activities.map((activity) => (
+                      <div key={activity.id} className="flex items-start pb-4 border-b border-gray-100 last:border-0 last:pb-0">
+                        <div className="flex-shrink-0 mr-3">
+                          <div className="flex items-center justify-center h-8 w-8 rounded-full bg-gray-100 text-gray-600 font-medium">
+                            {activity.user.charAt(0).toUpperCase()}
+                          </div>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm text-gray-900">
+                            <span className="font-medium">{activity.user}</span>{' '}
+                            {formatActivityMessage(activity)}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {formatDate(activity.createdAt)}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        );
+
       default:
         return (
           <Card>
@@ -244,6 +688,11 @@ export default function SettingsPage() {
   return (
     <div className="flex min-h-screen bg-white">
       {/* Sidebar */}
+      <div className="w-72">
+        <Sidebar />
+      </div>
+
+      {/* Settings local sidebar */}
       <div className="w-64 border-r border-gray-200 p-6">
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-1">

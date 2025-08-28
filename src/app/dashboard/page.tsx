@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Sidebar } from "@/components/Sidebar";
 import NotificationsDropdown from "@/components/NotificationsDropdown";
@@ -46,6 +46,13 @@ interface Task {
 interface Project {
   id: string;
   name: string;
+  description?: string;
+  progress: number;
+  totalTasks: number;
+  completedTasks: number;
+  lastUpdated: string;
+  color: string;
+  status?: 'not-started' | 'in-progress' | 'completed';
 }
 
 interface Member {
@@ -63,8 +70,13 @@ export default function Dashboard() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredTasks, setFilteredTasks] = useState<Task[]>([]);
   const [isAddingTask, setIsAddingTask] = useState(false);
-  const [isAddingProject, setIsAddingProject] = useState(false);
   const [isAddingMember, setIsAddingMember] = useState(false);
+  const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' }>({ 
+    key: 'lastUpdated', 
+    direction: 'desc' 
+  });
+  const [projectFilter, setProjectFilter] = useState('all');
+  const [searchProjectQuery, setSearchProjectQuery] = useState('');
   const [stats, setStats] = useState<{
     totalProjects: number;
     totalTasks: number;
@@ -74,13 +86,65 @@ export default function Dashboard() {
     tasks: Task[];
     members: Member[];
   }>({
-    totalProjects: 0,
-    totalTasks: 0,
-    assignedTasks: 0,
-    completedTasks: 0,
-    projects: [],
-    tasks: [],
-    members: [],
+    totalProjects: 3,
+    totalTasks: 12,
+    assignedTasks: 8,
+    completedTasks: 4,
+    projects: [
+      {
+        id: '1',
+        name: 'Projeto Kanban',
+        progress: 65,
+        totalTasks: 15,
+        completedTasks: 10,
+        lastUpdated: 'hoje',
+        color: 'blue'
+      },
+      {
+        id: '2',
+        name: 'Design de Interface',
+        progress: 30,
+        totalTasks: 8,
+        completedTasks: 2,
+        lastUpdated: 'ontem',
+        color: 'purple'
+      },
+      {
+        id: '3',
+        name: 'Documentação',
+        progress: 15,
+        totalTasks: 20,
+        completedTasks: 3,
+        lastUpdated: '2 dias atrás',
+        color: 'green'
+      }
+    ],
+    tasks: [
+      {
+        id: '1',
+        title: 'Implementar arrastar e soltar',
+        description: 'Adicionar funcionalidade de arrastar e soltar para as tarefas',
+        remainingDays: 2
+      },
+      {
+        id: '2',
+        title: 'Criar design responsivo',
+        description: 'Ajustar o layout para diferentes tamanhos de tela',
+        remainingDays: 1
+      }
+    ],
+    members: [
+      {
+        id: '1',
+        name: 'João Silva',
+        email: 'joao@exemplo.com'
+      },
+      {
+        id: '2',
+        name: 'Maria Santos',
+        email: 'maria@exemplo.com'
+      }
+    ]
   });
 
   const firstTaskRef = useRef<HTMLDivElement | null>(null);
@@ -153,12 +217,74 @@ export default function Dashboard() {
     return name.slice(0, 2).toUpperCase();
   };
 
-  const handleAddProject = () => {
-    setIsAddingProject(true);
-    console.log('Opening new project form...');
-    setTimeout(() => {
-      setIsAddingProject(false);
-    }, 1000);
+
+  // Sort projects based on current sort configuration
+  const sortedProjects = useMemo(() => {
+    const sortableItems = [...(stats.projects || [])];
+    if (sortConfig === null) return sortableItems;
+    
+    return [...sortableItems].sort((a, b) => {
+      // Get values safely with type checking
+      const aValue = a[sortConfig.key as keyof Project];
+      const bValue = b[sortConfig.key as keyof Project];
+      
+      // Handle undefined values
+      if (aValue === undefined && bValue === undefined) return 0;
+      if (aValue === undefined) return sortConfig.direction === 'asc' ? -1 : 1;
+      if (bValue === undefined) return sortConfig.direction === 'asc' ? 1 : -1;
+      
+      // Convert to strings for consistent comparison
+      const aStr = String(aValue).toLowerCase();
+      const bStr = String(bValue).toLowerCase();
+      
+      // Handle numeric comparison for progress
+      if (sortConfig.key === 'progress' || sortConfig.key === 'totalTasks' || sortConfig.key === 'completedTasks') {
+        const aNum = Number(aValue);
+        const bNum = Number(bValue);
+        return sortConfig.direction === 'asc' ? aNum - bNum : bNum - aNum;
+      }
+      
+      // String comparison for other fields
+      if (aStr < bStr) return sortConfig.direction === 'asc' ? -1 : 1;
+      if (aStr > bStr) return sortConfig.direction === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }, [stats.projects, sortConfig]);
+  
+  // Filter projects based on search query and status filter
+  const filteredAndSortedProjects = useMemo(() => {
+    return sortedProjects.filter(project => {
+      // Filter by search query
+      const matchesSearch = project.name.toLowerCase().includes(searchProjectQuery.toLowerCase()) ||
+                          (project.description && project.description.toLowerCase().includes(searchProjectQuery.toLowerCase()));
+      
+      // Filter by status
+      let matchesFilter = true;
+      if (projectFilter === 'in-progress') {
+        matchesFilter = project.progress > 0 && project.progress < 100;
+      } else if (projectFilter === 'completed') {
+        matchesFilter = project.progress === 100;
+      } else if (projectFilter === 'not-started') {
+        matchesFilter = project.progress === 0;
+      }
+      
+      return matchesSearch && matchesFilter;
+    });
+  }, [sortedProjects, searchProjectQuery, projectFilter]);
+  
+  // Function to handle sort request
+  const requestSort = (key: string) => {
+    let direction: 'asc' | 'desc' = 'asc';
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
+  
+  // Function to get sort indicator
+  const getSortIndicator = (key: string) => {
+    if (sortConfig.key !== key) return null;
+    return sortConfig.direction === 'asc' ? '↑' : '↓';
   };
 
   const handleAddMember = () => {
@@ -425,7 +551,7 @@ export default function Dashboard() {
                       >
                         <div className="flex items-start">
                           <div className="flex-1 min-w-0">
-                            <p className="font-medium text-gray-900 truncate">{task.title}</p>
+                            <p className="font-medium text-gray-900 dark:text-white truncate">{task.title}</p>
                             <p className="text-sm text-gray-500 mt-1 line-clamp-2">{task.description}</p>
                             {task.remainingDays !== null && task.remainingDays !== undefined && (
                               <div className="flex items-center mt-2 text-xs text-gray-500">
@@ -503,52 +629,123 @@ export default function Dashboard() {
             ) : (
               <>
                 <CardHeader>
-                  <CardTitle className="text-lg dark:text-white">Meus Projetos</CardTitle>
-                  <CardDescription className="dark:text-gray-300">{stats.projects.length} projetos ativos</CardDescription>
+                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                    <div>
+                      <CardTitle className="text-lg dark:text-white">Meus Projetos</CardTitle>
+                      <CardDescription className="dark:text-gray-300">
+                        {filteredAndSortedProjects.length} de {stats.projects.length} projetos
+                      </CardDescription>
+                    </div>
+                    
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      <div className="relative">
+                        <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                        <input
+                          type="text"
+                          placeholder="Buscar projetos..."
+                          className="pl-10 pr-4 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-700 dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full sm:w-48"
+                          value={searchProjectQuery}
+                          onChange={(e) => setSearchProjectQuery(e.target.value)}
+                        />
+                      </div>
+                      
+                      <select
+                        className="px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-700 dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        value={projectFilter}
+                        onChange={(e) => setProjectFilter(e.target.value)}
+                      >
+                        <option value="all">Todos os projetos</option>
+                        <option value="not-started">Não iniciados</option>
+                        <option value="in-progress">Em andamento</option>
+                        <option value="completed">Concluídos</option>
+                      </select>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center text-xs text-gray-500 dark:text-gray-400 mt-2 space-x-4 border-b border-gray-100 dark:border-gray-700 pb-2">
+                    <button 
+                      className={`flex items-center ${sortConfig.key === 'name' ? 'text-blue-600 dark:text-blue-400 font-medium' : ''}`}
+                      onClick={() => requestSort('name')}
+                    >
+                      Nome {getSortIndicator('name')}
+                    </button>
+                    <button 
+                      className={`flex items-center ${sortConfig.key === 'progress' ? 'text-blue-600 dark:text-blue-400 font-medium' : ''}`}
+                      onClick={() => requestSort('progress')}
+                    >
+                      Progresso {getSortIndicator('progress')}
+                    </button>
+                    <button 
+                      className={`flex items-center ${sortConfig.key === 'lastUpdated' ? 'text-blue-600 dark:text-blue-400 font-medium' : ''}`}
+                      onClick={() => requestSort('lastUpdated')}
+                    >
+                      Atualizado {getSortIndicator('lastUpdated')}
+                    </button>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    {stats.projects.map((project) => (
-                      <Link 
-                        key={project.id}
-                        href={`/projects/${project.id}`}
-                        className="block p-3 rounded-lg border border-gray-100 dark:border-gray-700 hover:border-blue-200 dark:hover:border-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors duration-200 group"
-                      >
-                        <div className="flex items-center">
-                          <div className="p-2 rounded-lg bg-blue-100 text-blue-600 mr-3 group-hover:bg-blue-200 transition-colors duration-200">
-                            <FiFolder className="w-5 h-5" />
+                    {filteredAndSortedProjects.map((project) => {
+                      const projectColors = {
+                        blue: { bg: 'bg-blue-100', text: 'text-blue-600', hover: 'hover:bg-blue-200', progress: 'bg-blue-500' },
+                        green: { bg: 'bg-green-100', text: 'text-green-600', hover: 'hover:bg-green-200', progress: 'bg-green-500' },
+                        purple: { bg: 'purple-100', text: 'text-purple-600', hover: 'hover:bg-purple-200', progress: 'bg-purple-500' },
+                        yellow: { bg: 'bg-yellow-100', text: 'text-yellow-600', hover: 'hover:bg-yellow-200', progress: 'bg-yellow-500' },
+                      };
+                      
+                      const color = projectColors[project.color as keyof typeof projectColors] || projectColors.blue;
+                      
+                      return (
+                        <Link 
+                          key={project.id}
+                          href={`/projects/${project.id}`}
+                          className="block p-4 rounded-xl border border-gray-100 dark:border-gray-700 hover:shadow-md transition-all duration-300 group"
+                        >
+                          <div className="space-y-3">
+                            <div className="flex items-start justify-between">
+                              <div className={`p-2 rounded-lg ${color.bg} ${color.text} ${color.hover} transition-colors duration-200 inline-block`}>
+                                <FiFolder className="w-5 h-5" />
+                              </div>
+                              <span className="text-xs px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
+                                {project.completedTasks}/{project.totalTasks} tarefas
+                              </span>
+                            </div>
+                            
+                            <div>
+                              <h3 className="font-semibold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                                {project.name}
+                              </h3>
+                              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                Atualizado {project.lastUpdated}
+                              </p>
+                            </div>
+                            
+                            <div className="space-y-1.5">
+                              <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400">
+                                <span>Progresso</span>
+                                <span>{project.progress}%</span>
+                              </div>
+                              <div className="w-full bg-gray-200 rounded-full h-2 dark:bg-gray-700">
+                                <div 
+                                  className={`h-2 rounded-full ${color.progress}`}
+                                  style={{ width: `${project.progress}%` }}
+                                ></div>
+                              </div>
+                            </div>
                           </div>
-                          <div>
-                            <p className="font-medium text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400">{project.name}</p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">Última atualização: 2 dias atrás</p>
-                          </div>
-                          <FiChevronRight className="ml-auto text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-200" />
-                        </div>
-                      </Link>
-                    ))}
+                        </Link>
+                      );
+                    })}
                     {stats.projects.length === 0 && (
                       <div className="text-center py-6">
                         <div className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-gray-200 rounded-lg">
                           <FiFolder className="w-12 h-12 text-gray-300 mb-4" />
                           <p className="text-gray-500 mb-4">Nenhum projeto encontrado</p>
                           <button 
-                            onClick={handleAddProject}
-                            disabled={isAddingProject}
-                            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center disabled:opacity-50"
+                            onClick={() => console.log('Open project creation modal')}
+                            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center"
                           >
-                            {isAddingProject ? (
-                              <>
-                                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
-                                Criando...
-                              </>
-                            ) : (
-                              <>
-                                <FiPlus className="mr-2" /> Criar Projeto
-                              </>
-                            )}
+                            <FiPlus className="mr-2" /> Criar Projeto
                           </button>
                         </div>
                       </div>
@@ -665,7 +862,7 @@ export default function Dashboard() {
               className="w-14 h-14 rounded-full bg-blue-600 text-white flex items-center justify-center shadow-lg hover:bg-blue-700 transition-colors"
               aria-label="Adicionar novo item"
             >
-              {isAddingTask || isAddingProject || isAddingMember ? (
+              {isAddingTask || isAddingMember ? (
                 <svg className="animate-spin h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>

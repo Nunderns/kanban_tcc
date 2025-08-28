@@ -28,7 +28,6 @@ export async function GET(req: NextRequest) {
       }, { status: 401 });
     }
 
-    // Parse query parameters
     const statusParam = req.nextUrl.searchParams.get("status");
     const status = statusParam && ["BACKLOG", "TODO", "IN_PROGRESS", "DONE"].includes(statusParam)
       ? statusParam as "BACKLOG" | "TODO" | "IN_PROGRESS" | "DONE"
@@ -36,10 +35,11 @@ export async function GET(req: NextRequest) {
       
     const workspaceIdParam = req.nextUrl.searchParams.get("workspaceId");
     const workspaceId = workspaceIdParam ? parseInt(workspaceIdParam) : undefined;
+    const projectIdParam = req.nextUrl.searchParams.get("projectId");
+    const projectId = projectIdParam ? parseInt(projectIdParam) : undefined;
     
-    console.log('Query params:', { status, workspaceId });
+    console.log('Query params:', { status, workspaceId, projectId });
 
-    // Convert session user ID to number if it's a string
     const userId = typeof session.user.id === 'string' 
       ? parseInt(session.user.id, 10) 
       : session.user.id;
@@ -52,23 +52,20 @@ export async function GET(req: NextRequest) {
       );
     }
     
-    // Define proper type for the where clause
     interface TaskWhere {
       userId: number;
       status?: "BACKLOG" | "TODO" | "IN_PROGRESS" | "DONE";
+      projectId?: number | null;
     }
     
-    // Build the where clause with proper typing
     const where: TaskWhere = { userId };
     
-    // Only add status if provided
     if (status) {
       where.status = status;
     }
-    
-    // Skip workspace filtering since the column doesn't exist in the database
-    // This is a temporary fix - you should run database migrations to add the column
-    console.warn('workspaceId filtering is disabled because the column does not exist in the database');
+    if (typeof projectId === 'number' && !isNaN(projectId)) {
+      where.projectId = projectId;
+    }
     
     console.log('Database query:', JSON.stringify(where, null, 2));
 
@@ -80,7 +77,7 @@ export async function GET(req: NextRequest) {
         project: { select: { id: true, name: true } }
       },
       orderBy: { createdAt: "desc" },
-      take: 100 // Limit number of results for safety
+      take: 100
     });
     
     console.log(`Found ${tasks.length} tasks`);
