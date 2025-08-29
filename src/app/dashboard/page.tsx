@@ -360,12 +360,12 @@ function DashboardContent() {
               <Popover>
                 <PopoverTrigger asChild>
                   <button aria-label="Abrir menu do usuário" className="rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <Avatar className="h-10 w-10 border border-gray-200">
+                    <Avatar className="h-10 w-10 border border-border bg-card">
                       <AvatarImage
                         src={session?.user?.image ?? undefined}
                         alt={session?.user?.name || session?.user?.email || "Avatar do usuário"}
                       />
-                      <AvatarFallback className="text-xs">
+                      <AvatarFallback className="text-xs text-foreground">
                         {getInitials(session?.user?.name || session?.user?.email)}
                       </AvatarFallback>
                     </Avatar>
@@ -587,7 +587,7 @@ function DashboardContent() {
                           <div className="flex-1 min-w-0">
                             <p className="font-medium text-gray-900 dark:text-white group-hover:text-gray-900 dark:group-hover:text-white truncate">{task.title}</p>
                             <p className="text-sm text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-300 mt-1 line-clamp-2">{task.description}</p>
-     <p className="text-sm text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-300 mt-1 line-clamp-2">{task.description}</p>
+                            <p className="text-sm text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-300 mt-1 line-clamp-2">{task.description}</p>
                             {task.remainingDays !== null && task.remainingDays !== undefined && (
                               <div className="flex items-center mt-2 text-xs text-gray-500">
                                 <FiClock className="mr-1" />
