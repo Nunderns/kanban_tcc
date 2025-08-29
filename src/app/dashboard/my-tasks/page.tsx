@@ -365,7 +365,7 @@ function KanbanPage() {
     setActiveId(null);
   }, [workItems, updateTaskStatus]);
 
-  const onDragStart = useCallback((event: any) => {
+  const onDragStart = useCallback((event: { active: { id: string | number } }) => {
     setActiveId(String(event.active.id));
   }, []);
 
