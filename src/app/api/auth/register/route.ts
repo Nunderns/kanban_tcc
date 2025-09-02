@@ -1,9 +1,10 @@
 import { prisma } from "@/lib/prisma";
+import { sendWelcomeEmail } from "@/lib/resend";
+import bcrypt from "bcryptjs";
+import { NextResponse } from "next/server";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = prisma as any;
-import bcrypt from "bcryptjs";
-import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
   const { email, password, name } = await req.json();
@@ -28,6 +29,15 @@ export async function POST(req: Request) {
         name,
       },
     });
+
+    try {
+      await sendWelcomeEmail({
+        to: email,
+        name: name
+      });
+    } catch (error) {
+      console.error('Failed to send welcome email:', error);
+    }
 
     const workspace = await db.workspace.create({
       data: {
