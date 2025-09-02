@@ -145,6 +145,58 @@ const initResend = async (): Promise<ResendClientWithEmails> => {
 };
 
 // ----------------------------------------------------------------------------
+/**
+ * Envia um e-mail de boas-vindas para um novo usuário
+ */
+export async function sendWelcomeEmail(params: {
+  to: string;
+  name?: string;
+}) {
+  const { to, name = 'usuário' } = params;
+  
+  const subject = 'Bem-vindo(a) ao TaskFlow!';
+  const html = `
+    <div style="font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #1F2937;">
+      <div style="background-color: #4F46E5; padding: 24px; text-align: center; border-radius: 8px 8px 0 0;">
+        <h1 style="color: white; margin: 0; font-size: 24px; font-weight: 600;">TaskFlow</h1>
+      </div>
+      
+      <div style="padding: 32px; background-color: #ffffff; border: 1px solid #E5E7EB; border-top: none; border-radius: 0 0 8px 8px;">
+        <h2 style="color: #111827; font-size: 20px; margin-top: 0; margin-bottom: 24px;">Olá, ${name}!</h2>
+        
+        <p style="margin-bottom: 16px; line-height: 1.6;">Seja muito bem-vindo(a) ao TaskFlow! Estamos muito felizes em tê-lo(a) conosco. 🎉</p>
+        
+        <div style="background-color: #F9FAFB; padding: 16px; border-radius: 6px; margin: 20px 0; border-left: 4px solid #4F46E5;">
+          <p style="margin: 0; font-weight: 500; color: #111827;">Dicas para começar:</p>
+          <ul style="margin: 8px 0 0 0; padding-left: 20px; color: #4B5563;">
+            <li style="margin-bottom: 8px;">Crie seu primeiro projeto</li>
+            <li style="margin-bottom: 8px;">Adicione tarefas e organize-as nos quadros</li>
+            <li>Convide membros da equipe para colaborar</li>
+          </ul>
+        </div>
+        
+        <p style="margin-bottom: 24px; line-height: 1.6;">Se precisar de ajuda ou tiver alguma dúvida, é só responder a este e-mail. Nossa equipe está à disposição para ajudar!</p>
+        
+        <a href="${process.env.NEXTAUTH_URL}/dashboard" style="display: inline-block; background-color: #4F46E5; color: white; text-decoration: none; font-weight: 500; padding: 12px 24px; border-radius: 6px; margin: 8px 0 24px 0;">
+          Acessar Minha Conta
+        </a>
+        
+        <div style="margin-top: 32px; padding-top: 24px; border-top: 1px solid #E5E7EB; font-size: 14px; color: #6B7280;">
+          <p style="margin: 0 0 8px 0;">Atenciosamente,<br><strong>Equipe TaskFlow</strong></p>
+          <p style="margin: 0; font-size: 13px; color: #9CA3AF;">Este é um e-mail automático, por favor não responda diretamente a esta mensagem.</p>
+        </div>
+      </div>
+    </div>
+  `;
+
+  return sendHtmlEmail({
+    to,
+    subject,
+    html,
+    fromName: 'TaskFlow Team'
+  });
+}
+
 export const resend = {
   emails: {
     send: async (payload: EmailPayload): Promise<EmailResponse> => {
@@ -192,7 +244,7 @@ export const sendInvitationEmail = async (params: {
   console.log("Sending email via Resend...");
 
   const res = await client.emails.send({
-    from: `Kanban TCC <${RESEND_FROM_EMAIL}>`,
+    from: `TaskFlow <${RESEND_FROM_EMAIL}>`,
     to: recipients,
     subject: `Você foi convidado para o workspace ${workspaceName}`,
     html: `
@@ -225,7 +277,7 @@ export const sendHtmlEmail = async (payload: {
   fromName?: string;
   reply_to?: string;
 }) => {
-  const { to, subject, html, reply_to, fromName = "Kanban TCC" } = payload;
+  const { to, subject, html, reply_to, fromName = "TaskFlow" } = payload;
 
   const isProd = NODE_ENV === "production";
   const canSendForReal = (isProd || FORCE_SEND) && !!RESEND_API_KEY;
