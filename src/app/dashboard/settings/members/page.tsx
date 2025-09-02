@@ -41,7 +41,7 @@ function InviteModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void
       await Promise.all(
         fields.map(async (field) => {
           if (!field.email.trim()) return null;
-          const response = await fetch('/api/invitations/send', {
+          const response = await fetch('/api/invitations', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email: field.email.trim(), role: field.role, workspaceId }),
