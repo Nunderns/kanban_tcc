@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef, useMemo } from "react";
+import { Suspense, useEffect, useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Sidebar } from "@/components/Sidebar";
 import NotificationsDropdown from "@/components/NotificationsDropdown";
@@ -26,6 +26,9 @@ import { Button } from "@/components/ui/button";
 import { useSession, signOut } from "next-auth/react";
 import { useTheme } from "next-themes";
 import { Sun, Moon, Monitor } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import WorkItemSidebar from "@/components/WorkItemSidebar";
+import type { WorkItem } from "@/app/dashboard/my-tasks/page";
 
 const Progress = ({ value, className = "" }: { value: number; className?: string }) => (
   <div className={`w-full bg-gray-200 rounded-full h-2.5 ${className}`}>
@@ -61,7 +64,7 @@ interface Member {
   email: string;
 }
 
-export default function Dashboard() {
+function DashboardContent() {
   const { data: session } = useSession();
   const { theme, setTheme } = useTheme();
   const [isLoading, setIsLoading] = useState(true);
@@ -147,7 +150,24 @@ export default function Dashboard() {
     ]
   });
 
-  const firstTaskRef = useRef<HTMLDivElement | null>(null);
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [selectedTask, setSelectedTask] = useState<WorkItem | null>(null);
+
+  // Handle task selection from URL
+  useEffect(() => {
+    const taskId = searchParams?.get('task');
+    if (taskId && stats.tasks.length > 0) {
+      const task = stats.tasks.find(t => t.id === taskId);
+      if (task) {
+        setSelectedTask(task as unknown as WorkItem);
+        // Only update URL if we're not already on the tasks page
+        if (!window.location.pathname.includes('/my-tasks')) {
+          router.push(`/dashboard/my-tasks?task=${taskId}`);
+        }
+      }
+    }
+  }, [searchParams, stats.tasks, router]);
 
   useEffect(() => {
     setIsClient(true);
@@ -185,11 +205,6 @@ export default function Dashboard() {
     }
   }, [searchQuery, stats.tasks]);
 
-  useEffect(() => {
-    if (filteredTasks.length > 0 && firstTaskRef.current) {
-      firstTaskRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
-    }
-  }, [filteredTasks]);
 
   const handleAddTask = () => {
     setIsAddingTask(true);
@@ -298,6 +313,22 @@ export default function Dashboard() {
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-gray-25 to-gray-50">
       <Sidebar />
+      {selectedTask && (
+        <WorkItemSidebar
+          item={selectedTask}
+          onClose={() => {
+            setSelectedTask(null);
+            // Update URL without the task parameter
+            const params = new URLSearchParams(window.location.search);
+            params.delete('task');
+            router.replace(`/dashboard?${params.toString()}`);
+          }}
+          onUpdate={(updated: WorkItem) => {
+            // Handle task update if needed
+            setSelectedTask(updated);
+          }}
+        />
+      )}
       <div className="flex-1 p-4 md:p-6 lg:p-8 overflow-auto">
         {/* Header */}
         <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
@@ -329,12 +360,12 @@ export default function Dashboard() {
               <Popover>
                 <PopoverTrigger asChild>
                   <button aria-label="Abrir menu do usuário" className="rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <Avatar className="h-10 w-10 border border-gray-200">
+                    <Avatar className="h-10 w-10 border border-border bg-card">
                       <AvatarImage
                         src={session?.user?.image ?? undefined}
                         alt={session?.user?.name || session?.user?.email || "Avatar do usuário"}
                       />
-                      <AvatarFallback className="text-xs">
+                      <AvatarFallback className="text-xs text-foreground">
                         {getInitials(session?.user?.name || session?.user?.email)}
                       </AvatarFallback>
                     </Avatar>
@@ -532,27 +563,31 @@ export default function Dashboard() {
                       <CardTitle className="text-lg font-semibold">Minhas Tarefas</CardTitle>
                       <CardDescription>{stats.tasks.length} tarefas atribuídas</CardDescription>
                     </div>
-                    <button 
-                      onClick={() => setActiveTab('tasks')}
+                    <Link 
+                      href="/dashboard/my-tasks"
                       className="text-sm text-blue-600 hover:underline flex items-center"
                     >
                       Ver todas <FiChevronRight className="ml-1" />
-                    </button>
+                    </Link>
                   </div>
                 </CardHeader>
                 <CardContent className="p-0">
                   <div className="divide-y divide-gray-100">
-                    {filteredTasks.slice(0, 5).map((task, index) => (
+                    {filteredTasks.slice(0, 5).map((task) => (
                       <motion.div 
                         key={task.id}
-                        ref={index === 0 ? firstTaskRef : null}
-                        className="p-4 hover:bg-gray-50 transition-colors duration-200 rounded-lg"
+                        className="p-4 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors duration-200 rounded-lg group cursor-pointer"
                         whileHover={{ scale: 1.01, boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' }}
+                        onClick={() => {
+                          // Navigate to tasks page with the task ID
+                          router.push(`/dashboard/my-tasks?task=${task.id}`);
+                        }}
                       >
                         <div className="flex items-start">
                           <div className="flex-1 min-w-0">
-                            <p className="font-medium text-gray-900 dark:text-white truncate">{task.title}</p>
-                            <p className="text-sm text-gray-500 mt-1 line-clamp-2">{task.description}</p>
+                            <p className="font-medium text-gray-900 dark:text-white group-hover:text-gray-900 dark:group-hover:text-white truncate">{task.title}</p>
+                            <p className="text-sm text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-300 mt-1 line-clamp-2">{task.description}</p>
+                            <p className="text-sm text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-300 mt-1 line-clamp-2">{task.description}</p>
                             {task.remainingDays !== null && task.remainingDays !== undefined && (
                               <div className="flex items-center mt-2 text-xs text-gray-500">
                                 <FiClock className="mr-1" />
@@ -784,8 +819,8 @@ export default function Dashboard() {
               <CardHeader>
                 <div className="flex justify-between items-center">
                   <div>
-                    <CardTitle>Membros da Equipe</CardTitle>
-                    <CardDescription>{stats.members.length} pessoas na equipe</CardDescription>
+                    <CardTitle className="dark:text-white">Membros da Equipe</CardTitle>
+                    <CardDescription className="dark:text-gray-300">{stats.members.length} pessoas na equipe</CardDescription>
                   </div>
                   <button 
                     onClick={() => setActiveTab('team')}
@@ -800,14 +835,14 @@ export default function Dashboard() {
                   {stats.members.map((member) => (
                     <div
                       key={member.id}
-                      className="flex items-center p-4 rounded-lg border border-gray-100 hover:border-blue-200 hover:bg-blue-50 transition-colors duration-200"
+                      className="flex items-center p-4 rounded-lg border border-gray-100 hover:border-blue-200 hover:bg-blue-50 dark:border-gray-700 dark:hover:border-blue-600 dark:hover:bg-gray-800 transition-colors duration-200"
                     >
                       <div className="flex items-center justify-center w-10 h-10 rounded-full bg-blue-100 text-blue-600 font-semibold">
                         {member.name[0].toUpperCase()}
                       </div>
                       <div className="ml-4 overflow-hidden">
-                        <p className="font-medium text-gray-900 truncate">{member.name}</p>
-                        <p className="text-sm text-gray-500 truncate">{member.email}</p>
+                        <p className="font-medium text-gray-900 dark:text-white">{member.name}</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-300">{member.email}</p>
                       </div>
                     </div>
                   ))}
@@ -875,5 +910,17 @@ export default function Dashboard() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function Dashboard() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    }>
+      <DashboardContent />
+    </Suspense>
   );
 }
