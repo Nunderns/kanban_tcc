@@ -307,20 +307,40 @@ function KanbanPage() {
   );
 
   // Helper: update task status locally and persist
-  const updateTaskStatus = useCallback(async (taskId: string, newStatus: Status) => {
-    // Ensure ID comparison works whether IDs are numbers or strings
-    setWorkItems(prev => prev.map(t => String(t.id) === String(taskId) ? { ...t, status: newStatus } : t));
-    try {
-      await fetch(`/api/tasks?id=${taskId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ status: newStatus })
-      });
-    } catch (e) {
-      console.error("Failed to persist status update", e);
-    }
-  }, []);
+  const updateTaskStatus = useCallback(
+    async (taskId: string, oldStatus: Status, newStatus: Status) => {
+      // Ensure ID comparison works whether IDs are numbers or strings
+      setWorkItems((prev) =>
+        prev.map((t) =>
+          String(t.id) === String(taskId) ? { ...t, status: newStatus } : t
+        )
+      );
+      try {
+        await fetch(`/api/tasks?id=${taskId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ status: newStatus }),
+        });
+
+        // Log activity for status change
+        await fetch(`/api/tasks/${taskId}/activities`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            user: session?.user?.name || "Unknown",
+            action: "updated field",
+            field: "status",
+            oldValue: oldStatus,
+            newValue: newStatus,
+          }),
+        });
+      } catch (e) {
+        console.error("Failed to persist status update", e);
+      }
+    },
+    [session]
+  );
 
   const onDragEnd = useCallback(async (event: DragEndEvent) => {
     const { active, over } = event;
@@ -345,7 +365,7 @@ function KanbanPage() {
     }
 
     if (destinationStatus !== sourceStatus) {
-      await updateTaskStatus(activeId, destinationStatus);
+      await updateTaskStatus(activeId, sourceStatus, destinationStatus);
       return;
     }
 
