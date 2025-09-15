@@ -44,6 +44,7 @@ export type Status = "BACKLOG" | "TODO" | "IN_PROGRESS" | "DONE";
 export type WorkItem = {
   id: string;
   title: string;
+  description?: string;
   status: Status;
   priority: Priority;
   startDate?: string;

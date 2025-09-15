@@ -39,10 +39,7 @@ const Progress = ({ value, className = "" }: { value: number; className?: string
   </div>
 );
 
-interface Task {
-  id: string;
-  title: string;
-  description: string;
+interface Task extends WorkItem {
   remainingDays: number | null;
 }
 
@@ -72,6 +69,8 @@ function DashboardContent() {
   const [activeTab, setActiveTab] = useState('overview');
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredTasks, setFilteredTasks] = useState<Task[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1);
   const [isAddingTask, setIsAddingTask] = useState(false);
   const [isAddingMember, setIsAddingMember] = useState(false);
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' }>({ 
@@ -127,12 +126,16 @@ function DashboardContent() {
         id: '1',
         title: 'Implementar arrastar e soltar',
         description: 'Adicionar funcionalidade de arrastar e soltar para as tarefas',
+        status: 'IN_PROGRESS' as const,
+        priority: 'MEDIUM' as const,
         remainingDays: 2
       },
       {
         id: '2',
         title: 'Criar design responsivo',
         description: 'Ajustar o layout para diferentes tamanhos de tela',
+        status: 'TODO' as const,
+        priority: 'HIGH' as const,
         remainingDays: 1
       }
     ],
@@ -152,7 +155,7 @@ function DashboardContent() {
 
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [selectedTask, setSelectedTask] = useState<WorkItem | null>(null);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
   // Handle task selection from URL
   useEffect(() => {
@@ -160,10 +163,12 @@ function DashboardContent() {
     if (taskId && stats.tasks.length > 0) {
       const task = stats.tasks.find(t => t.id === taskId);
       if (task) {
-        setSelectedTask(task as unknown as WorkItem);
+        setSelectedTask(task);
         // Only update URL if we're not already on the tasks page
         if (!window.location.pathname.includes('/my-tasks')) {
-          router.push(`/dashboard/my-tasks?task=${taskId}`);
+          const params = new URLSearchParams(window.location.search);
+          params.delete('task');
+          router.replace(`/dashboard?${params.toString()}`);
         }
       }
     }
@@ -193,15 +198,18 @@ function DashboardContent() {
   useEffect(() => {
     if (searchQuery.trim() === '') {
       setFilteredTasks(stats.tasks);
+      setShowSuggestions(false);
+      setSelectedSuggestionIndex(-1);
     } else {
       const query = searchQuery.toLowerCase();
-      setFilteredTasks(
-        stats.tasks.filter(
-          task => 
-            task.title.toLowerCase().includes(query) || 
-            task.description.toLowerCase().includes(query)
-        )
+      const filtered = stats.tasks.filter(
+        task => 
+          task.title.toLowerCase().includes(query) || 
+          (task.description && task.description.toLowerCase().includes(query))
       );
+      setFilteredTasks(filtered);
+      setShowSuggestions(true);
+      setSelectedSuggestionIndex(-1);
     }
   }, [searchQuery, stats.tasks]);
 
@@ -212,6 +220,67 @@ function DashboardContent() {
     setTimeout(() => {
       setIsAddingTask(false);
     }, 1000);
+  };
+
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!showSuggestions || filteredTasks.length === 0) return;
+
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        setSelectedSuggestionIndex(prev => 
+          prev < filteredTasks.length - 1 ? prev + 1 : prev
+        );
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        setSelectedSuggestionIndex(prev => prev > 0 ? prev - 1 : -1);
+        break;
+      case 'Enter':
+        e.preventDefault();
+        if (selectedSuggestionIndex >= 0 && selectedSuggestionIndex < filteredTasks.length) {
+          const selectedTask = filteredTasks[selectedSuggestionIndex];
+          setSelectedTask(selectedTask);
+          setShowSuggestions(false);
+          setSelectedSuggestionIndex(-1);
+          router.push(`/dashboard/my-tasks?task=${selectedTask.id}`);
+        }
+        break;
+      case 'Escape':
+        setShowSuggestions(false);
+        setSelectedSuggestionIndex(-1);
+        break;
+    }
+  };
+
+  const handleSuggestionClick = (task: Task) => {
+    setSearchQuery(task.title);
+    setShowSuggestions(false);
+    setSelectedSuggestionIndex(-1);
+    setSelectedTask(task);
+    router.push(`/dashboard/my-tasks?task=${task.id}`);
+  };
+
+  const handleSearchBlur = () => {
+    setTimeout(() => {
+      setShowSuggestions(false);
+      setSelectedSuggestionIndex(-1);
+    }, 200);
+  };
+
+  const highlightMatch = (text: string, query: string) => {
+    if (!query.trim()) return text;
+    
+    const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+    const parts = text.split(regex);
+    
+    return parts.map((part, index) => 
+      regex.test(part) ? (
+        <span key={index} className="bg-yellow-200 dark:bg-yellow-800 font-semibold">
+          {part}
+        </span>
+      ) : part
+    );
   };
 
   const getInitials = (nameOrEmail?: string | null) => {
@@ -315,7 +384,7 @@ function DashboardContent() {
       <Sidebar />
       {selectedTask && (
         <WorkItemSidebar
-          item={selectedTask}
+          item={selectedTask as unknown as WorkItem}
           onClose={() => {
             setSelectedTask(null);
             // Update URL without the task parameter
@@ -324,8 +393,7 @@ function DashboardContent() {
             router.replace(`/dashboard?${params.toString()}`);
           }}
           onUpdate={(updated: WorkItem) => {
-            // Handle task update if needed
-            setSelectedTask(updated);
+            setSelectedTask(updated as unknown as Task);
           }}
         />
       )}
@@ -344,11 +412,75 @@ function DashboardContent() {
               <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
               <input
                 type="text"
-                placeholder="Pesquisar..."
+                placeholder="Pesquisar tarefas..."
                 className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={handleSearchKeyDown}
+                onFocus={() => {
+                  if (searchQuery.trim() !== '') {
+                    setShowSuggestions(true);
+                  }
+                }}
+                onBlur={handleSearchBlur}
               />
+              
+              {/* Search Suggestions Dropdown */}
+              {showSuggestions && filteredTasks.length > 0 && (
+                <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto">
+                  {filteredTasks.slice(0, 8).map((task, index) => (
+                    <div
+                      key={task.id}
+                      className={`px-4 py-3 cursor-pointer transition-colors duration-200 hover:bg-gray-50 dark:hover:bg-gray-700 ${
+                        index === selectedSuggestionIndex 
+                          ? 'bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500' 
+                          : ''
+                      }`}
+                      onClick={() => handleSuggestionClick(task)}
+                      onMouseEnter={() => setSelectedSuggestionIndex(index)}
+                    >
+                      <div className="flex items-start">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-gray-900 dark:text-white text-sm truncate">
+                            {highlightMatch(task.title, searchQuery)}
+                          </p>
+                          {task.description && (
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">
+                              {highlightMatch(task.description, searchQuery)}
+                            </p>
+                          )}
+                          {task.remainingDays !== null && task.remainingDays !== undefined && (
+                            <div className="flex items-center mt-1 text-xs text-gray-500">
+                              <FiClock className="mr-1" size={12} />
+                              <span>
+                                {task.remainingDays} {task.remainingDays === 1 ? 'dia restante' : 'dias restantes'}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                        <div className="ml-3 flex-shrink-0">
+                          <div className="h-2 w-2 rounded-full bg-blue-500"></div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  {filteredTasks.length > 8 && (
+                    <div className="px-4 py-2 text-xs text-gray-500 dark:text-gray-400 text-center border-t border-gray-100 dark:border-gray-700">
+                      Mais {filteredTasks.length - 8} resultados...
+                    </div>
+                  )}
+                </div>
+              )}
+              
+              {/* No results message */}
+              {showSuggestions && searchQuery.trim() !== '' && filteredTasks.length === 0 && (
+                <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50">
+                  <div className="px-4 py-3 text-center text-gray-500 dark:text-gray-400">
+                    <FiSearch className="mx-auto mb-2" size={16} />
+                    <p className="text-sm">Nenhuma tarefa encontrada para &quot;{searchQuery}&quot;</p>
+                  </div>
+                </div>
+              )}
             </div>
             
             {/* Botão de notificações */}
