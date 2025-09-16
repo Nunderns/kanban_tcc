@@ -19,6 +19,35 @@ interface ExportHistoryItem {
   downloadUrl?: string;
 }
 
+interface ExportTask {
+  id: number;
+  title: string;
+  description: string | null;
+  status: string;
+  priority: string;
+  dueDate: string | null;
+  project: string | null;
+  creator: string;
+}
+
+interface ExportProject {
+  id: number;
+  name: string;
+  description: string | null;
+  createdAt: string;
+  taskCount: number;
+}
+
+interface ExportWorkspace {
+  id: number;
+  name: string;
+  description: string | null;
+  createdAt: string;
+  owner: string;
+  memberCount: number;
+  taskCount: number;
+}
+
 export default function ExportSettings() {
   const pathname = usePathname();
   const [selectedFormat, setSelectedFormat] = useState<ExportFormat>("csv");
@@ -76,7 +105,7 @@ export default function ExportSettings() {
           const headers = ["ID", "Título", "Descrição", "Status", "Prioridade", "Data de Vencimento", "Projeto", "Criador"];
           const csvRows = [
             headers.join(","),
-            ...exportData.tasks.map((task: any) => [
+            ...exportData.tasks.map((task: ExportTask) => [
               task.id,
               `"${task.title.replace(/"/g, '\"')}"`,
               `"${(task.description || '').replace(/"/g, '\"')}"`,
@@ -102,7 +131,7 @@ export default function ExportSettings() {
           const excelHeaders = ["ID", "Título", "Descrição", "Status", "Prioridade", "Data de Vencimento", "Projeto", "Criador"];
           const excelRows = [
             excelHeaders.join("\t"),
-            ...exportData.tasks.map((task: any) => [
+            ...exportData.tasks.map((task: ExportTask) => [
               task.id,
               task.title,
               task.description || '',
@@ -206,7 +235,7 @@ export default function ExportSettings() {
             yPosition += 3;
             
             // Task rows with alternating colors
-            exportData.tasks.forEach((task: any, index: number) => {
+            exportData.tasks.forEach((task: ExportTask, index: number) => {
               if (yPosition > 270) { // Check if we need a new page
                 doc.addPage();
                 yPosition = 30;
@@ -238,7 +267,7 @@ export default function ExportSettings() {
               
               // Truncate long text to fit in columns
               const truncatedTitle = task.title.length > 35 ? task.title.substring(0, 32) + "..." : task.title;
-              const truncatedProject = (task.project || "").length > 20 ? task.project.substring(0, 17) + "..." : task.project || "";
+              const truncatedProject = (task.project || "").length > 20 ? (task.project || "").substring(0, 17) + "..." : task.project || "";
               
               // Status color coding
               if (task.status === "DONE") {
@@ -309,7 +338,7 @@ export default function ExportSettings() {
             doc.setTextColor(0, 0, 0);
             yPosition = 50;
             
-            exportData.projects.forEach((project: any, index: number) => {
+            exportData.projects.forEach((project: ExportProject) => {
               if (yPosition > 270) {
                 doc.addPage();
                 yPosition = 30;
@@ -354,7 +383,7 @@ export default function ExportSettings() {
             doc.setTextColor(0, 0, 0);
             yPosition = 50;
             
-            exportData.workspaces.forEach((workspace: any, index: number) => {
+            exportData.workspaces.forEach((workspace: ExportWorkspace) => {
               if (yPosition > 270) {
                 doc.addPage();
                 yPosition = 30;

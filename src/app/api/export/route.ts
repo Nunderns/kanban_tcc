@@ -2,6 +2,49 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
+// Prisma types interfaces
+interface PrismaTask {
+  id: number;
+  title: string;
+  description: string | null;
+  status: string;
+  priority: string;
+  startDate: Date | null;
+  dueDate: Date | null;
+  module: string | null;
+  cycle: string | null;
+  assignees: string[];
+  labels: string[];
+  createdAt: Date;
+  updatedAt: Date;
+  projectId: number | null;
+  workspaceId: number | null;
+  project: { id: number; name: string } | null;
+  user: { id: number; name: string | null } | null;
+}
+
+interface PrismaProject {
+  id: number;
+  name: string;
+  description: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+interface PrismaWorkspace {
+  id: number;
+  name: string;
+  companySize: number;
+  slug: string;
+  createdAt: Date;
+  updatedAt: Date;
+  user: { id: number; name: string | null } | null;
+  members: Array<{
+    id: number;
+    user: { id: number; name: string | null } | null;
+  }>;
+}
+
 interface Task {
   id: number;
   title: string;
@@ -109,7 +152,7 @@ export async function GET() {
     });
 
     // Formatar os dados para exportação
-    const formattedTasks: Task[] = tasks.map((task: any) => ({
+    const formattedTasks: Task[] = tasks.map((task: PrismaTask) => ({
       id: task.id,
       title: task.title,
       description: task.description,
@@ -127,16 +170,16 @@ export async function GET() {
       creator: task.user?.name || "Desconhecido"
     }));
 
-    const formattedProjects: Project[] = projects.map((project: any) => ({
+    const formattedProjects: Project[] = projects.map((project: PrismaProject) => ({
       id: project.id,
       name: project.name,
       description: project.description,
       createdAt: project.createdAt,
       updatedAt: project.updatedAt,
-      taskCount: tasks.filter((task: any) => task.projectId === project.id).length
+      taskCount: tasks.filter((task: PrismaTask) => task.projectId === project.id).length
     }));
 
-    const formattedWorkspaces: Workspace[] = workspaces.map((workspace: any) => ({
+    const formattedWorkspaces: Workspace[] = workspaces.map((workspace: PrismaWorkspace) => ({
       id: workspace.id,
       name: workspace.name,
       description: null,
@@ -144,7 +187,7 @@ export async function GET() {
       updatedAt: workspace.updatedAt,
       owner: workspace.user?.name || "Desconhecido",
       memberCount: workspace.members.length,
-      taskCount: tasks.filter((task: any) => task.workspaceId === workspace.id).length
+      taskCount: tasks.filter((task: PrismaTask) => task.workspaceId === workspace.id).length
     }));
 
     return NextResponse.json<ExportData>({
