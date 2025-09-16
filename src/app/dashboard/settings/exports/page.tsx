@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { Sidebar } from "@/components/Sidebar";
 import Link from "next/link";
 import { FiDownload, FiFileText, FiAlertTriangle, FiCheckCircle } from "react-icons/fi";
+import jsPDF from "jspdf";
 
 type ExportFormat = "csv" | "json" | "excel" | "pdf";
 type ExportStatus = "idle" | "processing" | "completed" | "error";
@@ -56,33 +57,35 @@ export default function ExportSettings() {
     setError(null);
 
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      const exportData = {
-        tasks: [
-          { id: 1, title: "Tarefa 1", status: "Em andamento", dueDate: "2023-12-01" },
-          { id: 2, title: "Tarefa 2", status: "Concluída", dueDate: "2023-12-05" },
-          { id: 3, title: "Tarefa 3", status: "Pendente", dueDate: "2023-12-10" },
-        ],
-        projects: [
-          { id: 1, name: "Projeto A", status: "Ativo" },
-          { id: 2, name: "Projeto B", status: "Concluído" },
-        ],
-        exportDate: new Date().toISOString(),
-        includeComments,
-        includeAttachments,
-      };
-
+      // Fetch real data from API
+      const response = await fetch('/api/export');
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch export data: ${response.status}`);
+      }
+      
+      const exportData = await response.json();
+      
       let content = "";
       let mimeType = "";
       let fileExtension = "";
+      let blob: Blob | null = null;
 
       switch (selectedFormat) {
         case "csv": {
-          const headers = ["ID", "Título", "Status", "Data de Vencimento"];
+          const headers = ["ID", "Título", "Descrição", "Status", "Prioridade", "Data de Vencimento", "Projeto", "Criador"];
           const csvRows = [
             headers.join(","),
-            ...exportData.tasks.map((task) => [task.id, `"${task.title}"`, task.status, task.dueDate].join(",")),
+            ...exportData.tasks.map((task: any) => [
+              task.id,
+              `"${task.title.replace(/"/g, '\"')}"`,
+              `"${(task.description || '').replace(/"/g, '\"')}"`,
+              task.status,
+              task.priority,
+              task.dueDate || "",
+              `"${task.project || ''}"`,
+              `"${task.creator}"`
+            ].join(",")),
           ];
           content = csvRows.join("\n");
           mimeType = "text/csv;charset=utf-8;";
@@ -96,10 +99,19 @@ export default function ExportSettings() {
           break;
         }
         case "excel": {
-          const excelHeaders = ["ID", "Título", "Status", "Data de Vencimento"];
+          const excelHeaders = ["ID", "Título", "Descrição", "Status", "Prioridade", "Data de Vencimento", "Projeto", "Criador"];
           const excelRows = [
             excelHeaders.join("\t"),
-            ...exportData.tasks.map((task) => [task.id, task.title, task.status, task.dueDate].join("\t")),
+            ...exportData.tasks.map((task: any) => [
+              task.id,
+              task.title,
+              task.description || '',
+              task.status,
+              task.priority,
+              task.dueDate || '',
+              task.project || '',
+              task.creator
+            ].join("\t")),
           ];
           content = excelRows.join("\n");
           mimeType = "application/vnd.ms-excel;charset=utf-8;";
@@ -107,22 +119,293 @@ export default function ExportSettings() {
           break;
         }
         case "pdf": {
-          const pdfContent = [
-            "Relatório de Tarefas",
-            "====================",
-            `Data da Exportação: ${new Date().toLocaleString()}`,
-            "\nTarefas:",
-            ...exportData.tasks.map((task) => `- ${task.title} (${task.status}) - Vence em: ${task.dueDate}`),
-          ];
-          content = pdfContent.join("\n");
-          mimeType = "application/pdf;charset=utf-8;";
-          fileExtension = "txt";
+          const doc = new jsPDF();
+          
+          // Configurar fonte para suportar caracteres especiais
+          doc.setFont('helvetica');
+          
+          // Add header with background
+          doc.setFillColor(59, 130, 246); // Blue background
+          doc.rect(0, 0, 210, 40, 'F');
+          
+          // Add title in white
+          doc.setFontSize(20);
+          doc.setTextColor(255, 255, 255);
+          doc.text("Relatorio de Dados do Sistema", 20, 25);
+          
+          // Reset text color
+          doc.setTextColor(0, 0, 0);
+          
+          // Add user info section
+          doc.setFontSize(12);
+          doc.text(`Usuario: ${exportData.user.name || exportData.user.email}`, 20, 50);
+          doc.text(`Email: ${exportData.user.email}`, 20, 57);
+          
+          // Add export date
+          doc.text(`Data da Exportacao: ${new Date(exportData.exportDate).toLocaleString('pt-BR')}`, 20, 64);
+          
+          // Add separator line
+          doc.setDrawColor(200, 200, 200);
+          doc.line(20, 70, 190, 70);
+          
+          let yPosition = 80;
+          
+          // Add summary section with background
+          doc.setFillColor(248, 250, 252); // Light gray background
+          doc.rect(15, yPosition - 5, 180, 35, 'F');
+          
+          doc.setFontSize(16);
+          doc.setTextColor(31, 41, 55); // Dark gray
+          doc.text("Resumo", 20, yPosition);
+          yPosition += 10;
+          
+          doc.setFontSize(12);
+          doc.setTextColor(0, 0, 0);
+          doc.text(`Total de Tarefas: ${exportData.tasks.length}`, 25, yPosition);
+          yPosition += 8;
+          doc.text(`Total de Projetos: ${exportData.projects.length}`, 25, yPosition);
+          yPosition += 8;
+          doc.text(`Total de Workspaces: ${exportData.workspaces.length}`, 25, yPosition);
+          yPosition += 15;
+          
+          // Add tasks section
+          if (exportData.tasks.length > 0) {
+            // Check if we need a new page
+            if (yPosition > 250) {
+              doc.addPage();
+              yPosition = 30;
+            }
+            
+            doc.setFontSize(16);
+            doc.setTextColor(31, 41, 55);
+            doc.text("Tarefas", 20, yPosition);
+            yPosition += 10;
+            
+            doc.setFontSize(10);
+            doc.setTextColor(0, 0, 0);
+            
+            // Table header with background
+            doc.setFillColor(241, 245, 249); // Light blue background
+            doc.rect(15, yPosition - 5, 180, 10, 'F');
+            
+            const headers = ["ID", "Titulo", "Status", "Prioridade", "Vencimento", "Projeto"];
+            const colWidths = [15, 60, 25, 20, 25, 35];
+            let xPosition = 20;
+            
+            headers.forEach((header, index) => {
+              doc.setFont('helvetica', 'bold');
+              doc.text(header, xPosition, yPosition);
+              xPosition += colWidths[index];
+            });
+            doc.setFont('helvetica', 'normal');
+            yPosition += 8;
+            
+            // Add line under header
+            doc.setDrawColor(59, 130, 246);
+            doc.line(15, yPosition - 2, 195, yPosition - 2);
+            yPosition += 3;
+            
+            // Task rows with alternating colors
+            exportData.tasks.forEach((task: any, index: number) => {
+              if (yPosition > 270) { // Check if we need a new page
+                doc.addPage();
+                yPosition = 30;
+                
+                // Re-add header on new page
+                doc.setFillColor(241, 245, 249);
+                doc.rect(15, yPosition - 5, 180, 10, 'F');
+                doc.setFontSize(10);
+                doc.setFont('helvetica', 'bold');
+                xPosition = 20;
+                headers.forEach((header, index) => {
+                  doc.text(header, xPosition, yPosition);
+                  xPosition += colWidths[index];
+                });
+                doc.setFont('helvetica', 'normal');
+                yPosition += 8;
+                doc.setDrawColor(59, 130, 246);
+                doc.line(15, yPosition - 2, 195, yPosition - 2);
+                yPosition += 3;
+              }
+              
+              // Alternating row colors
+              if (index % 2 === 0) {
+                doc.setFillColor(249, 250, 251);
+                doc.rect(15, yPosition - 3, 180, 8, 'F');
+              }
+              
+              xPosition = 20;
+              
+              // Truncate long text to fit in columns
+              const truncatedTitle = task.title.length > 35 ? task.title.substring(0, 32) + "..." : task.title;
+              const truncatedProject = (task.project || "").length > 20 ? task.project.substring(0, 17) + "..." : task.project || "";
+              
+              // Status color coding
+              if (task.status === "DONE") {
+                doc.setTextColor(34, 197, 94); // Green
+              } else if (task.status === "IN_PROGRESS") {
+                doc.setTextColor(59, 130, 246); // Blue
+              } else if (task.status === "TODO") {
+                doc.setTextColor(251, 191, 36); // Yellow
+              } else {
+                doc.setTextColor(107, 114, 128); // Gray
+              }
+              
+              doc.text(String(task.id), xPosition, yPosition);
+              xPosition += colWidths[0];
+              
+              doc.setTextColor(0, 0, 0);
+              doc.text(truncatedTitle, xPosition, yPosition);
+              xPosition += colWidths[1];
+              
+              // Status with color
+              if (task.status === "DONE") {
+                doc.setTextColor(34, 197, 94);
+              } else if (task.status === "IN_PROGRESS") {
+                doc.setTextColor(59, 130, 246);
+              } else if (task.status === "TODO") {
+                doc.setTextColor(251, 191, 36);
+              } else {
+                doc.setTextColor(107, 114, 128);
+              }
+              doc.text(task.status, xPosition, yPosition);
+              xPosition += colWidths[2];
+              
+              // Priority with color
+              doc.setTextColor(0, 0, 0);
+              if (task.priority === "HIGH") {
+                doc.setTextColor(239, 68, 68); // Red
+              } else if (task.priority === "MEDIUM") {
+                doc.setTextColor(251, 191, 36); // Yellow
+              } else if (task.priority === "LOW") {
+                doc.setTextColor(34, 197, 94); // Green
+              }
+              doc.text(task.priority, xPosition, yPosition);
+              xPosition += colWidths[3];
+              
+              doc.setTextColor(0, 0, 0);
+              doc.text(task.dueDate ? new Date(task.dueDate).toLocaleDateString('pt-BR') : "", xPosition, yPosition);
+              xPosition += colWidths[4];
+              
+              doc.text(truncatedProject, xPosition, yPosition);
+              yPosition += 8;
+            });
+            
+            yPosition += 10;
+          }
+          
+          // Add projects section
+          if (exportData.projects.length > 0) {
+            doc.addPage();
+            yPosition = 30;
+            
+            // Add header with background
+            doc.setFillColor(59, 130, 246);
+            doc.rect(0, 0, 210, 40, 'F');
+            doc.setFontSize(18);
+            doc.setTextColor(255, 255, 255);
+            doc.text("Projetos", 20, 25);
+            
+            doc.setTextColor(0, 0, 0);
+            yPosition = 50;
+            
+            exportData.projects.forEach((project: any, index: number) => {
+              if (yPosition > 270) {
+                doc.addPage();
+                yPosition = 30;
+              }
+              
+              // Project card background
+              doc.setFillColor(248, 250, 252);
+              doc.rect(15, yPosition - 5, 180, 25, 'F');
+              
+              doc.setFontSize(14);
+              doc.setFont('helvetica', 'bold');
+              doc.text(`${project.name}`, 20, yPosition);
+              doc.setFont('helvetica', 'normal');
+              yPosition += 8;
+              
+              if (project.description) {
+                const truncatedDesc = project.description.length > 80 ? project.description.substring(0, 77) + "..." : project.description;
+                doc.setFontSize(10);
+                doc.text(`Descricao: ${truncatedDesc}`, 20, yPosition);
+                yPosition += 8;
+              }
+              
+              doc.setFontSize(10);
+              doc.text(`Tarefas: ${project.taskCount}`, 20, yPosition);
+              doc.text(`Criado em: ${new Date(project.createdAt).toLocaleDateString('pt-BR')}`, 80, yPosition);
+              yPosition += 15;
+            });
+          }
+          
+          // Add workspaces section
+          if (exportData.workspaces.length > 0) {
+            doc.addPage();
+            yPosition = 30;
+            
+            // Add header with background
+            doc.setFillColor(59, 130, 246);
+            doc.rect(0, 0, 210, 40, 'F');
+            doc.setFontSize(18);
+            doc.setTextColor(255, 255, 255);
+            doc.text("Workspaces", 20, 25);
+            
+            doc.setTextColor(0, 0, 0);
+            yPosition = 50;
+            
+            exportData.workspaces.forEach((workspace: any, index: number) => {
+              if (yPosition > 270) {
+                doc.addPage();
+                yPosition = 30;
+              }
+              
+              // Workspace card background
+              doc.setFillColor(248, 250, 252);
+              doc.rect(15, yPosition - 5, 180, 30, 'F');
+              
+              doc.setFontSize(14);
+              doc.setFont('helvetica', 'bold');
+              doc.text(`${workspace.name}`, 20, yPosition);
+              doc.setFont('helvetica', 'normal');
+              yPosition += 8;
+              
+              if (workspace.description) {
+                const truncatedDesc = workspace.description.length > 80 ? workspace.description.substring(0, 77) + "..." : workspace.description;
+                doc.setFontSize(10);
+                doc.text(`Descricao: ${truncatedDesc}`, 20, yPosition);
+                yPosition += 8;
+              }
+              
+              doc.setFontSize(10);
+              doc.text(`Dono: ${workspace.owner}`, 20, yPosition);
+              yPosition += 8;
+              doc.text(`Membros: ${workspace.memberCount}`, 20, yPosition);
+              doc.text(`Tarefas: ${workspace.taskCount}`, 80, yPosition);
+              yPosition += 15;
+            });
+          }
+          
+          // Add footer
+          const pageCount = doc.getNumberOfPages();
+          for (let i = 1; i <= pageCount; i++) {
+            doc.setPage(i);
+            doc.setFontSize(8);
+            doc.setTextColor(107, 114, 128);
+            doc.text(`Pagina ${i} de ${pageCount}`, 170, 285);
+            doc.text(`Gerado por Kanban TCC`, 20, 285);
+          }
+          
+          // Generate PDF blob
+          blob = doc.output('blob');
+          mimeType = "application/pdf";
+          fileExtension = "pdf";
           break;
         }
       }
 
-      const blob = new Blob([content], { type: mimeType });
-      const url = URL.createObjectURL(blob);
+      const finalBlob = blob || new Blob([content], { type: mimeType });
+      const url = URL.createObjectURL(finalBlob);
 
       const link = document.createElement("a");
       const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
@@ -138,7 +421,7 @@ export default function ExportSettings() {
         format: selectedFormat,
         date: new Date().toISOString(),
         status: "completed",
-        size: `${Math.max(1, Math.round(content.length / 1024))} KB`,
+        size: `${Math.max(1, Math.round((blob ? blob.size : content.length) / 1024))} KB`,
         downloadUrl: url,
       };
 
