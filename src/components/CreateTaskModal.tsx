@@ -55,6 +55,7 @@ function CreateTaskModal({
     ],
     showSubtasks: true
   });
+  const [viewType, setViewType] = useState<"kanban" | "list" | "weekly" | "monthly" | "daily">("list");
 
   const handleFilterChange = (filterType: string, value: string, checked: boolean) => {
     setFilters(prev => ({
@@ -79,6 +80,10 @@ function CreateTaskModal({
       ...prev,
       showSubtasks: checked
     }));
+  };
+
+  const handleViewTypeChange = (newViewType: "kanban" | "list" | "weekly" | "monthly" | "daily") => {
+    setViewType(newViewType);
   };
 
   const modalRef = useRef<HTMLDivElement>(null);
@@ -169,6 +174,8 @@ function CreateTaskModal({
                 showSubtasks={displayOptions.showSubtasks}
                 onDisplayOptionChange={handleDisplayOptionChange}
                 onToggleSubtasks={handleToggleSubtasks}
+                viewType={viewType}
+                onViewTypeChange={handleViewTypeChange}
               />
             </div>
             <div className="flex gap-2">
