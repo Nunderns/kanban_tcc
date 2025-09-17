@@ -126,7 +126,7 @@ export default function CriarEspacoTrabalho() {
               </label>
               <input
                 type="text"
-                value={`app.taskflow.com/${urlEspaco}`}
+                value={`kanban-tcc.vercel.app/${urlEspaco}`}
                 readOnly
                 className={`w-full bg-gray-100 border ${
                   erros.url ? "border-red-500" : "border-gray-300"
