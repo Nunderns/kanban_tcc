@@ -136,14 +136,10 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
-  console.log('PATCH /api/tasks - Starting request');
-  
   try {
-    console.log('1. Authenticating session...');
     const session = await auth();
 
     if (!session || !session.user?.id) {
-      console.log('Unauthorized: No valid session or user ID');
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     
@@ -153,54 +149,38 @@ export async function PATCH(req: NextRequest) {
     const taskId = searchParams.get('id');
     
     if (!taskId) {
-      console.log('Bad Request: Task ID is required');
       return NextResponse.json({ error: "Task ID is required" }, { status: 400 });
     }
 
-    console.log('Processing task ID:', taskId);
     const body = await req.json();
-    console.log('Request body:', JSON.stringify(body, null, 2));
-    
-    // Verify the task exists and belongs to the user
     const existingTask = await prisma.task.findUnique({
       where: { id: Number(taskId) }
     });
 
     if (!existingTask) {
-      console.log('Task not found:', taskId);
       return NextResponse.json({ error: "Task not found" }, { status: 404 });
     }
 
     if (existingTask.userId !== Number(session.user.id)) {
-      console.log('Forbidden: User does not own this task');
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
-
-    // We'll build the update data object dynamically
     const updateData: Record<string, unknown> = { updatedAt: new Date() };
     
-    // Handle project update separately as it's a relation
     if ('projectId' in body) {
       updateData.project = body.projectId 
         ? { connect: { id: Number(body.projectId) } }
         : { disconnect: true };
     }
-    
-    // Handle workspace update separately as it's a relation
     if ('workspaceId' in body) {
       updateData.workspace = body.workspaceId
         ? { connect: { id: Number(body.workspaceId) } }
         : { disconnect: true };
     }
-    
-    // Fields we allow updating directly (exclude relational workspaceId)
     const updatableFields = [
       'title', 'description', 'status', 'priority',
       'module', 'cycle', 'assignees', 'labels'
     ] as const;
     type UpdatableField = (typeof updatableFields)[number];
-
-    // Handle date fields separately to ensure they're proper Date objects
     if (body.startDate) {
       updateData.startDate = parseLocalDate(body.startDate);
     } else if ('startDate' in body) {
@@ -212,8 +192,6 @@ export async function PATCH(req: NextRequest) {
     } else if ('dueDate' in body) {
       updateData.dueDate = null;
     }
-
-    // Create a type-safe body object with only the fields we expect
     const safeBody: Record<string, unknown> = body;
     
     updatableFields.forEach((field: UpdatableField) => {
@@ -221,14 +199,8 @@ export async function PATCH(req: NextRequest) {
         (updateData as Record<string, unknown>)[field] = safeBody[field];
       }
     });
-    
-    // Always update the updatedAt field
     updateData.updatedAt = new Date();
-
-    console.log('5. Update data prepared:', JSON.stringify(updateData, null, 2));
-
     try {
-      console.log('6. Attempting to update task in database...');
       const updatedTask = await prisma.task.update({
         where: { id: Number(taskId) },
         data: updateData,

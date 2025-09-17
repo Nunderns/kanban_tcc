@@ -9,6 +9,10 @@ import CreateTaskModal from "@/components/CreateTaskModal";
 import FilterDropdown from "@/components/FilterDropdown";
 import DisplayDropdown from "@/components/DisplayDown";
 import WorkItemSidebar from "@/components/WorkItemSidebar";
+import TaskListView from "@/components/TaskListView";
+import TaskWeeklyView from "@/components/TaskWeeklyView";
+import TaskMonthlyView from "@/components/TaskMonthlyView";
+import TaskDailyView from "@/components/TaskDailyView";
 import { useSession } from "next-auth/react";
 import { useCallback, useEffect, useState, useRef, useMemo } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
@@ -44,6 +48,7 @@ export type Status = "BACKLOG" | "TODO" | "IN_PROGRESS" | "DONE";
 export type WorkItem = {
   id: string;
   title: string;
+  description?: string;
   status: Status;
   priority: Priority;
   startDate?: string;
@@ -102,6 +107,9 @@ function KanbanPage() {
     showSubtasks: true,
     visibleProperties: ["ID", "Responsável", "Data de início", "Prazo", "Prioridade", "Estado"],
   });
+  
+  // View type state
+  const [viewType, setViewType] = useState<"kanban" | "list" | "weekly" | "monthly" | "daily">("kanban");
   
   // Map status for filtering (UI -> Internal)
   const statusMap: Record<string, string> = {
@@ -307,20 +315,40 @@ function KanbanPage() {
   );
 
   // Helper: update task status locally and persist
-  const updateTaskStatus = useCallback(async (taskId: string, newStatus: Status) => {
-    // Ensure ID comparison works whether IDs are numbers or strings
-    setWorkItems(prev => prev.map(t => String(t.id) === String(taskId) ? { ...t, status: newStatus } : t));
-    try {
-      await fetch(`/api/tasks?id=${taskId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ status: newStatus })
-      });
-    } catch (e) {
-      console.error("Failed to persist status update", e);
-    }
-  }, []);
+  const updateTaskStatus = useCallback(
+    async (taskId: string, oldStatus: Status, newStatus: Status) => {
+      // Ensure ID comparison works whether IDs are numbers or strings
+      setWorkItems((prev) =>
+        prev.map((t) =>
+          String(t.id) === String(taskId) ? { ...t, status: newStatus } : t
+        )
+      );
+      try {
+        await fetch(`/api/tasks?id=${taskId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ status: newStatus }),
+        });
+
+        // Log activity for status change
+        await fetch(`/api/tasks/${taskId}/activities`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            user: session?.user?.name || "Unknown",
+            action: "updated field",
+            field: "status",
+            oldValue: oldStatus,
+            newValue: newStatus,
+          }),
+        });
+      } catch (e) {
+        console.error("Failed to persist status update", e);
+      }
+    },
+    [session]
+  );
 
   const onDragEnd = useCallback(async (event: DragEndEvent) => {
     const { active, over } = event;
@@ -345,7 +373,7 @@ function KanbanPage() {
     }
 
     if (destinationStatus !== sourceStatus) {
-      await updateTaskStatus(activeId, destinationStatus);
+      await updateTaskStatus(activeId, sourceStatus, destinationStatus);
       return;
     }
 
@@ -574,6 +602,8 @@ function KanbanPage() {
               showSubtasks={displayOptions.showSubtasks}
               onDisplayOptionChange={handleDisplayOptionChange}
               onToggleSubtasks={(checked) => setDisplayOptions(prev => ({ ...prev, showSubtasks: checked }))}
+              viewType={viewType}
+              onViewTypeChange={setViewType}
             />
             <button
               className="flex items-center gap-1 bg-blue-600 px-3 py-2 rounded hover:bg-blue-500 text-sm text-white"
@@ -584,113 +614,137 @@ function KanbanPage() {
             </div>
         </div>
         
+      {/* Main content area with view switching */}
       <div className="flex-1 overflow-x-auto p-4">
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={onDragStart} onDragCancel={onDragCancel} onDragEnd={onDragEnd}>
-          <div className="flex gap-4 min-w-max">
-            {Object.entries(collapsedColumns).map(([statusKey, isCollapsed]) => {
-            const typedStatus = statusKey as Status;
-            return (
-              <div key={typedStatus} className="w-72 flex-shrink-0">
-                <div
-                  className="flex justify-between items-center bg-gray-100 dark:bg-gray-800 p-2 rounded-t cursor-pointer"
-                  onClick={() => toggleColumnCollapse(typedStatus)}
-                >
-                  <div className="flex items-center gap-2">
-                    {/* Adicionando animação ao ícone de seta */}
-                    <div className="transition-transform duration-300 ease-in-out">
-                      {isCollapsed ? <FaChevronRight /> : <FaChevronDown />}
-                    </div>
-                    <h2 className="font-semibold">{typedStatus.replace("_", " ")}</h2>
-                    <span className="text-gray-500 text-sm">
-                      {filteredTasks.filter(i => i.status === typedStatus).length}
-                    </span>
-                  </div>
-                  <button
-                    className="text-gray-500 hover:text-gray-700"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setIsCreateModalOpen(true);
-                    }}
+        {viewType === "kanban" ? (
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={onDragStart} onDragCancel={onDragCancel} onDragEnd={onDragEnd}>
+            <div className="flex gap-4 min-w-max">
+              {Object.entries(collapsedColumns).map(([statusKey, isCollapsed]) => {
+              const typedStatus = statusKey as Status;
+              return (
+                <div key={typedStatus} className="w-72 flex-shrink-0">
+                  <div
+                    className="flex justify-between items-center bg-gray-100 dark:bg-gray-800 p-2 rounded-t cursor-pointer"
+                    onClick={() => toggleColumnCollapse(typedStatus)}
                   >
-                    <FaPlus />
-                  </button>
-                </div>
-              {/* Conteúdo da coluna com animação */}
-              <ColumnDroppable status={typedStatus}>
-                <div 
-                  className={`bg-white dark:bg-gray-800 rounded-b overflow-hidden transition-all duration-300 ease-in-out ${
-                    isCollapsed ? 'max-h-0 opacity-0' : 'max-h-[calc(100vh-220px)] opacity-100'
-                  }`}
-                >
-                  <div className="p-2 space-y-2 h-[calc(100vh-280px)] overflow-y-auto">
-                    {(() => {
-                      const columnItems = filteredTasks.filter(item => item.status === typedStatus);
-                      return (
-                        <SortableContext items={columnItems.map(i => String(i.id))} strategy={verticalListSortingStrategy}>
-                          {columnItems.map((item) => (
-                            <SortableCard key={item.id} item={item} />
-                          ))}
-                        </SortableContext>
-                      );
-                    })()}
-
-                    {creatingTaskInColumn === typedStatus ? (
-                      <div className="w-full mt-2">
-                        <input
-                          type="text"
-                          value={newTaskTitle}
-                          autoFocus
-                          placeholder="Título da tarefa"
-                          className="w-full px-3 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded shadow-sm focus:outline-none focus:ring focus:border-blue-500"
-                          onChange={(e) => setNewTaskTitle(e.target.value)}
-                          onKeyDown={async (e) => {
-                            if (e.key === "Enter" && newTaskTitle.trim()) {
-                              setTargetStatus(typedStatus);
-                              await handleCreateTask({ title: newTaskTitle.trim(), description: "" });
-                              setNewTaskTitle("");
-                              setCreatingTaskInColumn(null);
-                            } else if (e.key === "Escape") {
-                              setCreatingTaskInColumn(null);
-                              setNewTaskTitle("");
-                            }
-                          }}
-                        />
-                        <p className="text-xs text-gray-500 mt-1 px-1 italic">
-                          Pressione &apos;Enter&apos; para adicionar um outro item de tarefa
-                        </p>
+                    <div className="flex items-center gap-2">
+                      {/* Adicionando animação ao ícone de seta */}
+                      <div className="transition-transform duration-300 ease-in-out">
+                        {isCollapsed ? <FaChevronRight /> : <FaChevronDown />}
                       </div>
-                    ) : (
-                      <button
-                        className="w-full mt-2 px-3 py-2 border border-dashed border-gray-400 rounded text-sm text-gray-500 hover:bg-gray-50"
-                        onClick={() => {
-                          setTargetStatus(typedStatus);
-                          setCreatingTaskInColumn(typedStatus);
-                        }}
-                      >
-                        + Criar tarefa
-                      </button>
-                    )}
+                      <h2 className="font-semibold">{typedStatus.replace("_", " ")}</h2>
+                      <span className="text-gray-500 text-sm">
+                        {filteredTasks.filter(i => i.status === typedStatus).length}
+                      </span>
+                    </div>
+                    <button
+                      className="text-gray-500 hover:text-gray-700"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setIsCreateModalOpen(true);
+                      }}
+                    >
+                      <FaPlus />
+                    </button>
                   </div>
-                </div>
-              </ColumnDroppable>
-            </div>
-          );
-        })}
+                {/* Conteúdo da coluna com animação */}
+                <ColumnDroppable status={typedStatus}>
+                  <div 
+                    className={`bg-white dark:bg-gray-800 rounded-b overflow-hidden transition-all duration-300 ease-in-out ${
+                      isCollapsed ? 'max-h-0 opacity-0' : 'max-h-[calc(100vh-220px)] opacity-100'
+                    }`}
+                  >
+                    <div className="p-2 space-y-2 h-[calc(100vh-280px)] overflow-y-auto">
+                      {(() => {
+                        const columnItems = filteredTasks.filter(item => item.status === typedStatus);
+                        return (
+                          <SortableContext items={columnItems.map(i => String(i.id))} strategy={verticalListSortingStrategy}>
+                            {columnItems.map((item) => (
+                              <SortableCard key={item.id} item={item} />
+                            ))}
+                          </SortableContext>
+                        );
+                      })()}
+
+                      {creatingTaskInColumn === typedStatus ? (
+                        <div className="w-full mt-2">
+                          <input
+                            type="text"
+                            value={newTaskTitle}
+                            autoFocus
+                            placeholder="Título da tarefa"
+                            className="w-full px-3 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded shadow-sm focus:outline-none focus:ring focus:border-blue-500"
+                            onChange={(e) => setNewTaskTitle(e.target.value)}
+                            onKeyDown={async (e) => {
+                              if (e.key === "Enter" && newTaskTitle.trim()) {
+                                setTargetStatus(typedStatus);
+                                await handleCreateTask({ title: newTaskTitle.trim(), description: "" });
+                                setNewTaskTitle("");
+                                setCreatingTaskInColumn(null);
+                              } else if (e.key === "Escape") {
+                                setCreatingTaskInColumn(null);
+                                setNewTaskTitle("");
+                              }
+                            }}
+                          />
+                          <p className="text-xs text-gray-500 mt-1 px-1 italic">
+                            Pressione &apos;Enter&apos; para adicionar um outro item de tarefa
+                          </p>
+                        </div>
+                      ) : (
+                        <button
+                          className="w-full mt-2 px-3 py-2 border border-dashed border-gray-400 rounded text-sm text-gray-500 hover:bg-gray-50"
+                          onClick={() => {
+                            setTargetStatus(typedStatus);
+                            setCreatingTaskInColumn(typedStatus);
+                          }}
+                        >
+                          + Criar tarefa
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </ColumnDroppable>
+              </div>
+            );
+          })}
+        </div>
+        <DragOverlay dropAnimation={{ duration: 180 }}>
+          {activeId ? (() => {
+            const item = workItems.find(i => String(i.id) === String(activeId));
+            if (!item) return null;
+            return (
+              <div className="bg-white dark:bg-gray-800 text-black dark:text-white p-4 rounded-lg border border-gray-300 dark:border-gray-700 shadow-lg w-72">
+                <div className="text-xs text-gray-500 dark:text-gray-400 mb-1 font-semibold">PRIME-{item.id}</div>
+                <h3 className="text-base font-semibold mb-3 text-gray-900 dark:text-white">{item.title}</h3>
+              </div>
+            );
+          })() : null}
+        </DragOverlay>
+      </DndContext>
+        ) : viewType === "list" ? (
+          <TaskListView 
+            tasks={filteredTasks} 
+            onTaskClick={setSelectedItem} 
+            visibleProperties={displayOptions.visibleProperties}
+          />
+        ) : viewType === "weekly" ? (
+          <TaskWeeklyView 
+            tasks={filteredTasks} 
+            onTaskClick={setSelectedItem}
+          />
+        ) : viewType === "monthly" ? (
+          <TaskMonthlyView 
+            tasks={filteredTasks} 
+            onTaskClick={setSelectedItem}
+          />
+        ) : viewType === "daily" ? (
+          <TaskDailyView 
+            tasks={filteredTasks} 
+            onTaskClick={setSelectedItem}
+          />
+        ) : null}
       </div>
-      <DragOverlay dropAnimation={{ duration: 180 }}>
-        {activeId ? (() => {
-          const item = workItems.find(i => String(i.id) === String(activeId));
-          if (!item) return null;
-          return (
-            <div className="bg-white dark:bg-gray-800 text-black dark:text-white p-4 rounded-lg border border-gray-300 dark:border-gray-700 shadow-lg w-72">
-              <div className="text-xs text-gray-500 dark:text-gray-400 mb-1 font-semibold">PRIME-{item.id}</div>
-              <h3 className="text-base font-semibold mb-3 text-gray-900 dark:text-white">{item.title}</h3>
-            </div>
-          );
-        })() : null}
-      </DragOverlay>
-    </DndContext>
-  </div>
 </div>
 {selectedItem && (
   <WorkItemSidebar

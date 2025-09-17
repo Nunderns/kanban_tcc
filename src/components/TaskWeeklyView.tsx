@@ -1,0 +1,281 @@
+"use client";
+
+import { WorkItem, Priority, Status } from "@/app/dashboard/my-tasks/page";
+import { FaCircle, FaRegCircle, FaCalendarAlt } from "react-icons/fa";
+import { format, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay } from "date-fns";
+import { parseLocalDate } from "@/lib/utils";
+
+interface TaskWeeklyViewProps {
+  tasks: WorkItem[];
+  onTaskClick: (task: WorkItem) => void;
+}
+
+interface TaskPosition {
+  startDayIndex: number;
+  width: number;
+  isStartDate: boolean;
+  isEndDate: boolean;
+  isPartialStart: boolean;
+  isPartialEnd: boolean;
+}
+
+export default function TaskWeeklyView({ tasks, onTaskClick }: TaskWeeklyViewProps) {
+  const today = new Date();
+  const weekStart = startOfWeek(today, { weekStartsOn: 0 }); // Sunday
+  const weekEnd = endOfWeek(today, { weekStartsOn: 0 });
+  const weekDays = eachDayOfInterval({ start: weekStart, end: weekEnd });
+
+  const getDayName = (date: Date) => {
+    const dayNames = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+    return dayNames[date.getDay()];
+  };
+
+  const getPriorityIcon = (priority: Priority) => {
+    switch (priority) {
+      case "HIGH": return <FaCircle className="text-red-500 text-xs" />;
+      case "MEDIUM": return <FaCircle className="text-yellow-500 text-xs" />;
+      case "LOW": return <FaCircle className="text-green-500 text-xs" />;
+      default: return <FaRegCircle className="text-gray-500 text-xs" />;
+    }
+  };
+
+  const getStatusColor = (status: Status) => {
+    switch (status) {
+      case "DONE": return "bg-green-100 text-green-800 border-green-200";
+      case "IN_PROGRESS": return "bg-blue-100 text-blue-800 border-blue-200";
+      case "TODO": return "bg-yellow-100 text-yellow-800 border-yellow-200";
+      case "BACKLOG": return "bg-gray-100 text-gray-800 border-gray-200";
+      default: return "bg-gray-100 text-gray-800 border-gray-200";
+    }
+  };
+
+  // Calcular posição e largura para tarefas que span multiple dias
+  const getTaskPosition = (task: WorkItem) => {
+    if (!task.startDate && !task.dueDate) return null;
+    
+    try {
+      const startDate = task.startDate ? parseLocalDate(task.startDate) : parseLocalDate(task.dueDate!);
+      const dueDate = task.dueDate ? parseLocalDate(task.dueDate) : startDate;
+      
+      // Normalizar datas para meia-noite no fuso horário local
+      const normalizedStartDate = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+      const normalizedDueDate = new Date(dueDate.getFullYear(), dueDate.getMonth(), dueDate.getDate());
+      
+      // Normalizar datas da semana para meia-noite
+      const weekStartNormalized = new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate());
+      const weekEndNormalized = new Date(weekEnd.getFullYear(), weekEnd.getMonth(), weekEnd.getDate());
+      
+      // Se a tarefa não intersecta a semana, não mostrar
+      if (normalizedDueDate.getTime() < weekStartNormalized.getTime() || 
+          normalizedStartDate.getTime() > weekEndNormalized.getTime()) {
+        return null;
+      }
+      
+      // Calcular o start day (máximo entre início da tarefa e início da semana)
+      const taskStartInWeek = normalizedStartDate.getTime() < weekStartNormalized.getTime() 
+        ? weekStartNormalized 
+        : normalizedStartDate;
+      
+      // Calcular o end day (mínimo entre fim da tarefa e fim da semana)
+      const taskEndInWeek = normalizedDueDate.getTime() > weekEndNormalized.getTime() 
+        ? weekEndNormalized 
+        : normalizedDueDate;
+      
+      // Calcular posição (0-6) e largura (1-7)
+      const startDayIndex = Math.floor((taskStartInWeek.getTime() - weekStartNormalized.getTime()) / (1000 * 60 * 60 * 24));
+      const endDayIndex = Math.floor((taskEndInWeek.getTime() - weekStartNormalized.getTime()) / (1000 * 60 * 60 * 24));
+      const width = endDayIndex - startDayIndex + 1;
+      
+      return {
+        startDayIndex,
+        width,
+        isStartDate: isSameDay(normalizedStartDate, taskStartInWeek),
+        isEndDate: isSameDay(normalizedDueDate, taskEndInWeek),
+        isPartialStart: !isSameDay(normalizedStartDate, taskStartInWeek),
+        isPartialEnd: !isSameDay(normalizedDueDate, taskEndInWeek)
+      };
+    } catch {
+      return null;
+    }
+  };
+
+  // Agrupar tarefas por posição para evitar sobreposição
+  const getTaskRows = () => {
+    const positionedTasks = tasks
+      .map(task => ({
+        task,
+        position: getTaskPosition(task)
+      }))
+      .filter((item): item is {task: WorkItem, position: TaskPosition} => item.position !== null);
+    
+    const rows: Array<{task: WorkItem, position: TaskPosition}[]> = [];
+    
+    positionedTasks.forEach(item => {
+      let placed = false;
+      
+      // Tentar colocar em uma linha existente
+      for (let i = 0; i < rows.length; i++) {
+        const canPlace = rows[i].every(existingItem => {
+          const existing = existingItem.position;
+          const current = item.position;
+          if (!existing || !current) return false;
+          return (
+            existing.startDayIndex + existing.width <= current.startDayIndex ||
+            current.startDayIndex + current.width <= existing.startDayIndex
+          );
+        });
+        
+        if (canPlace) {
+          rows[i].push(item);
+          placed = true;
+          break;
+        }
+      }
+      
+      // Se não couber em nenhuma linha existente, criar nova linha
+      if (!placed) {
+        rows.push([item]);
+      }
+    });
+    
+    return rows;
+  };
+
+  const taskRows = getTaskRows();
+
+  const ContinuousTaskRectangle = ({ task, position, rowIndex }: { task: WorkItem; position: TaskPosition; rowIndex: number }) => {
+    const { startDayIndex, width, isStartDate, isEndDate, isPartialStart, isPartialEnd } = position;
+    
+    return (
+      <div
+        className={`absolute h-12 ${getStatusColor(task.status)} border-2 rounded-lg cursor-pointer hover:shadow-lg transition-all hover:scale-[1.02] hover:z-20 z-10 shadow-sm`}
+        style={{
+          top: `${rowIndex * 56 + 8}px`,
+          left: `calc(${(startDayIndex / 7) * 100}% + 4px)`,
+          width: `calc(${(width / 7) * 100}% - 8px)`,
+          minWidth: `${Math.max(width * 80 - 8, 120)}px`
+        }}
+        onClick={() => onTaskClick(task)}
+      >
+        <div className="flex items-center justify-between h-full p-2">
+          <div className="flex items-center gap-2 flex-1 min-w-0">
+            <div className="flex flex-col items-center gap-1">
+              {getPriorityIcon(task.priority)}
+              <div className="flex gap-1">
+                {isStartDate && (
+                  <div className="w-2 h-2 bg-green-500 rounded-full" title="Início da tarefa" />
+                )}
+                {isEndDate && (
+                  <div className="w-2 h-2 bg-red-500 rounded-full" title="Fim da tarefa" />
+                )}
+              </div>
+            </div>
+            <div className="flex-1 min-w-0">
+              <h4 className="text-xs font-bold text-gray-900 dark:text-white truncate mb-1">
+                {task.title}
+              </h4>
+              <div className="flex items-center gap-2 text-xs">
+                <span className={`px-2 py-1 rounded-full text-xs font-semibold ${getStatusColor(task.status)}`}>
+                  {task.status === "IN_PROGRESS" ? "Em Progresso" : 
+                   task.status === "TODO" ? "A Fazer" :
+                   task.status === "DONE" ? "Concluído" :
+                   task.status === "BACKLOG" ? "Backlog" : task.status}
+                </span>
+                {task.creator && (
+                  <span className="text-gray-600 dark:text-gray-400 truncate text-xs">
+                    {task.creator}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-1 text-xs font-medium text-gray-600 dark:text-gray-400 ml-2">
+            {isPartialStart && (
+              <span className="text-blue-600 dark:text-blue-400" title="Começou antes">«</span>
+            )}
+            {isPartialEnd && (
+              <span className="text-blue-600 dark:text-blue-400" title="Continua depois">»</span>
+            )}
+            {!isPartialStart && !isPartialEnd && width > 1 && (
+              <span className="text-blue-600 dark:text-blue-400" title="Tarefa multi-dia">↔</span>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-300 dark:border-gray-700 p-4">
+      <div className="mb-4">
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+          Semana de {format(weekStart, "dd/MM")} - {format(weekEnd, "dd/MM/yyyy")}
+        </h2>
+      </div>
+      
+      {/* Container principal com posicionamento relativo */}
+      <div className="relative">
+        {/* Cabeçalho dos dias da semana */}
+        <div className="grid grid-cols-7 gap-2 mb-2">
+          {weekDays.map((day, index) => {
+            const isToday = isSameDay(day, today);
+            return (
+              <div key={index} className="text-center">
+                <div className={`text-sm font-medium ${
+                  isToday ? "text-blue-600 dark:text-blue-400" : "text-gray-900 dark:text-white"
+                }`}>
+                  {getDayName(day)}
+                </div>
+                <div className={`text-lg font-bold ${
+                  isToday ? "text-blue-600 dark:text-blue-400" : "text-gray-700 dark:text-gray-300"
+                }`}>
+                  {format(day, "dd")}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        
+        {/* Área de tarefas com altura mínima para acomodar os retângulos */}
+        <div className="relative min-h-[500px] border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-900/20 overflow-hidden">
+          {/* Linhas de fundo para cada dia */}
+          <div className="absolute inset-0 grid grid-cols-7 gap-2">
+            {weekDays.map((_, index) => (
+              <div 
+                key={index}
+                className={`border-r ${
+                  index < 6 ? "border-gray-200 dark:border-gray-700" : ""
+                } ${isSameDay(weekDays[index], today) ? "bg-blue-50 dark:bg-blue-900/10" : ""}`}
+              />
+            ))}
+          </div>
+          
+          {/* Renderizar retângulos de tarefas */}
+          {taskRows.map((row, rowIndex) => (
+            <div key={rowIndex}>
+              {row.map(({ task, position }) => (
+                <ContinuousTaskRectangle
+                  key={task.id}
+                  task={task}
+                  position={position}
+                  rowIndex={rowIndex}
+                />
+              ))}
+            </div>
+          ))}
+          
+          {/* Mensagem quando não há tarefas */}
+          {taskRows.length === 0 && (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="text-center text-gray-500 dark:text-gray-400">
+                <FaCalendarAlt className="mx-auto text-3xl mb-2" />
+                <p className="text-sm">Nenhuma tarefa para esta semana</p>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

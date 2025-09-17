@@ -11,7 +11,7 @@ export default function WorkspaceSettings() {
   const [companySize, setCompanySize] = useState("");
   const [slug, setSlug] = useState("");
 
-  const workspaceUrl = `localhost:3000/${slug}`;
+  const workspaceUrl = `kanban-tcc.vercel.app/${slug}`;
 
   useEffect(() => {
     const stored = localStorage.getItem("workspaceSelecionado");
@@ -107,7 +107,7 @@ export default function WorkspaceSettings() {
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-4">
             {/* Bloco com letra inicial */}
-            <div className="w-10 h-10 bg-gray-800 dark:bg-gray-600 text-white flex items-center justify-center rounded-md text-lg font-semibold">
+            <div className="w-10 h-10 bg-gray-800 dark:bg-gray-700 text-white flex items-center justify-center rounded-md text-lg font-semibold">
               {typeof workspaceName === "string" && workspaceName.length > 0
                 ? workspaceName.charAt(0).toUpperCase()
                 : ""}
@@ -117,7 +117,7 @@ export default function WorkspaceSettings() {
             <div>
               <div className="text-xl font-semibold">{workspaceName}</div>
               <div className="text-sm text-blue-600 dark:text-blue-400">{workspaceUrl}</div>
-              <button className="text-xs text-blue-500 dark:text-blue-400 mt-1 hover:underline">
+              <button className="text-xs text-blue-600 dark:text-blue-400 mt-1 hover:text-blue-700 dark:hover:text-blue-300 hover:underline transition-colors">
                 Enviar logotipo
               </button>
             </div>
@@ -127,19 +127,19 @@ export default function WorkspaceSettings() {
         {/* Formulário */}
         <form className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
           <div className="col-span-1">
-            <label className="block text-sm font-medium mb-1">Nome do workspace</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nome do workspace</label>
             <input
               type="text"
-              className="w-full border border-gray-300 dark:border-gray-700 rounded-md px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+              className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400 transition-colors"
               value={workspaceName}
               onChange={(e) => setWorkspaceName(e.target.value)}
             />
           </div>
 
           <div className="col-span-1">
-            <label className="block text-sm font-medium mb-1">Tamanho da empresa</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tamanho da empresa</label>
             <select
-              className="w-full border border-gray-300 dark:border-gray-700 rounded-md px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+              className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400 transition-colors"
               value={companySize}
               onChange={(e) => setCompanySize(e.target.value)}
             >
@@ -153,12 +153,12 @@ export default function WorkspaceSettings() {
           </div>
 
           <div className="col-span-1">
-            <label className="block text-sm font-medium mb-1">URL do workspace</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">URL do workspace</label>
             <input
               type="text"
               readOnly
               value={workspaceUrl}
-              className="w-full bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 text-sm text-gray-600 dark:text-gray-300"
+              className="w-full bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 text-sm text-gray-600 dark:text-gray-300 cursor-not-allowed"
             />
           </div>
         </form>
@@ -190,18 +190,18 @@ export default function WorkspaceSettings() {
                 alert("Erro ao atualizar workspace.");
               }
             }}
-            className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-md"
+            className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-md transition-colors"
           >
             Atualizar workspace
           </button>
         </div>
 
         {/* Excluir workspace */}
-        <div className="mt-10 border-t pt-6">
-          <p className="text-sm text-red-600 font-medium mb-2">
+        <div className="mt-10 border-t border-gray-200 dark:border-gray-700 pt-6">
+          <p className="text-sm text-red-600 dark:text-red-400 font-medium mb-2">
             Excluir este workspace
           </p>
-          <button className="text-sm text-gray-700 dark:text-gray-300 hover:text-red-600 transition">
+          <button className="text-sm text-gray-700 dark:text-gray-300 hover:text-red-600 dark:hover:text-red-400 transition-colors">
             Mostrar opções de exclusão
           </button>
         </div>

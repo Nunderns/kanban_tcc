@@ -7,13 +7,17 @@ interface DisplayDropdownProps {
   showSubtasks: boolean;
   onDisplayOptionChange: (option: string, checked: boolean) => void;
   onToggleSubtasks: (checked: boolean) => void;
+  viewType: "kanban" | "list" | "weekly" | "monthly" | "daily";
+  onViewTypeChange: (viewType: "kanban" | "list" | "weekly" | "monthly" | "daily") => void;
 }
 
 function DisplayDropdown({ 
   visibleProperties, 
   showSubtasks, 
   onDisplayOptionChange, 
-  onToggleSubtasks 
+  onToggleSubtasks,
+  viewType,
+  onViewTypeChange
 }: DisplayDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
@@ -31,6 +35,14 @@ function DisplayDropdown({
     "Estimativa",
     "Módulo",
     "Ciclo",
+  ];
+
+  const viewTypeOptions = [
+    { id: "kanban", label: "Kanban" },
+    { id: "list", label: "Lista" },
+    { id: "weekly", label: "Semanal" },
+    { id: "monthly", label: "Mensal" },
+    { id: "daily", label: "Diário" },
   ];
 
 
@@ -66,6 +78,24 @@ function DisplayDropdown({
 
       {isOpen && (
         <div className="absolute mt-2 w-72 bg-[#1f1f1f] text-white border border-gray-700 rounded-md shadow-lg p-4 z-50">
+          <div className="text-sm font-semibold text-gray-400 mb-2">Tipo de exibição</div>
+          
+          <div className="flex flex-wrap gap-2 mb-4">
+            {viewTypeOptions.map((option) => (
+              <button
+                key={option.id}
+                onClick={() => onViewTypeChange(option.id as "kanban" | "list" | "weekly" | "monthly" | "daily")}
+                className={`px-3 py-1 rounded-md text-sm font-medium transition ${
+                  viewType === option.id
+                    ? "bg-blue-600 text-white"
+                    : "bg-[#2a2a2a] text-white hover:bg-[#333]"
+                }`}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+          
           <div className="text-sm font-semibold text-gray-400 mb-2">Propriedades visíveis</div>
 
           <div className="flex flex-wrap gap-2">
