@@ -11,7 +11,7 @@ export default function WorkspaceSettings() {
   const [companySize, setCompanySize] = useState("");
   const [slug, setSlug] = useState("");
 
-  const workspaceUrl = `localhost:3000/${slug}`;
+  const workspaceUrl = `kanban-tcc.vercel.app/${slug}`;
 
   useEffect(() => {
     const stored = localStorage.getItem("workspaceSelecionado");
