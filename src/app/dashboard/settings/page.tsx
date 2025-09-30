@@ -113,33 +113,87 @@ export default function SettingsPage() {
       day: 'numeric',
     });
   };
-
-  // Format activity message based on action type
+  
   const formatActivityMessage = (activity: Activity) => {
     const { action, field, taskTitle, oldValue, newValue } = activity;
     
     switch (action) {
       case 'create':
-        return `criou a tarefa "${taskTitle}"`;
+        return (
+          <span>
+            <span className="text-green-600 dark:text-green-400 font-medium">criou</span>{' '}
+            a tarefa <span className="font-semibold text-blue-600 dark:text-blue-400">&ldquo;{taskTitle}&rdquo;</span>
+          </span>
+        );
       case 'update':
         if (field === 'status') {
-          return `alterou o status de "${taskTitle}" de "${oldValue}" para "${newValue}"`;
+          return (
+            <span>
+              <span className="text-blue-600 dark:text-blue-400 font-medium">alterou o status</span>{' '}
+              da tarefa <span className="font-semibold">&ldquo;{taskTitle}&rdquo;</span>{' '}
+              de <span className="line-through text-red-600 dark:text-red-400">&ldquo;{oldValue}&rdquo;</span>{' '}
+              para <span className="text-green-600 dark:text-green-400 font-medium">&ldquo;{newValue}&rdquo;</span>
+            </span>
+          );
         } else if (field === 'assignee') {
           if (newValue) {
-            return `atribuiu "${taskTitle}" para ${newValue}`;
+            return (
+              <span>
+                <span className="text-purple-600 dark:text-purple-400 font-medium">atribuiu</span>{' '}
+                a tarefa <span className="font-semibold">&ldquo;{taskTitle}&rdquo;</span>{' '}
+                para <span className="text-blue-600 dark:text-blue-400 font-medium">{newValue}</span>
+              </span>
+            );
           } else {
-            return `removeu a atribuição de "${taskTitle}"`;
+            return (
+              <span>
+                <span className="text-orange-600 dark:text-orange-400 font-medium">removeu a atribuição</span>{' '}
+                da tarefa <span className="font-semibold">&ldquo;{taskTitle}&rdquo;</span>
+              </span>
+            );
           }
         } else if (field) {
-          return `atualizou ${field} de "${taskTitle}"`;
+          return (
+            <span>
+              <span className="text-indigo-600 dark:text-indigo-400 font-medium">atualizou</span>{' '}
+              o campo <span className="font-medium text-gray-700 dark:text-gray-300">{field}</span>{' '}
+              da tarefa <span className="font-semibold">&ldquo;{taskTitle}&rdquo;</span>
+              {oldValue && newValue && (
+                <span>
+                  {' '}de <span className="line-through text-red-600 dark:text-red-400">&ldquo;{oldValue}&rdquo;</span>{' '}
+                  para <span className="text-green-600 dark:text-green-400 font-medium">&ldquo;{newValue}&rdquo;</span>
+                </span>
+              )}
+            </span>
+          );
         }
-        return `atualizou a tarefa "${taskTitle}"`;
+        return (
+          <span>
+            <span className="text-indigo-600 dark:text-indigo-400 font-medium">atualizou</span>{' '}
+            a tarefa <span className="font-semibold">&ldquo;{taskTitle}&rdquo;</span>
+          </span>
+        );
       case 'delete':
-        return `excluiu a tarefa "${taskTitle}"`;
+        return (
+          <span>
+            <span className="text-red-600 dark:text-red-400 font-medium">excluiu</span>{' '}
+            a tarefa <span className="font-semibold line-through">&ldquo;{taskTitle}&rdquo;</span>
+          </span>
+        );
       case 'comment':
-        return `comentou em "${taskTitle}"`;
+        return (
+          <span>
+            <span className="text-yellow-600 dark:text-yellow-400 font-medium">comentou</span>{' '}
+            na tarefa <span className="font-semibold">&ldquo;{taskTitle}&rdquo;</span>
+          </span>
+        );
       default:
-        return `realizou uma ação em "${taskTitle}"`;
+        return (
+          <span>
+            <span className="text-gray-600 dark:text-gray-400 font-medium">realizou uma ação</span>{' '}
+            na tarefa <span className="font-semibold">&ldquo;{taskTitle}&rdquo;</span>
+          </span>
+        );
     }
   };
   
@@ -228,44 +282,44 @@ export default function SettingsPage() {
               </CardHeader>
               <CardContent>
                 <div className="flex items-center gap-4 mb-6">
-                  <Avatar className="h-16 w-16 border border-gray-200">
+                  <Avatar className="h-16 w-16 border border-gray-200 dark:border-gray-700">
                     <AvatarImage src={session?.user?.image ?? undefined} alt={name} />
                     <AvatarFallback>{getInitials(name || email)}</AvatarFallback>
                   </Avatar>
                   <div>
                     <p className="text-lg font-medium">{name}</p>
-                    <p className="text-sm text-gray-500">{email}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{email}</p>
                   </div>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       Nome
                     </label>
                     <input
                       id="firstName"
-                      className="w-full rounded-md border border-gray-200 px-3 py-2"
+                      className="w-full rounded-md border border-gray-200 dark:border-gray-700 px-3 py-2 dark:bg-gray-800 dark:text-white"
                       defaultValue={name.split(" ")[0] || ""}
                     />
                   </div>
                   <div>
-                    <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       Sobrenome
                     </label>
                     <input
                       id="lastName"
-                      className="w-full rounded-md border border-gray-200 px-3 py-2"
+                      className="w-full rounded-md border border-gray-200 dark:border-gray-700 px-3 py-2 dark:bg-gray-800 dark:text-white"
                       defaultValue={name.split(" ").slice(1).join(" ") || ""}
                     />
                   </div>
                   <div className="md:col-span-2">
-                    <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       E-mail
                     </label>
                     <input
                       id="email"
                       type="email"
-                      className="w-full rounded-md border border-gray-200 px-3 py-2 bg-gray-50"
+                      className="w-full rounded-md border border-gray-200 dark:border-gray-700 px-3 py-2 bg-gray-50 dark:bg-gray-800 dark:text-white"
                       defaultValue={email}
                       disabled
                     />
@@ -383,7 +437,7 @@ export default function SettingsPage() {
                 <div>
                   <h3 className="font-medium mb-2">Primeiro dia da semana</h3>
                   <p className="text-sm text-gray-600 mb-3">Isso alterará como todos os calendários no aplicativo são exibidos.</p>
-                  <select className="w-full rounded-md border border-gray-200 px-3 py-2">
+                  <select className="w-full rounded-md border border-gray-200 dark:border-gray-700 px-3 py-2 dark:bg-gray-800 dark:text-white">
                     <option value="sunday">Domingo</option>
                     <option value="monday">Segunda-feira</option>
                   </select>
@@ -392,11 +446,11 @@ export default function SettingsPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <h3 className="font-medium">Cursor Suave</h3>
-                    <p className="text-sm text-gray-600">Ativar animação suave do cursor</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Ativar animação suave do cursor</p>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input type="checkbox" className="sr-only peer" defaultChecked />
-                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                    <div className="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                   </label>
                 </div>
               </CardContent>
@@ -416,7 +470,7 @@ export default function SettingsPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <h3 className="font-medium">Notificações por e-mail</h3>
-                    <p className="text-sm text-gray-600">Mantenha-se atualizado sobre os itens de trabalho que você acompanha. Ative para receber notificações.</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Mantenha-se atualizado sobre os itens de trabalho que você acompanha. Ative para receber notificações.</p>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input
@@ -425,14 +479,14 @@ export default function SettingsPage() {
                       checked={emailNotifications ?? false}
                       onChange={() => setEmailNotifications(v => !v)}
                     />
-                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                    <div className="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                   </label>
                 </div>
 
                 <div className="flex items-center justify-between">
                   <div>
                     <h3 className="font-medium">Mudanças nas propriedades</h3>
-                    <p className="text-sm text-gray-600">Me notifique quando as propriedades dos itens de trabalho, como responsáveis, prioridade, estimativas ou qualquer outra coisa, forem alteradas.</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Me notifique quando as propriedades dos itens de trabalho, como responsáveis, prioridade, estimativas ou qualquer outra coisa, forem alteradas.</p>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input
@@ -442,14 +496,14 @@ export default function SettingsPage() {
                       onChange={() => setNotifyPropertyChanges(v => !v)}
                       disabled={!emailNotifications}
                     />
-                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                    <div className="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                   </label>
                 </div>
 
                 <div className="flex items-center justify-between">
                   <div>
                     <h3 className="font-medium">Mudança de estado</h3>
-                    <p className="text-sm text-gray-600">Me notifique quando o item de trabalho mudar para um estado diferente.</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Me notifique quando o item de trabalho mudar para um estado diferente.</p>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input
@@ -459,14 +513,14 @@ export default function SettingsPage() {
                       onChange={() => setNotifyStateChange(v => !v)}
                       disabled={!emailNotifications}
                     />
-                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                    <div className="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                   </label>
                 </div>
 
                 <div className="flex items-center justify-between">
                   <div>
                     <h3 className="font-medium">Item concluído</h3>
-                    <p className="text-sm text-gray-600">Me notifique apenas quando um item de trabalho for concluído.</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Me notifique apenas quando um item de trabalho for concluído.</p>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input
@@ -476,14 +530,14 @@ export default function SettingsPage() {
                       onChange={() => setNotifyWorkItemCompleted(v => !v)}
                       disabled={!emailNotifications}
                     />
-                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                    <div className="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                   </label>
                 </div>
 
                 <div className="flex items-center justify-between">
                   <div>
                     <h3 className="font-medium">Comentários</h3>
-                    <p className="text-sm text-gray-600">Me notifique quando alguém deixar um comentário no item de trabalho.</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Me notifique quando alguém deixar um comentário no item de trabalho.</p>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input
@@ -493,14 +547,14 @@ export default function SettingsPage() {
                       onChange={() => setNotifyComments(v => !v)}
                       disabled={!emailNotifications}
                     />
-                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                    <div className="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                   </label>
                 </div>
 
                 <div className="flex items-center justify-between">
                   <div>
                     <h3 className="font-medium">Menções</h3>
-                    <p className="text-sm text-gray-600">Me notifique apenas quando alguém me mencionar nos comentários ou descrição.</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Me notifique apenas quando alguém me mencionar nos comentários ou descrição.</p>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input
@@ -510,7 +564,7 @@ export default function SettingsPage() {
                       onChange={() => setNotifyMentions(v => !v)}
                       disabled={!emailNotifications}
                     />
-                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                    <div className="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                   </label>
                 </div>
 
@@ -639,18 +693,18 @@ export default function SettingsPage() {
                 ) : (
                   <div className="space-y-6">
                     {activities.map((activity) => (
-                      <div key={activity.id} className="flex items-start pb-4 border-b border-gray-100 last:border-0 last:pb-0">
+                      <div key={activity.id} className="flex items-start pb-4 border-b border-gray-100 dark:border-gray-700 last:border-0 last:pb-0">
                         <div className="flex-shrink-0 mr-3">
-                          <div className="flex items-center justify-center h-8 w-8 rounded-full bg-gray-100 text-gray-600 font-medium">
+                          <div className="flex items-center justify-center h-8 w-8 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 font-medium">
                             {activity.user.charAt(0).toUpperCase()}
                           </div>
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm text-gray-900">
-                            <span className="font-medium">{activity.user}</span>{' '}
+                          <p className="text-sm text-gray-900 dark:text-gray-100">
+                            <span className="font-medium text-gray-800 dark:text-gray-200">{activity.user}</span>{' '}
                             {formatActivityMessage(activity)}
                           </p>
-                          <p className="text-xs text-gray-500">
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
                             {formatDate(activity.createdAt)}
                           </p>
                         </div>
@@ -686,14 +740,14 @@ export default function SettingsPage() {
   ];
 
   return (
-    <div className="flex min-h-screen bg-white">
+    <div className="flex min-h-screen bg-white dark:bg-gray-900">
       {/* Sidebar */}
       <div className="w-72">
         <Sidebar />
       </div>
 
       {/* Settings local sidebar */}
-      <div className="w-64 border-r border-gray-200 p-6">
+      <div className="w-64 border-r border-gray-200 dark:border-gray-700 p-6">
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-1">
             <Avatar className="h-9 w-9">
@@ -702,7 +756,7 @@ export default function SettingsPage() {
             </Avatar>
             <div>
               <p className="font-medium">{name}</p>
-              <p className="text-sm text-gray-500">{email}</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">{email}</p>
             </div>
           </div>
         </div>
@@ -714,8 +768,8 @@ export default function SettingsPage() {
               onClick={() => setActiveSection(section.id)}
               className={`w-full text-left px-3 py-2 rounded-md text-sm font-medium ${
                 activeSection === section.id
-                  ? 'bg-gray-100 text-gray-900'
-                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                  ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white'
+                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white'
               }`}
             >
               {section.ptName}
