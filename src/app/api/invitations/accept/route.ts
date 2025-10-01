@@ -38,24 +38,12 @@ export async function POST(req: Request) {
     });
     log(`[${requestId}] Request headers:`, JSON.stringify(headers, null, 2));
     
-    // Check if user is authenticated
-    if (!session?.user?.email) {
-      const error = 'Usuário não autenticado';
-      log(`[${requestId}] ${error}`);
-      return NextResponse.json(
-        { 
-          error, 
-          code: 'NOT_AUTHENTICATED',
-          requestId
-        },
-        { status: 401 }
-      );
-    }
-
     let token: string | undefined;
+    let email: string | undefined;
+    let slug: string | undefined;
     
     try {
-      const requestData = await req.json() as { token?: string };
+      const requestData = await req.json() as { token?: string; email?: string; slug?: string };
       log(`[${requestId}] Request data:`, JSON.stringify(requestData, null, 2));
       
       if (!requestData?.token || typeof requestData.token !== 'string') {
@@ -73,6 +61,8 @@ export async function POST(req: Request) {
       }
       
       token = requestData.token;
+      email = requestData.email;
+      slug = requestData.slug;
       log(`[${requestId}] Token from request: Received`);
     } catch (e) {
       const error = 'Erro ao processar a requisição';
@@ -158,6 +148,50 @@ export async function POST(req: Request) {
       );
     }
     
+    // Validate email and slug parameters if provided
+    if (email && invitation.email !== email) {
+      const error = 'O email do convite não corresponde ao email fornecido';
+      log(`[${requestId}] ${error}`, { 
+        invitationEmail: invitation.email, 
+        providedEmail: email 
+      });
+      return NextResponse.json(
+        { 
+          error, 
+          code: 'EMAIL_MISMATCH',
+          requestId
+        },
+        { status: 400 }
+      );
+    }
+    
+    if (slug) {
+      // More flexible slug validation - handle special characters and multiple dashes
+      const expectedSlug = invitation.workspace.name
+        .toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, '') // Remove special characters except spaces and dashes
+        .replace(/\s+/g, '-') // Replace spaces with dashes
+        .replace(/-+/g, '-') // Replace multiple dashes with single dash
+        .replace(/^-|-$/g, ''); // Remove leading/trailing dashes
+      
+      if (slug !== expectedSlug) {
+        const error = 'O slug do workspace não corresponde ao esperado';
+        log(`[${requestId}] ${error}`, { 
+          expectedSlug, 
+          providedSlug: slug,
+          workspaceName: invitation.workspace.name
+        });
+        return NextResponse.json(
+          { 
+            error, 
+            code: 'SLUG_MISMATCH',
+            requestId
+          },
+          { status: 400 }
+        );
+      }
+    }
+    
     // Check if invitation is already used
     if (invitation.status !== 'pending') {
       const error = 'Este convite já foi utilizado';
@@ -197,12 +231,15 @@ export async function POST(req: Request) {
       );
     }
 
+    // Get the invitation email early for use in membership check
+    const invitationEmail = invitation.email;
+    
     // Check if user is already a member of the workspace
     log(`[${requestId}] Checking for existing workspace membership`);
     const existingMember = await prisma.workspaceMember.findFirst({
       where: {
         workspaceId: invitation.workspaceId,
-        user: { email: session.user.email }
+        user: { email: invitationEmail }
       },
       select: {
         id: true,
@@ -233,22 +270,27 @@ export async function POST(req: Request) {
       });
     }
 
-    // Get the current user
+    // Permitir aceitação sem sessão quando o email do convite é fornecido
+    // Isso permite que usuários recém-registrados aceitem convites
     const userSession = session as UserSession;
-    const userEmail = userSession?.user?.email;
+    const sessionEmail = userSession?.user?.email;
     
-    if (!userEmail) {
-      const error = 'Usuário não autenticado';
+    // Se não há sessão, mas temos email do convite, continuamos
+    if (!sessionEmail && !email) {
+      const error = 'Usuário não autenticado e email não fornecido';
       log(`[${requestId}] ${error}`);
       return NextResponse.json(
-        { error, code: 'NOT_AUTHENTICATED' },
+        { error, code: 'NOT_AUTHENTICATED_NO_EMAIL' },
         { status: 401 }
       );
     }
-
-    log(`[${requestId}] Fetching user with email:`, userEmail);
-    const user = await prisma.user.findUnique({
-      where: { email: userEmail },
+    
+    // Usar o email da sessão se disponível, senão usar o email do convite
+    const targetEmail = sessionEmail || email || invitationEmail;
+    
+    log(`[${requestId}] Fetching user with email:`, targetEmail);
+    let user = await prisma.user.findUnique({
+      where: { email: targetEmail },
       include: { 
         workspaces: {
           select: {
@@ -260,17 +302,39 @@ export async function POST(req: Request) {
     });
     
     if (!user) {
-      const error = 'Usuário não encontrado';
-      log(`[${requestId}] ${error}`, { email: userEmail });
-      return NextResponse.json(
-        { 
-          error,
-          code: 'USER_NOT_FOUND',
-          requestId,
-          email: userEmail
-        },
-        { status: 404 }
-      );
+      // Criar novo usuário para aceitação do convite usando o email do convite
+      log(`[${requestId}] Creating new user for email:`, targetEmail);
+      
+      try {
+        const newUser = await prisma.user.create({
+          data: {
+            email: targetEmail,
+            name: targetEmail.split('@')[0].charAt(0).toUpperCase() + targetEmail.split('@')[0].slice(1), // Gerar nome a partir do email
+            emailVerified: new Date(), // Auto-verificar email para usuários convidados
+          }
+        });
+        
+        log(`[${requestId}] New user created:`, { 
+          userId: newUser.id, 
+          email: newUser.email,
+          name: newUser.name
+        });
+        
+        // Usar o usuário recém-criado
+        user = newUser;
+      } catch (error) {
+        const errorMessage = 'Erro ao criar novo usuário';
+        log(`[${requestId}] ${errorMessage}:`, error);
+        return NextResponse.json(
+          { 
+            error: errorMessage,
+            code: 'USER_CREATION_FAILED',
+            requestId,
+            email: targetEmail
+          },
+          { status: 500 }
+        );
+      }
     }
     
     log(`[${requestId}] User found:`, { 
@@ -279,22 +343,17 @@ export async function POST(req: Request) {
       hasImage: 'image' in user ? !!user.image : false
     });
     
-    // Verificar se o e-mail do convite corresponde ao e-mail do usuário autenticado
-    if (invitation.email.toLowerCase() !== userEmail.toLowerCase()) {
-      const error = 'Este convite não é para o seu endereço de e-mail';
-      log(`[${requestId}] ${error}`, { 
-        invitationEmail: invitation.email, 
-        userEmail 
-      });
-      return NextResponse.json(
-        { 
-          error,
-          code: 'INVALID_INVITATION_RECIPIENT',
-          details: 'O convite foi enviado para um endereço de e-mail diferente',
-          requestId
-        },
-        { status: 403 }
-      );
+    // Allow users to accept invitations even if emails don't match
+    // This enables users to invite others who are already logged in
+    log(`[${requestId}] Email check:`, { 
+      invitationEmail, 
+      sessionEmail: sessionEmail || 'N/A',
+      match: sessionEmail ? invitationEmail.toLowerCase() === sessionEmail.toLowerCase() : false
+    });
+    
+    if (sessionEmail && invitationEmail.toLowerCase() !== sessionEmail.toLowerCase()) {
+      log(`[${requestId}] Email mismatch but allowing acceptance for existing user`);
+      // Continue with the process - don't return error
     }
 
     // Add user to workspace

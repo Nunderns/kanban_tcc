@@ -55,6 +55,7 @@ export async function POST(req: Request) {
         role,
         token,
         workspaceId: wsId,
+        inviterId: parseInt(session.user.id as string),
         expiresAt,
         status: 'pending',
       },
@@ -62,10 +63,18 @@ export async function POST(req: Request) {
 
     // Send email via centralized helper
     try {
+      // Get inviter information
+      const inviter = await prisma.user.findUnique({
+        where: { id: parseInt(session.user.id as string) },
+        select: { name: true, email: true }
+      });
+
       await sendInvitationEmail({
         to: email.toLowerCase(),
         token,
         workspaceName: workspace.name,
+        inviterName: inviter?.name || undefined,
+        inviterEmail: inviter?.email || undefined,
       });
     } catch (error) {
       console.error('Error sending invitation email:', error);

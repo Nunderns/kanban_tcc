@@ -218,14 +218,22 @@ export const sendInvitationEmail = async (params: {
   to: string | string[];
   token: string;
   workspaceName: string;
+  inviterName?: string;
+  inviterEmail?: string;
+  temporaryPassword?: string;
 }) => {
   console.log("=== STARTING EMAIL SEND PROCESS ===");
 
-  const { to, token, workspaceName } = params;
+  const { to, token, workspaceName, inviterName } = params;
   const recipients = Array.isArray(to) ? to : [to];
-  const inviteLink = `${NEXTAUTH_URL}/invite?token=${encodeURIComponent(
-    token
-  )}`;
+  const slug = workspaceName
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, '') // Remove special characters except spaces and dashes
+    .replace(/\s+/g, '-') // Replace spaces with dashes
+    .replace(/-+/g, '-') // Replace multiple dashes with single dash
+    .replace(/^-|-$/g, ''); // Remove leading/trailing dashes
+  
+  const inviteLink = `${NEXTAUTH_URL}/register?email=${encodeURIComponent(recipients[0])}&invitation_id=${encodeURIComponent(token)}&workspace=${encodeURIComponent(slug)}`;
 
   const isProd = NODE_ENV === "production";
   const canSendForReal = (isProd || FORCE_SEND) && !!RESEND_API_KEY;
@@ -246,17 +254,44 @@ export const sendInvitationEmail = async (params: {
   const res = await client.emails.send({
     from: `TaskFlow <${RESEND_FROM_EMAIL}>`,
     to: recipients,
-    subject: `Você foi convidado para o workspace ${workspaceName}`,
+    subject: `${inviterName || 'Someone'} has invited you to join them in ${workspaceName} on TaskFlow`,
     html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e5e7eb; border-radius: 8px;">
-        <h2 style="color: #1f2937; margin-bottom: 20px;">Você foi convidado para o workspace ${workspaceName}</h2>
-        <p style="color: #4b5563; margin-bottom: 20px;">Clique no botão abaixo para aceitar o convite:</p>
-        <a href="${inviteLink}" style="display: inline-block; padding: 10px 20px; text-decoration: none; border-radius: 5px; margin: 20px 0; font-weight: 500; background-color:#2563eb; color:#fff;">
-          Aceitar convite
-        </a>
-        <p style="color: #6b7280; font-size: 14px; margin-top: 20px;">Se o botão não funcionar, copie e cole este link no seu navegador:</p>
-        <p style="background-color: #f3f4f6; padding: 10px; border-radius: 4px; font-family: monospace; word-break: break-all; font-size: 14px;">${inviteLink}</p>
-        <p style="color: #6b7280; font-size: 14px; margin-top: 20px;">Este link expirará em 7 dias.</p>
+      <div style="font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #1F2937;">
+        <div style="background-color: #4F46E5; padding: 32px; text-align: center; border-radius: 12px 12px 0 0;">
+          <h1 style="color: white; margin: 0; font-size: 28px; font-weight: 700;">TaskFlow</h1>
+          <p style="color: #E0E7FF; margin: 8px 0 0 0; font-size: 16px;">Seu workspace para projetos e progresso</p>
+        </div>
+        
+        <div style="padding: 40px; background-color: #ffffff; border: 1px solid #E5E7EB; border-top: none; border-radius: 0 0 12px 12px;">
+          <div style="text-align: center; margin-bottom: 32px;">
+            <div style="display: inline-block; background-color: #FEF3C7; padding: 16px 24px; border-radius: 50px; margin-bottom: 24px;">
+              <span style="color: #92400E; font-weight: 600; font-size: 18px;">🎉 You are a celebrated colleague!</span>
+            </div>
+            
+            <h2 style="color: #111827; font-size: 24px; margin-top: 0; margin-bottom: 16px; font-weight: 700;">
+              ${inviterName || 'Someone'} has invited you to join them in ${workspaceName} on TaskFlow.
+            </h2>
+            
+            <p style="color: #4B5563; font-size: 18px; line-height: 1.6; margin-bottom: 24px;">
+              Some of our users have told us it's a privilege, but we will let you be the judge of that.
+            </p>
+            
+            <div style="text-align: center; margin-top: 32px;">
+              <a href="${inviteLink}" style="display: inline-block; background-color: #4F46E5; color: white; text-decoration: none; font-weight: 600; padding: 16px 32px; border-radius: 8px; font-size: 16px; transition: background-color 0.2s;">
+                Join them on TaskFlow
+              </a>
+            </div>
+          </div>
+          
+          <div style="margin-top: 40px; padding-top: 24px; border-top: 1px solid #E5E7EB; text-align: center;">
+            <p style="color: #6B7280; font-size: 14px; margin: 0 0 8px 0;">Obrigado por se interessar por nossas soluções!</p>
+            <p style="color: #111827; font-size: 16px; margin: 0; font-weight: 600;">Um grande abraço,<br><span style="color: #4F46E5;">Time TaskFlow!</span></p>
+          </div>
+        </div>
+        
+        <div style="text-align: center; padding: 16px; color: #9CA3AF; font-size: 12px;">
+          <p style="margin: 0;">This email was sent to ${recipients[0]}. Please delete if you are not the intended recipient.</p>
+        </div>
       </div>
     `,
   });

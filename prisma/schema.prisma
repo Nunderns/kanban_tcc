@@ -28,6 +28,7 @@ model User {
   sessions         Session[]
   workspaces       Workspace[]
   workspaceMembers WorkspaceMember[]
+  invitations      Invitation[]
 }
 
 model Project {
@@ -48,6 +49,8 @@ model Invitation {
   token      String   @unique
   workspaceId Int
   workspace  Workspace @relation(fields: [workspaceId], references: [id])
+  inviterId  Int
+  inviter    User     @relation(fields: [inviterId], references: [id])
   expiresAt  DateTime
   status     String   @default("pending") // pending, accepted, expired
   createdAt  DateTime @default(now())
