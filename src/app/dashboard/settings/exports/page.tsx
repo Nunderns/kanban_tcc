@@ -25,7 +25,14 @@ interface ExportTask {
   description: string | null;
   status: string;
   priority: string;
+  startDate: string | null;
   dueDate: string | null;
+  module: string | null;
+  cycle: string | null;
+  assignees: string[];
+  labels: string[];
+  createdAt: string;
+  updatedAt: string;
   project: string | null;
   creator: string;
 }
@@ -35,6 +42,7 @@ interface ExportProject {
   name: string;
   description: string | null;
   createdAt: string;
+  updatedAt: string;
   taskCount: number;
 }
 
@@ -43,6 +51,7 @@ interface ExportWorkspace {
   name: string;
   description: string | null;
   createdAt: string;
+  updatedAt: string;
   owner: string;
   memberCount: number;
   taskCount: number;
@@ -102,21 +111,87 @@ export default function ExportSettings() {
 
       switch (selectedFormat) {
         case "csv": {
-          const headers = ["ID", "Título", "Descrição", "Status", "Prioridade", "Data de Vencimento", "Projeto", "Criador"];
-          const csvRows = [
-            headers.join(","),
-            ...exportData.tasks.map((task: ExportTask) => [
-              task.id,
-              `"${task.title.replace(/"/g, '\"')}"`,
-              `"${(task.description || '').replace(/"/g, '\"')}"`,
-              task.status,
-              task.priority,
-              task.dueDate || "",
-              `"${task.project || ''}"`,
-              `"${task.creator}"`
-            ].join(",")),
+          const csvSections = [];
+          
+          const taskHeaders = [
+            "ID", "Título", "Descrição", "Status", "Prioridade", 
+            "Data de Início", "Data de Vencimento", "Módulo", "Ciclo",
+            "Responsáveis", "Etiquetas", "Projeto", "Criador", "Data de Criação", "Data de Atualização"
           ];
-          content = csvRows.join("\n");
+          
+          const taskRows = exportData.tasks.map((task: ExportTask) => [
+            task.id,
+            `"${task.title.replace(/"/g, '""')}"`,
+            `"${(task.description || '').replace(/"/g, '""')}"`,
+            task.status,
+            task.priority,
+            task.startDate ? new Date(task.startDate).toLocaleDateString('pt-BR') : "",
+            task.dueDate ? new Date(task.dueDate).toLocaleDateString('pt-BR') : "",
+            `"${task.module || ''}"`,
+            `"${task.cycle || ''}"`,
+            `"${(task.assignees || []).join('; ')}"`,
+            `"${(task.labels || []).join('; ')}"`,
+            `"${task.project || ''}"`,
+            `"${task.creator}"`,
+            new Date(task.createdAt).toLocaleDateString('pt-BR'),
+            new Date(task.updatedAt).toLocaleDateString('pt-BR')
+          ].join(","));
+          
+          csvSections.push("--- TAREFAS ---");
+          csvSections.push(taskHeaders.join(","));
+          csvSections.push(...taskRows);
+          csvSections.push("");
+
+          if (exportData.projects.length > 0) {
+            const projectHeaders = [
+              "ID", "Nome", "Descrição", "Quantidade de Tarefas", "Data de Criação", "Data de Atualização"
+            ];
+            
+            const projectRows = exportData.projects.map((project: ExportProject) => [
+              project.id,
+              `"${project.name.replace(/"/g, '""')}"`,
+              `"${(project.description || '').replace(/"/g, '""')}"`,
+              project.taskCount,
+              new Date(project.createdAt).toLocaleDateString('pt-BR'),
+              new Date(project.updatedAt).toLocaleDateString('pt-BR')
+            ].join(","));
+            
+            csvSections.push("--- PROJETOS ---");
+            csvSections.push(projectHeaders.join(","));
+            csvSections.push(...projectRows);
+            csvSections.push("");
+          }
+          
+          if (exportData.workspaces.length > 0) {
+            const workspaceHeaders = [
+              "ID", "Nome", "Descrição", "Dono", "Quantidade de Membros", "Quantidade de Tarefas", "Data de Criação", "Data de Atualização"
+            ];
+            
+            const workspaceRows = exportData.workspaces.map((workspace: ExportWorkspace) => [
+              workspace.id,
+              `"${workspace.name.replace(/"/g, '""')}"`,
+              `"${(workspace.description || '').replace(/"/g, '""')}"`,
+              `"${workspace.owner}"`,
+              workspace.memberCount,
+              workspace.taskCount,
+              new Date(workspace.createdAt).toLocaleDateString('pt-BR'),
+              new Date(workspace.updatedAt).toLocaleDateString('pt-BR')
+            ].join(","));
+            
+            csvSections.push("--- WORKSPACES ---");
+            csvSections.push(workspaceHeaders.join(","));
+            csvSections.push(...workspaceRows);
+          }
+          
+          csvSections.push("--- RESUMO ---");
+          csvSections.push(`"Data da Exportação","${new Date(exportData.exportDate).toLocaleString('pt-BR')}"`);
+          csvSections.push(`"Usuário","${exportData.user.name || exportData.user.email}"`);
+          csvSections.push(`"Email","${exportData.user.email || ''}"`);
+          csvSections.push(`"Total de Tarefas",${exportData.tasks.length}`);
+          csvSections.push(`"Total de Projetos",${exportData.projects.length}`);
+          csvSections.push(`"Total de Workspaces",${exportData.workspaces.length}`);
+          
+          content = "\uFEFF" + csvSections.join("\n");
           mimeType = "text/csv;charset=utf-8;";
           fileExtension = "csv";
           break;
@@ -149,38 +224,21 @@ export default function ExportSettings() {
         }
         case "pdf": {
           const doc = new jsPDF();
-          
-          // Configurar fonte para suportar caracteres especiais
           doc.setFont('helvetica');
-          
-          // Add header with background
-          doc.setFillColor(59, 130, 246); // Blue background
+          doc.setFillColor(59, 130, 246);
           doc.rect(0, 0, 210, 40, 'F');
-          
-          // Add title in white
           doc.setFontSize(20);
           doc.setTextColor(255, 255, 255);
           doc.text("Relatorio de Dados do Sistema", 20, 25);
-          
-          // Reset text color
           doc.setTextColor(0, 0, 0);
-          
-          // Add user info section
           doc.setFontSize(12);
           doc.text(`Usuario: ${exportData.user.name || exportData.user.email}`, 20, 50);
           doc.text(`Email: ${exportData.user.email}`, 20, 57);
-          
-          // Add export date
           doc.text(`Data da Exportacao: ${new Date(exportData.exportDate).toLocaleString('pt-BR')}`, 20, 64);
-          
-          // Add separator line
           doc.setDrawColor(200, 200, 200);
           doc.line(20, 70, 190, 70);
-          
           let yPosition = 80;
-          
-          // Add summary section with background
-          doc.setFillColor(248, 250, 252); // Light gray background
+          doc.setFillColor(248, 250, 252);
           doc.rect(15, yPosition - 5, 180, 35, 'F');
           
           doc.setFontSize(16);
@@ -197,9 +255,7 @@ export default function ExportSettings() {
           doc.text(`Total de Workspaces: ${exportData.workspaces.length}`, 25, yPosition);
           yPosition += 15;
           
-          // Add tasks section
           if (exportData.tasks.length > 0) {
-            // Check if we need a new page
             if (yPosition > 250) {
               doc.addPage();
               yPosition = 30;
@@ -213,8 +269,7 @@ export default function ExportSettings() {
             doc.setFontSize(10);
             doc.setTextColor(0, 0, 0);
             
-            // Table header with background
-            doc.setFillColor(241, 245, 249); // Light blue background
+            doc.setFillColor(241, 245, 249);
             doc.rect(15, yPosition - 5, 180, 10, 'F');
             
             const headers = ["ID", "Titulo", "Status", "Prioridade", "Vencimento", "Projeto"];
@@ -229,18 +284,15 @@ export default function ExportSettings() {
             doc.setFont('helvetica', 'normal');
             yPosition += 8;
             
-            // Add line under header
             doc.setDrawColor(59, 130, 246);
             doc.line(15, yPosition - 2, 195, yPosition - 2);
             yPosition += 3;
             
-            // Task rows with alternating colors
             exportData.tasks.forEach((task: ExportTask, index: number) => {
-              if (yPosition > 270) { // Check if we need a new page
+              if (yPosition > 270) {
                 doc.addPage();
                 yPosition = 30;
                 
-                // Re-add header on new page
                 doc.setFillColor(241, 245, 249);
                 doc.rect(15, yPosition - 5, 180, 10, 'F');
                 doc.setFontSize(10);
@@ -257,7 +309,6 @@ export default function ExportSettings() {
                 yPosition += 3;
               }
               
-              // Alternating row colors
               if (index % 2 === 0) {
                 doc.setFillColor(249, 250, 251);
                 doc.rect(15, yPosition - 3, 180, 8, 'F');
@@ -265,19 +316,17 @@ export default function ExportSettings() {
               
               xPosition = 20;
               
-              // Truncate long text to fit in columns
               const truncatedTitle = task.title.length > 35 ? task.title.substring(0, 32) + "..." : task.title;
               const truncatedProject = (task.project || "").length > 20 ? (task.project || "").substring(0, 17) + "..." : task.project || "";
               
-              // Status color coding
               if (task.status === "DONE") {
-                doc.setTextColor(34, 197, 94); // Green
+                doc.setTextColor(34, 197, 94);
               } else if (task.status === "IN_PROGRESS") {
-                doc.setTextColor(59, 130, 246); // Blue
+                doc.setTextColor(59, 130, 246);
               } else if (task.status === "TODO") {
-                doc.setTextColor(251, 191, 36); // Yellow
+                doc.setTextColor(251, 191, 36);
               } else {
-                doc.setTextColor(107, 114, 128); // Gray
+                doc.setTextColor(107, 114, 128);
               }
               
               doc.text(String(task.id), xPosition, yPosition);
@@ -287,7 +336,6 @@ export default function ExportSettings() {
               doc.text(truncatedTitle, xPosition, yPosition);
               xPosition += colWidths[1];
               
-              // Status with color
               if (task.status === "DONE") {
                 doc.setTextColor(34, 197, 94);
               } else if (task.status === "IN_PROGRESS") {
@@ -300,14 +348,13 @@ export default function ExportSettings() {
               doc.text(task.status, xPosition, yPosition);
               xPosition += colWidths[2];
               
-              // Priority with color
               doc.setTextColor(0, 0, 0);
               if (task.priority === "HIGH") {
-                doc.setTextColor(239, 68, 68); // Red
+                doc.setTextColor(239, 68, 68);
               } else if (task.priority === "MEDIUM") {
-                doc.setTextColor(251, 191, 36); // Yellow
+                doc.setTextColor(251, 191, 36);
               } else if (task.priority === "LOW") {
-                doc.setTextColor(34, 197, 94); // Green
+                doc.setTextColor(34, 197, 94);
               }
               doc.text(task.priority, xPosition, yPosition);
               xPosition += colWidths[3];
@@ -323,12 +370,10 @@ export default function ExportSettings() {
             yPosition += 10;
           }
           
-          // Add projects section
           if (exportData.projects.length > 0) {
             doc.addPage();
             yPosition = 30;
             
-            // Add header with background
             doc.setFillColor(59, 130, 246);
             doc.rect(0, 0, 210, 40, 'F');
             doc.setFontSize(18);
@@ -344,7 +389,6 @@ export default function ExportSettings() {
                 yPosition = 30;
               }
               
-              // Project card background
               doc.setFillColor(248, 250, 252);
               doc.rect(15, yPosition - 5, 180, 25, 'F');
               
@@ -368,12 +412,10 @@ export default function ExportSettings() {
             });
           }
           
-          // Add workspaces section
           if (exportData.workspaces.length > 0) {
             doc.addPage();
             yPosition = 30;
             
-            // Add header with background
             doc.setFillColor(59, 130, 246);
             doc.rect(0, 0, 210, 40, 'F');
             doc.setFontSize(18);
@@ -389,7 +431,6 @@ export default function ExportSettings() {
                 yPosition = 30;
               }
               
-              // Workspace card background
               doc.setFillColor(248, 250, 252);
               doc.rect(15, yPosition - 5, 180, 30, 'F');
               
@@ -415,7 +456,6 @@ export default function ExportSettings() {
             });
           }
           
-          // Add footer
           const pageCount = doc.getNumberOfPages();
           for (let i = 1; i <= pageCount; i++) {
             doc.setPage(i);
@@ -425,7 +465,6 @@ export default function ExportSettings() {
             doc.text(`Gerado por Kanban TCC`, 20, 285);
           }
           
-          // Generate PDF blob
           blob = doc.output('blob');
           mimeType = "application/pdf";
           fileExtension = "pdf";
