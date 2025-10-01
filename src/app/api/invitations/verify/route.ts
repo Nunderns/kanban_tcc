@@ -5,10 +5,8 @@ import { prisma } from '@/lib/prisma';
 export async function POST(req: Request) {
   try {
     const { token, email, slug } = await req.json();
-    console.log('Verify invitation request:', { token, email, slug });
 
     if (!token) {
-      console.log('Error: Token is required but not provided');
       return NextResponse.json({ message: 'Token is required' }, { status: 400 });
     }
 
@@ -26,37 +24,21 @@ export async function POST(req: Request) {
       },
     });
 
-    console.log('Found invitation:', {
-      id: invitation?.id,
-      email: invitation?.email,
-      status: invitation?.status,
-      expiresAt: invitation?.expiresAt,
-      workspaceName: invitation?.workspace.name
-    });
-
     // Check if invitation exists and is not expired
     if (!invitation) {
-      console.log('Error: Invitation not found for token:', token);
       return NextResponse.json({ message: 'Convite não encontrado' }, { status: 400 });
     }
     
     if (new Date() > new Date(invitation.expiresAt)) {
-      console.log('Error: Invitation expired at:', invitation.expiresAt);
       return NextResponse.json({ message: 'Convite expirado' }, { status: 400 });
     }
     
     if (invitation.status !== 'pending') {
-      console.log('Error: Invitation already processed, status:', invitation.status);
       return NextResponse.json({ message: 'Convite já utilizado' }, { status: 400 });
     }
 
     // Validate email and slug if provided (for new URL format)
     if (email) {
-      console.log('Email validation:', { 
-        providedEmail: email, 
-        invitationEmail: invitation.email,
-        match: email.toLowerCase() === invitation.email.toLowerCase()
-      });
       
       if (email.toLowerCase() !== invitation.email.toLowerCase()) {
         console.log('Error: Email does not match invitation');
@@ -73,13 +55,6 @@ export async function POST(req: Request) {
         .replace(/-+/g, '-') // Replace multiple dashes with single dash
         .replace(/^-|-$/g, ''); // Remove leading/trailing dashes
       
-      console.log('Slug validation:', { 
-        providedSlug: slug, 
-        expectedSlug, 
-        workspaceName: invitation.workspace.name,
-        match: slug === expectedSlug
-      });
-      
       if (slug !== expectedSlug) {
         console.log('Slug validation failed:', { slug, expectedSlug, workspaceName: invitation.workspace.name });
         return NextResponse.json({ message: 'Invalid workspace slug' }, { status: 400 });
@@ -87,16 +62,9 @@ export async function POST(req: Request) {
     }
 
     const session = await auth();
-    console.log('Session check:', { 
-      hasSession: !!session,
-      hasUser: !!session?.user,
-      userEmail: session?.user?.email,
-      userId: session?.user?.id
-    });
     
     // If user is not logged in, redirect to sign in with callback URL
     if (!session?.user) {
-      console.log('User not logged in, redirecting to sign in');
       return NextResponse.json({
         requiresAuth: true,
         email: invitation.email,
@@ -109,25 +77,14 @@ export async function POST(req: Request) {
 
     // Ensure user has an email address
     if (!session.user.email) {
-      console.log('User has no email address');
       return NextResponse.json(
         { error: 'Usuário não possui um endereço de e-mail' },
         { status: 400 }
       );
     }
-
-    // Check if the logged-in user email matches the invitation email
-    console.log('Email match check:', {
-      sessionEmail: session.user.email.toLowerCase(),
-      invitationEmail: invitation.email.toLowerCase(),
-      match: session.user.email.toLowerCase() === invitation.email.toLowerCase()
-    });
     
-    // Allow users to accept invitations even if emails don't match
-    // This enables users to invite others who are already logged in
     if (session.user.email.toLowerCase() !== invitation.email.toLowerCase()) {
-      console.log('Email mismatch but allowing acceptance for existing user');
-      // Continue with the process - don't return error
+      return NextResponse.json({ message: 'Email do usuário não corresponde ao do convite' }, { status: 400 });
     }
 
     // Check if user is already a member of the workspace
@@ -168,13 +125,7 @@ export async function POST(req: Request) {
       workspaceName: invitation.workspace.name,
       redirectUrl: `/dashboard/workspaces/${invitation.workspaceId}`,
     });
-  } catch (error) {
-    console.error('Error verifying invitation:', error);
-    console.error('Error details:', {
-      message: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : undefined,
-      name: error instanceof Error ? error.name : undefined
-    });
+  } catch {
     return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
   }
 }

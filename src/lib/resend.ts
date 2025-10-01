@@ -232,6 +232,10 @@ export const sendInvitationEmail = async (params: {
     .replace(/\s+/g, '-') // Replace spaces with dashes
     .replace(/-+/g, '-') // Replace multiple dashes with single dash
     .replace(/^-|-$/g, ''); // Remove leading/trailing dashes
+
+  if (!slug || slug.length === 0) {
+    throw new Error('Workspace inválida: ' + workspaceName);
+  }
   
   const inviteLink = `${NEXTAUTH_URL}/register?email=${encodeURIComponent(recipients[0])}&invitation_id=${encodeURIComponent(token)}&workspace=${encodeURIComponent(slug)}`;
 
@@ -335,7 +339,7 @@ export const sendHtmlEmail = async (payload: {
   });
 
   if ("error" in res && res.error) {
-    throw new Error(`Failed to send email: ${res.error.message}`);
+    throw new Error(`Falha ao enviar email: ${res.error.message}`);
   }
   return res.data;
 };

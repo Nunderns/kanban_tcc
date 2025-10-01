@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect, Suspense } from "react";
+import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "react-hot-toast";
 import { Lock, Mail, User, ArrowRight } from "lucide-react";
@@ -79,7 +80,14 @@ function RegisterPageContent() {
       toast.success("Conta criada com sucesso!");
       
       // Se houver um convite, aceitá-lo automaticamente
-      if (invitationId) {
+      // Autentica e só então tenta aceitar o convite
+      let loggedIn = false;
+      try {
+        const signInRes = await signIn("credentials", { redirect: false, email, password });
+        loggedIn = !!signInRes && !signInRes.error;
+      } catch {}
+
+      if (invitationId && loggedIn) {
         try {
           const acceptRes = await fetch("/api/invitations/accept", {
             method: "POST",
@@ -91,16 +99,22 @@ function RegisterPageContent() {
             headers: { "Content-Type": "application/json" },
           });
           
+          const acceptData = await acceptRes.json();
           if (acceptRes.ok) {
             toast.success("Você foi adicionado ao workspace com sucesso!");
+            if (acceptData?.redirectUrl) return router.push(acceptData.redirectUrl);
           } else {
-            console.error("Failed to accept invitation:", await acceptRes.json());
+            console.error("Failed to accept invitation:", acceptData);
           }
         } catch (error) {
           console.error("Error accepting invitation:", error);
         }
       }
-      
+      // Se não logou, leve ao login preservando o convite para pós-login
+      if (!loggedIn && invitationId) {
+        const qp = new URLSearchParams({ invitation_id: invitationId, email, workspace: workspace ?? "" }).toString();
+        return router.push(`/login?callbackUrl=/register?${qp}`);
+      }
       router.push("/login");
     } else {
       if (data.error.includes("email")) {
