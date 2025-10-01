@@ -37,7 +37,13 @@ function InviteModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void
     setIsLoading(true);
     setError(null);
     try {
-      const workspaceId = 1; // TODO: substituir pelo ID real do workspace
+      // Get current workspace ID
+      const workspaceResponse = await fetch('/api/workspaces/current');
+      if (!workspaceResponse.ok) {
+        throw new Error('Não foi possível obter o workspace atual');
+      }
+      const workspaceData = await workspaceResponse.json();
+      const workspaceId = workspaceData.id;
       await Promise.all(
         fields.map(async (field) => {
           if (!field.email.trim()) return null;
