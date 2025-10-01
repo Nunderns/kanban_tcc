@@ -58,11 +58,11 @@ export default function ProjectViewClient({ projectId, projectName }: { projectI
 
   const filtered = useMemo(() => tasks, [tasks]);
 
-  const onCreate = async ({ title, description }: { title: string; description: string }) => {
+  const onCreate = async ({ title, description, assignedUserId }: { title: string; description: string; assignedUserId?: string }) => {
     const res = await fetch("/api/tasks", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title, description, projectId, status: "BACKLOG" }),
+      body: JSON.stringify({ title, description, projectId, status: "BACKLOG", assignedUserId }),
     });
     if (!res.ok) {
       const text = await res.text();

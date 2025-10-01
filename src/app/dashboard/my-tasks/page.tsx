@@ -54,6 +54,8 @@ export type WorkItem = {
   startDate?: string;
   dueDate?: string;
   assignees?: string[];
+  assignedUserId?: string;
+  assignedUserName?: string;
   module?: string;
   cycle?: string;
   labels?: string[];
@@ -449,7 +451,7 @@ function KanbanPage() {
     return () => window.removeEventListener('workspaceChanged', handler);
   }, [fetchWorkItems]);
 
-  const handleCreateTask = async ({ title, description }: { title: string; description: string }) => {
+  const handleCreateTask = async ({ title, description, assignedUserId }: { title: string; description: string; assignedUserId?: string }) => {
     if (status !== "authenticated" || !userId) return;
     try {
       const stored = localStorage.getItem("workspaceSelecionado");
@@ -467,7 +469,8 @@ function KanbanPage() {
           priority: "NONE",
           assignees: [],
           labels: [],
-          workspaceId: wsId
+          workspaceId: wsId,
+          assignedUserId
         })
       });
 
@@ -546,6 +549,12 @@ function KanbanPage() {
           <div className="flex items-center gap-1 border border-gray-300 dark:border-gray-600 rounded-full px-2 py-1 text-gray-800 dark:text-gray-200">
             <FaUser className="text-gray-500" />
             <span>{item.creator}</span>
+          </div>
+        )}
+        {item.assignedUserId && (
+          <div className="flex items-center gap-1 border border-blue-300 dark:border-blue-600 rounded-full px-2 py-1 text-blue-800 dark:text-blue-200 bg-blue-50 dark:bg-blue-900/20">
+            <FaUser className="text-blue-500" />
+            <span>{item.assignedUserName || 'Responsável'}</span>
           </div>
         )}
         {item.module && (
