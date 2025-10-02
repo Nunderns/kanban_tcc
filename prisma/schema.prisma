@@ -29,6 +29,7 @@ model User {
   workspaces       Workspace[]
   workspaceMembers WorkspaceMember[]
   invitations      Invitation[]
+  assignedTasks    Task[]            @relation("TaskAssignedUser")
 }
 
 model Project {
@@ -77,11 +78,14 @@ model Task {
   project     Project?       @relation(fields: [projectId], references: [id])
   workspaceId Int?
   workspace   Workspace?     @relation(fields: [workspaceId], references: [id])
+  assignedUserId Int?
+  assignedUser User?         @relation("TaskAssignedUser", fields: [assignedUserId], references: [id])
   activities  TaskActivity[]
   
   @@index([userId])
   @@index([projectId])
   @@index([workspaceId])
+  @@index([assignedUserId])
 }
 
 enum Status {

@@ -41,6 +41,13 @@ export default function TaskListView({ tasks, onTaskClick, visibleProperties }: 
             <span className="text-sm">{task.creator}</span>
           </div>
         ) : "-";
+      case "Atribuído a":
+        return task.assignedUserName ? (
+          <div className="flex items-center gap-1">
+            <FaUser className="text-blue-500 text-xs" />
+            <span className="text-sm">{task.assignedUserName}</span>
+          </div>
+        ) : "-";
       case "Data de início":
         return task.startDate ? (
           <div className="flex items-center gap-1">

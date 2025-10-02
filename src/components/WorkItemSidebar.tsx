@@ -15,7 +15,8 @@ import {
   CubeIcon,
   ArrowsPointingOutIcon,
   ListBulletIcon,
-  ArrowPathIcon
+  ArrowPathIcon,
+  ChevronDownIcon
 } from '@heroicons/react/24/outline';
 import { priorityColors } from "@/lib/constants";
 
@@ -30,6 +31,14 @@ interface Activity {
   createdAt: string;
 }
 
+interface WorkspaceMember {
+  id: string;
+  fullName: string;
+  displayName: string;
+  email: string;
+  role: string;
+}
+
 interface Props {
   item: WorkItem;
   onClose: () => void;
@@ -39,6 +48,9 @@ interface Props {
 export default function WorkItemSidebar({ item, onClose, onUpdate }: Props) {
   const [localItem, setLocalItem] = useState(item);
   const [activities, setActivities] = useState<Activity[]>([]);
+  const [workspaceMembers, setWorkspaceMembers] = useState<WorkspaceMember[]>([]);
+  const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
+  const [loadingMembers, setLoadingMembers] = useState(false);
 
   const formatDate = (dateString: string): string => {
     if (!dateString) return 'não definida';
@@ -114,6 +126,21 @@ export default function WorkItemSidebar({ item, onClose, onUpdate }: Props) {
     }
   }, [item.id]);
 
+  const fetchWorkspaceMembers = async () => {
+    try {
+      setLoadingMembers(true);
+      const response = await fetch('/api/workspace/members');
+      if (response.ok) {
+        const data = await response.json();
+        setWorkspaceMembers(data.members || []);
+      }
+    } catch (error) {
+      console.error('Error fetching workspace members:', error);
+    } finally {
+      setLoadingMembers(false);
+    }
+  };
+
   // Update local state when item prop changes
   useEffect(() => {
     // Usando JSON.stringify para garantir uma comparação profunda
@@ -126,6 +153,7 @@ export default function WorkItemSidebar({ item, onClose, onUpdate }: Props) {
 
   useEffect(() => {
     fetchActivities();
+    fetchWorkspaceMembers();
   }, [fetchActivities]);
 
   const handleChange = (field: keyof WorkItem, value: string | string[] | null | undefined) => {
@@ -254,6 +282,64 @@ export default function WorkItemSidebar({ item, onClose, onUpdate }: Props) {
           <UserCircleIcon className="h-4 w-4 mr-1" />
           Criado por {item.creator || "henri.okayama"}
         </p>
+        <div className="mt-2">
+          <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Responsável</p>
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
+              className="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded p-2 text-sm flex items-center justify-between hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-white"
+            >
+              <div className="flex items-center gap-2">
+                <UserCircleIcon className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+                {localItem.assignedUserId 
+                  ? workspaceMembers.find(m => m.id === localItem.assignedUserId)?.fullName || 'Usuário selecionado'
+                  : 'Selecione um responsável'
+                }
+              </div>
+              <ChevronDownIcon className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+            </button>
+            
+            {isUserDropdownOpen && (
+              <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                <div className="p-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleChange("assignedUserId", "");
+                      setIsUserDropdownOpen(false);
+                    }}
+                    className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded flex items-center gap-2"
+                  >
+                    <UserCircleIcon className="h-4 w-4 text-gray-400 dark:text-gray-500" />
+                    Nenhum responsável
+                  </button>
+                  {loadingMembers ? (
+                    <div className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400">Carregando...</div>
+                  ) : (
+                    workspaceMembers.map((member) => (
+                      <button
+                        key={member.id}
+                        type="button"
+                        onClick={() => {
+                          handleChange("assignedUserId", member.id);
+                          setIsUserDropdownOpen(false);
+                        }}
+                        className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded flex items-center gap-2"
+                      >
+                        <UserCircleIcon className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+                        <div>
+                          <div className="font-medium">{member.fullName}</div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400">{member.email}</div>
+                        </div>
+                      </button>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       <div className="space-y-4">
