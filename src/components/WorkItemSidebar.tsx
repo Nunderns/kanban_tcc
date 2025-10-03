@@ -86,15 +86,34 @@ export default function WorkItemSidebar({ item, onClose, onUpdate }: Props) {
     if (action === 'updated field') {
       const isDateField = field.toLowerCase().includes('date');
       const fieldName = getFieldName(field);
+      if (field === 'assignedUserId') {
+        if (newValue && (!oldValue || oldValue === 'null' || oldValue === 'undefined')) {
+          const assignedUser = workspaceMembers.find(member => member.id === newValue);
+          const userName = assignedUser?.displayName || assignedUser?.fullName || 'um usuário';
+          return `${formattedDate} - ${user} atribuiu a tarefa para ${userName}`;
+        } else if (!newValue || newValue === 'null' || newValue === 'undefined') {
+          const previousUser = workspaceMembers.find(member => member.id === oldValue);
+          const userName = previousUser?.displayName || previousUser?.fullName || 'um usuário';
+          return `${formattedDate} - ${user} removeu a atribuição de ${userName}`;
+        } else {
+          const oldUser = workspaceMembers.find(member => member.id === oldValue);
+          const newUser = workspaceMembers.find(member => member.id === newValue);
+          const oldUserName = oldUser?.displayName || oldUser?.fullName || 'um usuário';
+          const newUserName = newUser?.displayName || newUser?.fullName || 'um usuário';
+          return `${formattedDate} - ${user} transferiu a tarefa de ${oldUserName} para ${newUserName}`;
+        }
+      }
       
       const formatValue = (value: string) => {
         if (isDateField) return formatDate(value);
-        if (!value) return 'não definido';
+        if (!value || value === 'null' || value === 'undefined') return 'não definido';
         return value;
       };
       
       const oldVal = formatValue(oldValue);
       const newVal = formatValue(newValue);
+      
+      if (field === 'assignedUserId') return '';
       
       return `${formattedDate} - ${user} alterou o campo ${fieldName} de "${oldVal}" para "${newVal}"`;
     }
