@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useSession, signIn } from "next-auth/react";
 import { toast } from "react-hot-toast";
 import { FaSpinner, FaGoogle } from "react-icons/fa";
@@ -16,7 +17,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (status === "authenticated") {
-      router.push("/dashboard");
+      router.push("/post-login");
     }
   }, [status, router]);
 
@@ -61,7 +62,7 @@ export default function LoginPage() {
         toast.error('Email ou senha inválidos');
       } else {
         toast.success("Login bem-sucedido!");
-        router.push("/dashboard");
+        router.push("/post-login");
       }
     } catch {
       toast.error('Ocorreu um erro ao tentar fazer login');
@@ -71,7 +72,7 @@ export default function LoginPage() {
   };
 
   const handleGoogleSignIn = () => {
-    signIn('google', { callbackUrl: '/dashboard' });
+    signIn('google', { callbackUrl: '/post-login' });
   };
 
   if (status === "loading") {
@@ -143,9 +144,9 @@ export default function LoginPage() {
           <div className="mt-4 text-center">
             <p className="text-sm text-gray-600 dark:text-gray-400">
               Não tem uma conta?{" "}
-              <a href="/register" className="text-blue-600 dark:text-blue-400 hover:underline">
+              <Link href="/register" className="text-blue-600 dark:text-blue-400 hover:underline">
                 Cadastre-se
-              </a>
+              </Link>
             </p>
           </div>
         </form>

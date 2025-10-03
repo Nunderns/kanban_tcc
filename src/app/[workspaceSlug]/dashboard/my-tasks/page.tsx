@@ -3,7 +3,6 @@
 import { DndContext, DragOverlay, closestCenter, PointerSensor, useSensor, useSensors, type DragEndEvent, useDroppable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
-import Sidebar from "@/components/Sidebar";
 import CreateTaskModal from "@/components/CreateTaskModal";
 import FilterDropdown from "@/components/FilterDropdown";
 import DisplayDropdown, { DisplayOption } from "@/components/DisplayDown";
@@ -594,7 +593,6 @@ function KanbanPage() {
 
   return (
     <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white">
-      <Sidebar />
       <div className="flex-1 flex flex-col">
         <div className="flex justify-between items-center p-4 border-b border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800">
           <h1 className="text-xl font-bold">{workspaceName} &gt; Item de Trabalho</h1>
@@ -774,7 +772,9 @@ function KanbanPage() {
       // Update URL without the task parameter
       const searchParams = new URLSearchParams(window.location.search);
       searchParams.delete('task');
-      router.replace(`/dashboard/my-tasks?${searchParams.toString()}`);
+      // Use the current pathname to maintain the workspace slug
+      const currentPath = window.location.pathname;
+      router.replace(`${currentPath}?${searchParams.toString()}`, { scroll: false });
     }}
     onUpdate={(updated: WorkItem) => {
       setWorkItems(prev => prev.map(i => (i.id === updated.id ? updated : i)));
