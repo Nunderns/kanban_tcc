@@ -1,7 +1,7 @@
 "use client";
 
 import FilterDropdown from "@/components/FilterDropdown";
-import DisplayDropdown from "@/components/DisplayDown";
+import DisplayDropdown, { DisplayOption } from "@/components/DisplayDown";
 import { useState, useRef, useEffect } from "react";
 import { FaFilter, FaTimes, FaUser, FaChevronDown } from "react-icons/fa";
 
@@ -58,7 +58,10 @@ function CreateTaskModal({
     startDate: [],
     dueDate: []
   });
-  const [displayOptions, setDisplayOptions] = useState({
+  const [displayOptions, setDisplayOptions] = useState<{
+    visibleProperties: DisplayOption[];
+    showSubtasks: boolean;
+  }>({
     visibleProperties: [
       "ID",
       "Responsável",
@@ -66,7 +69,7 @@ function CreateTaskModal({
       "Prazo",
       "Prioridade",
       "Estado"
-    ],
+    ] as DisplayOption[],
     showSubtasks: true
   });
   const [viewType, setViewType] = useState<"kanban" | "list" | "weekly" | "monthly" | "daily">("list");
@@ -80,13 +83,17 @@ function CreateTaskModal({
     }));
   };
 
-  const handleDisplayOptionChange = (option: string, checked: boolean) => {
-    setDisplayOptions(prev => ({
-      ...prev,
-      visibleProperties: checked
+  const handleDisplayOptionChange = (option: DisplayOption, checked: boolean) => {
+    setDisplayOptions(prev => {
+      const newProperties = checked
         ? [...prev.visibleProperties, option]
-        : prev.visibleProperties.filter(prop => prop !== option)
-    }));
+        : prev.visibleProperties.filter(prop => prop !== option);
+      
+      return {
+        ...prev,
+        visibleProperties: newProperties
+      };
+    });
   };
 
   const handleToggleSubtasks = (checked: boolean) => {
