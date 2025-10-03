@@ -1,6 +1,6 @@
 "use client";
 
-import { WorkItem, Priority } from "@/app/dashboard/my-tasks/page";
+import { WorkItem, Priority } from "@/app/[workspaceSlug]/dashboard/my-tasks/page";
 import { FaCircle, FaRegCircle, FaUser, FaTag, FaCalendarAlt } from "react-icons/fa";
 import { format } from "date-fns";
 import { parseLocalDate } from "@/lib/utils";

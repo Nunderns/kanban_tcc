@@ -1,15 +1,12 @@
 "use client";
 
+import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { useState, useRef, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
-import { useTheme } from "next-themes";
 import { 
   Plus, 
   Settings, 
-  UserPlus, 
-  Mail, 
   LogOut, 
   Check, 
   ChevronDown, 
@@ -18,122 +15,171 @@ import {
   FolderPlus,
   Star
 } from "lucide-react";
-import { AddProjectModal } from "./AddProjectModal";
-import { Navigation } from "@/components/Navigation";
 
-export const Sidebar = () => {
-  const {} = useTheme();
-  useSession(); // Session is used for authentication, but we don't need the data here
-  const [workspace, setWorkspace] = useState("Espaço de trabalho");
+interface SidebarProps {
+  workspaceSlug?: string;
+}
+
+interface Project {
+  id: string;
+  name: string;
+  description: string | null;
+  color: string;
+  isFavorite: boolean;
+  status: string;
+}
+
+interface Workspace {
+  id: number;
+  nome: string;
+  slug: string;
+  tamanhoEmpresa: number;
+  funcao: string;
+  membros: number;
+}
+
+// Add this component at the end of the file
+const AddProjectModal = ({
+  isOpen,
+  onClose
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+}) => {
+  if (!isOpen) return null;
+  
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-lg w-full max-w-md">
+        <h2 className="text-xl font-bold mb-4">Adicionar Projeto</h2>
+        <p className="text-gray-600 dark:text-gray-300 mb-4">
+          Funcionalidade de adicionar projeto será implementada em breve.
+        </p>
+        <div className="flex justify-end space-x-3">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+          >
+            Fechar
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const Sidebar = ({ workspaceSlug = '' }: SidebarProps) => {
+  const { data: session } = useSession();
+  const pathname = usePathname() || '';
+  const [workspace, setWorkspace] = useState<Workspace | null>(null);
   const [email, setEmail] = useState("");
   const [funcao, setFuncao] = useState("");
   const [membros, setMembros] = useState(0);
-  const [userProjects, setUserProjects] = useState<Array<{
-    id: string;
-    name: string;
-    description: string | null;
-    color: string;
-    isFavorite: boolean;
-    status: string;
-  }>>([]);
+  const [userProjects, setUserProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
-  const [workspacesList, setWorkspacesList] = useState<Array<{
-    id: number;
-    nome: string;
-    slug: string;
-    tamanhoEmpresa: number;
-    funcao: string;
-    membros: number;
-  }>>([]);
+  const [workspacesList, setWorkspacesList] = useState<Workspace[]>([]);
   const [mounted, setMounted] = useState(false);
   const [showPopover, setShowPopover] = useState(false);
   const [showAddProjectModal, setShowAddProjectModal] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
   const popoverRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
+  
+  const settingsHref = workspaceSlug ? `/${workspaceSlug}/settings` : '/dashboard/settings';
+  const tasksHref = workspaceSlug ? `/${workspaceSlug}/dashboard/my-tasks` : '/dashboard/my-tasks';
+  const overviewHref = workspaceSlug ? `/${workspaceSlug}/dashboard` : '/dashboard';
+  
+  useEffect(() => {
+    setMounted(true);
+    if (session?.user?.email) setEmail(session.user.email);
+  }, [session]);
 
-
-  const togglePopover = () => {
-    setShowPopover((prev) => !prev);
+  const togglePopover = (): void => {
+    setShowPopover(prev => !prev);
   };
 
-  const selectWorkspace = (ws: {
-    id: number;
-    nome: string;
-    slug: string;
-    tamanhoEmpresa: number;
-    funcao: string;
-    membros: number;
-  }) => {
-    setWorkspace(ws.nome);
+  const selectWorkspace = (ws: Workspace) => {
+    setWorkspace(ws);
     setFuncao(ws.funcao);
     setMembros(ws.membros);
-    localStorage.setItem(
-      "workspaceSelecionado",
-      JSON.stringify({
-        id: ws.id,
-        nome: ws.nome,
-        slug: ws.slug,
-        companySize: ws.tamanhoEmpresa,
-      })
-    );
+    
     if (typeof window !== 'undefined') {
+      localStorage.setItem(
+        "workspaceSelecionado",
+        JSON.stringify({
+          id: ws.id,
+          nome: ws.nome,
+          slug: ws.slug,
+          companySize: ws.tamanhoEmpresa,
+        })
+      );
       window.dispatchEvent(new Event('workspaceChanged'));
     }
+    
     setShowPopover(false);
   };
 
   useEffect(() => {
-    async function fetchWorkspaceData() {
+    const fetchWorkspaces = async () => {
       try {
-        const [currentRes, listRes] = await Promise.all([
-          fetch("/api/workspaces/current"),
-          fetch("/api/workspaces/all"),
-        ]);
-
-        if (currentRes.ok) {
-          const data = await currentRes.json();
-          setWorkspace(data.nome);
-          setEmail(data.email);
-          setFuncao(data.funcao);
-          setMembros(data.membros);
+        setLoading(true);
+        
+        // Fetch workspaces list
+        const response = await fetch('/api/workspaces?scope=all');
+        if (!response.ok) {
+          throw new Error('Failed to fetch workspaces');
+        }
+        
+        const data = await response.json();
+        const workspaces: Workspace[] = Array.isArray(data)
+          ? data
+          : Array.isArray(data?.workspaces)
+            ? data.workspaces
+            : data
+              ? [data]
+              : [];
+        setWorkspacesList(workspaces);
+        
+        // Set current workspace based on workspaceSlug or default to first workspace
+        let currentWorkspace: Workspace | null = null;
+        
+        if (workspaceSlug) {
+          // Find workspace by slug
+          currentWorkspace = workspaces.find(ws => ws.slug === workspaceSlug) || null;
+        } else if (workspaces.length > 0) {
+          // Default to first workspace if no slug provided
+          currentWorkspace = workspaces[0];
+        }
+        
+        if (currentWorkspace) {
+          setWorkspace(currentWorkspace);
+          setFuncao(currentWorkspace.funcao);
+          setMembros(currentWorkspace.membros);
+          
+          // Save to localStorage
           localStorage.setItem(
             "workspaceSelecionado",
             JSON.stringify({
-              id: data.id,
-              nome: data.nome,
-              slug: data.slug,
-              companySize: data.tamanhoEmpresa,
+              id: currentWorkspace.id,
+              nome: currentWorkspace.nome,
+              slug: currentWorkspace.slug,
+              companySize: currentWorkspace.tamanhoEmpresa,
             })
           );
         }
-
-        if (listRes.ok) {
-          const data = await listRes.json();
-          setWorkspacesList(data.workspaces);
-        }
-      } catch (err) {
-        console.error("Erro ao buscar workspace:", err);
-      }
-    }
-
-    const fetchData = async () => {
-      try {
-        await fetchWorkspaceData();
-        await fetchProjects();
+        
       } catch (error) {
-        console.error('Error fetching data:', error);
+        console.error('Error fetching workspaces:', error);
+        setError('Falha ao carregar os workspaces');
       } finally {
-        setMounted(true);
         setLoading(false);
       }
     };
 
-    fetchData();
-  }, []);
+    fetchWorkspaces();
+  }, [workspaceSlug]);
 
-  // Session is used for authentication, but we don't need the data here
+    // Session is used for authentication, but we don't need the data here
   useSession();
 
   const fetchProjects = async () => {
@@ -167,9 +213,7 @@ export const Sidebar = () => {
     }
   };
 
-  const handleProjectAdded = () => {
-    fetchProjects();
-  };
+  // Removed unused handleProjectAdded to satisfy ESLint
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -192,12 +236,12 @@ export const Sidebar = () => {
     };
   }, [showPopover]);
 
-  const pathname = usePathname();
+  // Using the pathname from usePathname() hook
 
   return (
     <div className="flex h-full flex-col bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 shadow-sm">
       {/* Logo */}
-      <Link href="/dashboard" className="text-2xl font-bold text-indigo-600 mb-8 flex items-center">
+      <Link href={overviewHref} className="text-2xl font-bold text-indigo-600 mb-8 flex items-center">
         <LayoutGrid size={24} className="mr-2" />
         TaskFlow
       </Link>
@@ -215,7 +259,7 @@ export const Sidebar = () => {
             </div>
             <div className="text-left">
               <p className="text-sm font-medium text-gray-900 dark:text-white truncate max-w-[160px]">
-                {mounted ? workspace : "Carregando..."}
+                {mounted ? (workspace?.nome || 'Selecionar Workspace') : 'Carregando...'}
               </p>
               <p className="text-xs text-gray-500 dark:text-gray-400">{membros} membro{membros !== 1 ? 's' : ''}</p>
             </div>
@@ -231,60 +275,54 @@ export const Sidebar = () => {
             <div className="p-4 border-b border-gray-100">
               <p className="text-xs font-medium text-gray-500 dark:text-gray-300 mb-1">Logado como</p>
               <div className="flex items-center justify-between">
-                <p className="font-semibold text-gray-900 dark:text-white truncate">{email}</p>
+                <p className="font-semibold text-gray-900 dark:text-white truncate">{email || 'Usuário'}</p>
                 <Check size={16} className="text-indigo-600 dark:text-indigo-400 flex-shrink-0 ml-2" />
               </div>
-              <p className="text-xs text-gray-500 dark:text-gray-300 mt-1">{funcao} • {membros} membro{membros !== 1 ? 's' : ''}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-300 mt-1">{funcao || 'Membro'} • {membros} membro{membros !== 1 ? 's' : ''}</p>
             </div>
 
             <div className="p-2">
               <Link
-                href="/dashboard/settings/general"
-                className="flex items-center w-full text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 px-3 py-2.5 rounded-lg transition-colors"
+                href={settingsHref}
+                className={`flex items-center space-x-2 px-4 py-2 rounded-lg ${pathname?.startsWith(settingsHref) ? 'bg-gray-100 dark:bg-gray-800' : 'hover:bg-gray-50 dark:hover:bg-gray-800'}`}
               >
-                <Settings size={16} className="text-gray-500 mr-3" />
-                Configurações
+                <Settings className="w-5 h-5" />
+                <span>Configurações</span>
               </Link>
 
               <Link
-                href="/dashboard/settings/members"
-                className="flex items-center w-full text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 px-3 py-2.5 rounded-lg transition-colors"
+                href={tasksHref}
+                className={`flex items-center space-x-2 px-4 py-2 rounded-lg ${pathname?.startsWith(tasksHref) ? 'bg-gray-100 dark:bg-gray-800' : 'hover:bg-gray-50 dark:hover:bg-gray-800'}`}
               >
-                <UserPlus size={16} className="text-gray-500 mr-3" />
-                Convidar Membros
+                <Check className="w-5 h-5" />
+                <span>Minhas Tarefas</span>
               </Link>
 
               <Link
-                href="/create-workspace"
-                className="flex items-center w-full text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 px-3 py-2.5 rounded-lg transition-colors"
+                href={overviewHref}
+                className={`flex items-center space-x-2 px-4 py-2 rounded-lg ${pathname === overviewHref || pathname?.startsWith(`${overviewHref}`) ? 'bg-gray-100 dark:bg-gray-800' : 'hover:bg-gray-50 dark:hover:bg-gray-800'}`}
               >
-                <Plus size={16} className="text-gray-500 mr-3" />
-                Criar Espaço
+                <LayoutGrid className="w-5 h-5" />
+                <span>Visão Geral</span>
               </Link>
-
-              <button className="flex items-center w-full text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 px-3 py-2.5 rounded-lg transition-colors">
-                <Mail size={16} className="text-gray-500 mr-3" />
-                Convites Recebidos
-              </button>
-
               {workspacesList.length > 1 && (
                 <div className="mt-2">
-                  <p className="text-xs font-medium text-gray-500 px-3 mb-1">
-                    Trocar de workspace
-                  </p>
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-200">
+                    {workspace?.nome ? `Trocar para ${workspace.nome}` : 'Selecionar Workspace'}
+                  </span>
                   <div className="space-y-1">
                     {workspacesList.map((ws) => (
                       <button
                         key={ws.id}
                         onClick={() => selectWorkspace(ws)}
-                        className={`flex items-center w-full text-sm px-3 py-2.5 rounded-lg transition-colors ${
-                          ws.nome === workspace
+                        className={`w-full text-left px-3 py-2 rounded-lg flex items-center ${
+                          workspace && ws.id === workspace.id
                             ? "bg-indigo-50 text-indigo-600"
                             : "text-gray-700 hover:bg-gray-50"
                         }`}
                       >
                         <span className="truncate flex-1">{ws.nome}</span>
-                        {ws.nome === workspace && (
+                        {workspace && ws.id === workspace.id && (
                           <Check size={16} className="ml-2 text-indigo-600" />
                         )}
                       </button>
@@ -311,15 +349,36 @@ export const Sidebar = () => {
         )}
       </div>
 
-      {/* Navegação */}
-      <div className="mt-2">
-        <Navigation />
+      <div className="px-4 py-2">
+        <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2 px-2">Meu Espaço</h3>
+        <nav className="space-y-1">
+          <Link
+            href={overviewHref}
+            className={`flex items-center px-3 py-2 text-sm rounded-md ${
+              pathname === overviewHref
+                ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-900/20 dark:text-indigo-300'
+                : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'
+            }`}
+          >
+            <LayoutGrid size={18} className="mr-3" />
+            Visão Geral
+          </Link>
+          <Link
+            href={tasksHref}
+            className={`flex items-center px-3 py-2 text-sm rounded-md ${
+              pathname === tasksHref
+                ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-900/20 dark:text-indigo-300'
+                : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'
+            }`}
+          >
+            <Check size={18} className="mr-3" />
+            Minhas Tarefas
+          </Link>
+        </nav>
       </div>
-
-      {/* Lista de Projetos */}
-      <div className="mt-6 px-4">
-        <div className="flex justify-between items-center mb-3">
-          <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Meus Projetos</h3>
+      <div className="mt-2 px-4 py-2">
+        <div className="flex justify-between items-center mb-2">
+          <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider px-2">Projetos</h3>
           <button 
             onClick={() => setShowAddProjectModal(true)}
             className="text-gray-400 hover:text-indigo-600 p-1 rounded-full hover:bg-indigo-50 dark:hover:bg-gray-700 transition-colors"
@@ -401,17 +460,32 @@ export const Sidebar = () => {
           )}
         </nav>
       </div>
-      
+
+      {/* Configurações Section */}
+      <div className="mt-auto px-4 py-4 border-t border-gray-200 dark:border-gray-700">
+        <Link
+          href={settingsHref}
+          className={`flex items-center px-3 py-2 text-sm rounded-md ${
+            pathname === settingsHref
+              ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-900/20 dark:text-indigo-300'
+              : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'
+          }`}
+        >
+          <Settings size={18} className="mr-3" />
+          Configurações
+        </Link>
+      </div>
+
       <AddProjectModal 
         isOpen={showAddProjectModal}
         onClose={() => {
           setShowAddProjectModal(false);
           setError('');
         }}
-        onProjectAdded={handleProjectAdded}
       />
     </div>
   );
 };
 
 export default Sidebar;
+export { Sidebar };

@@ -2,7 +2,6 @@
 
 import { Suspense, useEffect, useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Sidebar } from "@/components/Sidebar";
 import NotificationsDropdown from "@/components/NotificationsDropdown";
 import Link from "next/link";
 import axios from "axios";
@@ -28,7 +27,7 @@ import { useTheme } from "next-themes";
 import { Sun, Moon, Monitor } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import WorkItemSidebar from "@/components/WorkItemSidebar";
-import type { WorkItem } from "@/app/dashboard/my-tasks/page";
+import type { WorkItem } from "@/app/[workspaceSlug]/dashboard/my-tasks/page";
 
 const Progress = ({ value, className = "" }: { value: number; className?: string }) => (
   <div className={`w-full bg-gray-200 rounded-full h-2.5 ${className}`}>
@@ -381,7 +380,6 @@ function DashboardContent() {
 
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-gray-25 to-gray-50">
-      <Sidebar />
       {selectedTask && (
         <WorkItemSidebar
           item={selectedTask as unknown as WorkItem}
