@@ -4,48 +4,54 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const session = await auth();
 
     if (!session?.user?.email) {
       return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
     }
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
+
+    // Obter o workspaceSlug da URL
+    const url = new URL(request.url);
+    const workspaceSlug = url.searchParams.get('workspaceSlug');
+
+    if (!workspaceSlug) {
+      return NextResponse.json({ error: "Workspace não especificado" }, { status: 400 });
+    }
+
+    // Buscar o workspace específico baseado no slug
+    const workspace = await prisma.workspace.findUnique({
+      where: { slug: workspaceSlug },
       include: {
-        workspaceMembers: {
-          include: {
-            workspace: true
+        members: {
+          where: {
+            user: { email: session.user.email }
           },
-          orderBy: { joinedAt: "asc" },
-          take: 1
+          include: {
+            user: true
+          }
         }
-      },
+      }
     });
 
-    if (!user) {
-      return NextResponse.json({ error: "Usuário não encontrado" }, { status: 404 });
+    if (!workspace) {
+      return NextResponse.json({ error: "Workspace não encontrado" }, { status: 404 });
     }
 
-    const workspaceMember = user.workspaceMembers[0];
-
-    if (!workspaceMember) {
-      return NextResponse.json({ error: "Nenhum workspace encontrado" }, { status: 404 });
-    }
-
-    const workspace = workspaceMember.workspace;
     const memberCount = await prisma.workspaceMember.count({
       where: { workspaceId: workspace.id },
     });
+
+    const currentMember = workspace.members[0];
 
     return NextResponse.json({
       id: workspace.id,
       nome: workspace.name,
       slug: workspace.slug,
       tamanhoEmpresa: workspace.companySize,
-      email: user.email,
-      funcao: workspaceMember.role,
+      email: currentMember?.user.email,
+      funcao: currentMember?.role,
       membros: memberCount,
     });
   } catch (error) {

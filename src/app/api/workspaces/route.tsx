@@ -120,23 +120,89 @@ export async function PATCH(req: Request) {
 }
 
 // Excluir workspace
-export async function DELETE() {
-  const session = await auth();
-  if (!session?.user?.email) {
-    return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
+export async function DELETE(request: Request) {
+  try {
+    const session = await auth();
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
+    }
+
+    // Obter o workspaceSlug do corpo da requisição
+    const { workspaceSlug } = await request.json();
+    if (!workspaceSlug) {
+      return NextResponse.json({ error: "Workspace não especificado" }, { status: 400 });
+    }
+
+    // Encontrar o usuário atual
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email },
+      select: { id: true }
+    });
+
+    if (!user) {
+      return NextResponse.json({ error: "Usuário não encontrado" }, { status: 404 });
+    }
+
+    // Encontrar o workspace pelo slug
+    const workspace = await prisma.workspace.findUnique({
+      where: { slug: workspaceSlug },
+      include: {
+        members: {
+          where: { userId: user.id },
+          select: { role: true, userId: true }
+        }
+      }
+    });
+
+    if (!workspace) {
+      return NextResponse.json({ error: "Workspace não encontrado" }, { status: 404 });
+    }
+
+    // Verificar se o usuário é o criador do workspace (proprietário)
+    const isCreator = workspace.userId === user.id;
+    if (!isCreator) {
+      return NextResponse.json(
+        { error: "Apenas o criador pode excluir o workspace" }, 
+        { status: 403 }
+      );
+    }
+
+    // Iniciar uma transação para garantir a integridade dos dados
+    await prisma.$transaction([
+      // Primeiro, excluir todas as tarefas e atividades relacionadas
+      prisma.taskActivity.deleteMany({
+        where: {
+          task: { workspaceId: workspace.id }
+        }
+      }),
+      
+      // Depois, excluir as tarefas
+      prisma.task.deleteMany({
+        where: { workspaceId: workspace.id }
+      }),
+      
+      // Excluir convites
+      prisma.invitation.deleteMany({
+        where: { workspaceId: workspace.id }
+      }),
+      
+      // Excluir membros do workspace
+      prisma.workspaceMember.deleteMany({
+        where: { workspaceId: workspace.id }
+      }),
+      
+      // Finalmente, excluir o workspace
+      prisma.workspace.delete({
+        where: { id: workspace.id }
+      })
+    ]);
+
+    return NextResponse.json({ message: "Workspace excluído com sucesso" });
+  } catch (error) {
+    console.error("Erro ao excluir workspace:", error);
+    return NextResponse.json(
+      { error: `Erro ao excluir o workspace: ${error instanceof Error ? error.message : 'Erro desconhecido'}` },
+      { status: 500 }
+    );
   }
-
-  const member = await prisma.workspaceMember.findFirst({
-    where: { user: { email: session.user.email } },
-  });
-
-  if (!member) {
-    return NextResponse.json({ error: "Workspace não encontrado" }, { status: 404 });
-  }
-
-  await prisma.workspace.delete({
-    where: { id: member.workspaceId },
-  });
-
-  return NextResponse.json({ message: "Workspace deletado" });
 }

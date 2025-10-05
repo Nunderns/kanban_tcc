@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { usePathname } from "next/navigation";
-import { Sidebar } from "@/components/Sidebar";
 import Link from "next/link";
 import { FiUpload, FiFileText, FiAlertTriangle, FiCheckCircle, FiDownload } from "react-icons/fi";
 
@@ -30,20 +29,23 @@ export default function ImportSettings() {
   const [availableFields, setAvailableFields] = useState<string[]>([]);
   const [filePreview, setFilePreview] = useState<Record<string, string>[]>([]);
 
+  // Extrai o workspaceSlug da URL atual
+  const workspaceSlug = pathname?.split('/')[1];
+  
   const links = [
-    { href: "/dashboard/settings/general", label: "Geral" },
-    { href: "/dashboard/settings/members", label: "Membros" },
-    { href: "/dashboard/settings/project-states", label: "Estados do Projeto" },
-    { href: "/dashboard/settings/integrations", label: "Integrações" },
-    { href: "/dashboard/settings/imports", label: "Importações" },
-    { href: "/dashboard/settings/exports", label: "Exportações" },
-    { href: "/dashboard/settings/webhooks", label: "Webhooks" },
-    { href: "/dashboard/settings/api-tokens", label: "Tokens de API" },
-    { href: "/dashboard/settings/worklogs", label: "Registros de Trabalho" },
-    { href: "/dashboard/settings/teamspaces", label: "Espaços de Equipe" },
-    { href: "/dashboard/settings/initiatives", label: "Iniciativas" },
-    { href: "/dashboard/settings/customers", label: "Clientes" },
-    { href: "/dashboard/settings/templates", label: "Modelos" },
+    { href: `/${workspaceSlug}/settings`, label: "Geral" },
+    { href: `/${workspaceSlug}/settings/members`, label: "Membros" },
+    { href: `/${workspaceSlug}/settings/project-states`, label: "Estados do Projeto" },
+    { href: `/${workspaceSlug}/settings/integrations`, label: "Integrações" },
+    { href: `/${workspaceSlug}/settings/imports`, label: "Importações" },
+    { href: `/${workspaceSlug}/settings/exports`, label: "Exportações" },
+    { href: `/${workspaceSlug}/settings/webhooks`, label: "Webhooks" },
+    { href: `/${workspaceSlug}/settings/api-tokens`, label: "Tokens de API" },
+    { href: `/${workspaceSlug}/settings/worklogs`, label: "Registros de Trabalho" },
+    { href: `/${workspaceSlug}/settings/teamspaces`, label: "Espaços de Equipe" },
+    { href: `/${workspaceSlug}/settings/initiatives`, label: "Iniciativas" },
+    { href: `/${workspaceSlug}/settings/customers`, label: "Clientes" },
+    { href: `/${workspaceSlug}/settings/templates`, label: "Modelos" },
   ];
 
   const formatOptions = [
@@ -137,7 +139,6 @@ export default function ImportSettings() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 flex">
-      <Sidebar />
 
       <aside className="w-64 border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4 space-y-1 text-sm">
         <h2 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-4 px-2">Configurações</h2>

@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { usePathname } from "next/navigation";
-import { Sidebar } from "@/components/Sidebar";
 import Link from "next/link";
 import { FiDownload, FiFileText, FiAlertTriangle, FiCheckCircle } from "react-icons/fi";
 import jsPDF from "jspdf";
@@ -516,8 +515,6 @@ export default function ExportSettings() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 flex">
-      <Sidebar />
-
       <aside className="w-64 border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4 space-y-1 text-sm">
         <h2 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-4 px-2">Configurações</h2>
         <nav className="space-y-1">
