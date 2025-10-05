@@ -20,12 +20,12 @@ export function AddProjectModal({ isOpen, onClose, onProjectAdded }: AddProjectM
   const router = useRouter();
 
   const colors = [
-    "#3b82f6", // blue-500
-    "#10b981", // emerald-500
-    "#8b5cf6", // violet-500
-    "#ec4899", // pink-500
-    "#f59e0b", // amber-500
-    "#ef4444", // red-500
+    "#3b82f6",
+    "#10b981",
+    "#8b5cf6",
+    "#ec4899",
+    "#f59e0b",
+    "#ef4444", 
   ];
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -60,12 +60,10 @@ export function AddProjectModal({ isOpen, onClose, onProjectAdded }: AddProjectM
       onProjectAdded();
       onClose();
       
-      // Reset form
       setProjectName("");
       setDescription("");
       setColor("#3b82f6");
       
-      // Redirect to the new project
       router.push(`/projects/${newProject.id}`);
     } catch (err) {
       setError("Ocorreu um erro ao criar o projeto. Tente novamente.");

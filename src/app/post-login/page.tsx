@@ -9,7 +9,6 @@ export default async function PostLogin() {
     redirect("/login");
   }
 
-  // Find user's first workspace membership (oldest join first)
   const user = await prisma.user.findUnique({
     where: { email: session.user.email },
     include: {

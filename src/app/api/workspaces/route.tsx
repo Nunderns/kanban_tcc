@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-// Listar workspaces (suporta ?scope=current|all; padrão: current)
 export async function GET(req: Request) {
   try {
     const session = await auth();
@@ -51,7 +50,6 @@ export async function GET(req: Request) {
       return NextResponse.json({ workspaces });
     }
 
-    // default/current
     const user = await prisma.user.findUnique({
       where: { email: session.user.email },
       include: {
@@ -90,7 +88,6 @@ export async function GET(req: Request) {
   }
 }
 
-// Atualizar workspace
 export async function PATCH(req: Request) {
   const session = await auth();
   if (!session?.user?.email) {
@@ -118,8 +115,6 @@ export async function PATCH(req: Request) {
 
   return NextResponse.json(updated);
 }
-
-// Excluir workspace
 export async function DELETE(request: Request) {
   try {
     const session = await auth();
@@ -127,13 +122,10 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
     }
 
-    // Obter o workspaceSlug do corpo da requisição
     const { workspaceSlug } = await request.json();
     if (!workspaceSlug) {
       return NextResponse.json({ error: "Workspace não especificado" }, { status: 400 });
     }
-
-    // Encontrar o usuário atual
     const user = await prisma.user.findUnique({
       where: { email: session.user.email },
       select: { id: true }
@@ -143,7 +135,6 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: "Usuário não encontrado" }, { status: 404 });
     }
 
-    // Encontrar o workspace pelo slug
     const workspace = await prisma.workspace.findUnique({
       where: { slug: workspaceSlug },
       include: {
@@ -158,7 +149,6 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: "Workspace não encontrado" }, { status: 404 });
     }
 
-    // Verificar se o usuário é o criador do workspace (proprietário)
     const isCreator = workspace.userId === user.id;
     if (!isCreator) {
       return NextResponse.json(
@@ -166,32 +156,23 @@ export async function DELETE(request: Request) {
         { status: 403 }
       );
     }
-
-    // Iniciar uma transação para garantir a integridade dos dados
     await prisma.$transaction([
-      // Primeiro, excluir todas as tarefas e atividades relacionadas
       prisma.taskActivity.deleteMany({
         where: {
           task: { workspaceId: workspace.id }
         }
       }),
       
-      // Depois, excluir as tarefas
       prisma.task.deleteMany({
         where: { workspaceId: workspace.id }
       }),
       
-      // Excluir convites
       prisma.invitation.deleteMany({
         where: { workspaceId: workspace.id }
       }),
-      
-      // Excluir membros do workspace
       prisma.workspaceMember.deleteMany({
         where: { workspaceId: workspace.id }
       }),
-      
-      // Finalmente, excluir o workspace
       prisma.workspace.delete({
         where: { id: workspace.id }
       })

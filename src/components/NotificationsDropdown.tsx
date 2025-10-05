@@ -13,7 +13,7 @@ export interface Notification {
   read: boolean;
   createdAt: Date;
   link?: string;
-  [key: string]: unknown; // Allow additional properties with unknown type
+  [key: string]: unknown;
 }
 
 const NotificationsDropdown = () => {
@@ -26,13 +26,7 @@ const NotificationsDropdown = () => {
 
   const fetchTasks = useCallback(async (): Promise<Task[]> => {
     try {
-      console.log('Fetching tasks...');
-      
-      // For now, we'll fetch all tasks without workspace filtering
-      // since the workspaceId column doesn't exist in the database yet
       const url = '/api/tasks';
-      console.log('Fetching tasks from URL:', url);
-      
       const response = await fetch(url, {
         method: 'GET',
         headers: {
@@ -40,24 +34,13 @@ const NotificationsDropdown = () => {
           'Cache-Control': 'no-cache',
           'Pragma': 'no-cache'
         },
-        credentials: 'include' // Ensure cookies are sent with the request
-      });
-      
-      console.log('Response status:', response.status);
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Error response:', errorText);
-        throw new Error(`Falha ao buscar tarefas: ${response.status} ${response.statusText}`);
-      }
-      
+        credentials: 'include'
+      });      
       const data = await response.json() as Task[];
-      console.log('Tasks fetched successfully, count:', data?.length || 0);
       
       return Array.isArray(data) ? data : [];
     } catch (error) {
       console.error('Erro ao buscar tarefas:', error);
-      // Return empty array on error to prevent UI from breaking
       return [];
     }
   }, []);
@@ -66,24 +49,19 @@ const NotificationsDropdown = () => {
     try {
       const [tasks] = await Promise.all([
         fetchTasks(),
-        // Adicione outras chamadas de API aqui se necessário
       ]);
 
-      // Gera notificações para tarefas próximas do vencimento
       const taskNotifications = checkTasksForNotifications(tasks);
       
-      // Notificações do sistema (pode ser vazio se não houver)
       const systemNotifications: Notification[] = [
-        // Notificações do sistema podem ser adicionadas aqui
       ];
 
-      // Combina e remove duplicatas
       const allNotifications = mergeAndDeduplicateNotifications(
         systemNotifications,
         taskNotifications
       );
 
-      // Ordena por data de criação (mais recentes primeiro)
+      allNotifications.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
       allNotifications.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
       
       setNotifications(allNotifications);
@@ -94,7 +72,6 @@ const NotificationsDropdown = () => {
     }
   }, [fetchTasks]);
 
-  // Carregar notificações iniciais
   useEffect(() => {
     fetchInitialNotifications();
   }, [fetchInitialNotifications]);
@@ -107,7 +84,6 @@ const NotificationsDropdown = () => {
     return () => window.removeEventListener('workspaceChanged', handler);
   }, [fetchInitialNotifications]);
 
-  // Configurar polling para verificar tarefas
   useEffect(() => {
     const checkForUpdates = async () => {
       if (isPolling) return;
@@ -120,7 +96,6 @@ const NotificationsDropdown = () => {
           
           setNotifications(prev => {
             const newNotifications = mergeAndDeduplicateNotifications(prev, taskNotifications);
-            // Se houver novas notificações, ordena novamente
             if (newNotifications.length !== prev.length) {
               return [...newNotifications].sort((a, b) => 
                 (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0)
@@ -136,10 +111,8 @@ const NotificationsDropdown = () => {
       }
     };
 
-    // Verifica a cada 5 minutos
     pollInterval.current = setInterval(checkForUpdates, 5 * 60 * 1000) as unknown as NodeJS.Timeout;
     
-    // Limpa o intervalo quando o componente é desmontado
     return () => {
       if (pollInterval.current) {
         clearInterval(pollInterval.current);
@@ -148,7 +121,6 @@ const NotificationsDropdown = () => {
     };
   }, [fetchTasks, isPolling]);
 
-  // Fechar o dropdown ao clicar fora
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {

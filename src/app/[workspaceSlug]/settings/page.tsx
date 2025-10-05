@@ -30,12 +30,10 @@ export default function SettingsPage() {
   const name = session?.user?.name || "Usuário";
   const email = session?.user?.email || "";
 
-  // Activity state
   const [activities, setActivities] = useState<Activity[]>([]);
   const [isLoadingActivities, setIsLoadingActivities] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch activities when the component mounts or when the active section changes to 'activity'
   useEffect(() => {
     const fetchActivities = async () => {
       if (activeSection !== 'activity') return;
@@ -88,7 +86,6 @@ export default function SettingsPage() {
     fetchActivities();
   }, [activeSection]);
 
-  // Format date to relative time (e.g., "2 hours ago")
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
@@ -257,7 +254,6 @@ export default function SettingsPage() {
     }
   };
 
-  // Ensure UI is mounted before showing theme selector
   useEffect(() => {
     setMounted(true);
   }, []);

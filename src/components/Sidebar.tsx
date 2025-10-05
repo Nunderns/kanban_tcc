@@ -104,7 +104,6 @@ const Sidebar = ({ workspaceSlug = '' }: SidebarProps) => {
     setMembros(ws.membros);
     
     if (typeof window !== 'undefined') {
-      // Salva no localStorage
       localStorage.setItem(
         "workspaceSelecionado",
         JSON.stringify({
@@ -115,11 +114,9 @@ const Sidebar = ({ workspaceSlug = '' }: SidebarProps) => {
         })
       );
       
-      // Navega para o dashboard do workspace selecionado
       const newPath = `/${ws.slug}/dashboard`;
       window.location.href = newPath;
       
-      // Dispara evento para outros componentes saberem que o workspace mudou
       window.dispatchEvent(new Event('workspaceChanged'));
     }
     
@@ -131,7 +128,6 @@ const Sidebar = ({ workspaceSlug = '' }: SidebarProps) => {
       try {
         setLoading(true);
         
-        // Fetch workspaces list
         const response = await fetch('/api/workspaces?scope=all');
         if (!response.ok) {
           throw new Error('Failed to fetch workspaces');
@@ -147,14 +143,11 @@ const Sidebar = ({ workspaceSlug = '' }: SidebarProps) => {
               : [];
         setWorkspacesList(workspaces);
         
-        // Set current workspace based on workspaceSlug or default to first workspace
         let currentWorkspace: Workspace | null = null;
         
         if (workspaceSlug) {
-          // Find workspace by slug
           currentWorkspace = workspaces.find(ws => ws.slug === workspaceSlug) || null;
         } else if (workspaces.length > 0) {
-          // Default to first workspace if no slug provided
           currentWorkspace = workspaces[0];
         }
         
@@ -162,8 +155,6 @@ const Sidebar = ({ workspaceSlug = '' }: SidebarProps) => {
           setWorkspace(currentWorkspace);
           setFuncao(currentWorkspace.funcao);
           setMembros(currentWorkspace.membros);
-          
-          // Save to localStorage
           localStorage.setItem(
             "workspaceSelecionado",
             JSON.stringify({
@@ -186,7 +177,6 @@ const Sidebar = ({ workspaceSlug = '' }: SidebarProps) => {
     fetchWorkspaces();
   }, [workspaceSlug]);
 
-    // Session is used for authentication, but we don't need the data here
   useSession();
 
   const fetchProjects = async () => {
@@ -220,8 +210,6 @@ const Sidebar = ({ workspaceSlug = '' }: SidebarProps) => {
     }
   };
 
-  // Removed unused handleProjectAdded to satisfy ESLint
-
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -242,8 +230,6 @@ const Sidebar = ({ workspaceSlug = '' }: SidebarProps) => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [showPopover]);
-
-  // Using the pathname from usePathname() hook
 
   return (
     <div className="flex h-full w-64 flex-col bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 shadow-sm">
