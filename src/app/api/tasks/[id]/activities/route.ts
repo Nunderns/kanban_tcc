@@ -27,7 +27,6 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
       return NextResponse.json({ error: "Invalid task ID" }, { status: 400 });
     }
 
-    // Verify the task belongs to the user
     const task = await prisma.task.findUnique({
       where: { id: taskId, userId: Number(session.user.id) },
     });
@@ -36,7 +35,6 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
       return NextResponse.json({ error: "Task not found" }, { status: 404 });
     }
 
-    // Fetch activities for this task
     const activities = await prisma.taskActivity.findMany({
       where: { taskId },
       orderBy: { createdAt: "desc" },
@@ -65,7 +63,6 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     const body = await request.json();
     const { user: userName, action, field, oldValue, newValue } = body;
 
-    // Verify the task exists and belongs to the user
     const task = await prisma.task.findUnique({
       where: { id: taskId, userId: Number(session.user.id) },
     });
@@ -74,7 +71,6 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
       return NextResponse.json({ error: "Task not found" }, { status: 404 });
     }
 
-    // Create activity log
     const activity = await prisma.taskActivity.create({
       data: {
         taskId,

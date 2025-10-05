@@ -1,9 +1,4 @@
 'use client';
-
-// This page relies on search params from the URL. During the build step,
-// Next.js attempts to pre-render pages by default which causes errors
-// when `useSearchParams` is executed without a request context.
-// Mark the page as dynamic so that it renders at runtime only.
 export const dynamic = 'force-dynamic';
 
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -45,20 +40,17 @@ function InvitePageContent() {
           throw new Error(data.message || 'Erro ao verificar o convite');
         }
 
-        // Set invitation details
         if (data.workspaceName) setWorkspaceName(data.workspaceName);
         if (data.inviterName) setInviterName(data.inviterName);
         if (data.inviterEmail) setInviterEmail(data.inviterEmail);
         if (data.role) setRole(data.role);
 
         if (data.requiresAuth) {
-          // Redirect to sign in with callback URL
           router.push(`/auth/signin?callbackUrl=${encodeURIComponent(window.location.href)}`);
           return;
         }
 
         if (data.redirectUrl) {
-          // If user is already logged in and invitation is valid, redirect to workspace
           setStatus('accepted');
           setMessage('Redirecionando para o workspace...');
           setTimeout(() => {
@@ -110,7 +102,6 @@ function InvitePageContent() {
       setStatus('accepted');
       setMessage('Convite aceito com sucesso! Redirecionando...');
       
-      // Redirect to dashboard after a short delay
       setTimeout(() => {
         window.location.href = data.redirectUrl || '/dashboard';
       }, 1500);

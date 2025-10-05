@@ -24,7 +24,6 @@ export async function POST(req: Request) {
       },
     });
 
-    // Check if invitation exists and is not expired
     if (!invitation) {
       return NextResponse.json({ message: 'Convite não encontrado' }, { status: 400 });
     }
@@ -37,7 +36,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ message: 'Convite já utilizado' }, { status: 400 });
     }
 
-    // Validate email and slug if provided (for new URL format)
     if (email) {
       
       if (email.toLowerCase() !== invitation.email.toLowerCase()) {
@@ -47,13 +45,12 @@ export async function POST(req: Request) {
     }
 
     if (slug) {
-      // More flexible slug validation - handle special characters and multiple dashes
       const expectedSlug = invitation.workspace.name
         .toLowerCase()
-        .replace(/[^a-z0-9\s-]/g, '') // Remove special characters except spaces and dashes
-        .replace(/\s+/g, '-') // Replace spaces with dashes
-        .replace(/-+/g, '-') // Replace multiple dashes with single dash
-        .replace(/^-|-$/g, ''); // Remove leading/trailing dashes
+        .replace(/[^a-z0-9\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '');
       
       if (slug !== expectedSlug) {
         console.log('Slug validation failed:', { slug, expectedSlug, workspaceName: invitation.workspace.name });
@@ -63,7 +60,6 @@ export async function POST(req: Request) {
 
     const session = await auth();
     
-    // If user is not logged in, redirect to sign in with callback URL
     if (!session?.user) {
       return NextResponse.json({
         requiresAuth: true,
@@ -75,7 +71,6 @@ export async function POST(req: Request) {
       });
     }
 
-    // Ensure user has an email address
     if (!session.user.email) {
       return NextResponse.json(
         { error: 'Usuário não possui um endereço de e-mail' },
@@ -87,7 +82,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ message: 'Email do usuário não corresponde ao do convite' }, { status: 400 });
     }
 
-    // Check if user is already a member of the workspace
     const existingMember = await prisma.workspaceMember.findFirst({
       where: {
         workspaceId: invitation.workspaceId,
@@ -105,7 +99,6 @@ export async function POST(req: Request) {
       });
     }
 
-    // Add user to workspace
     await prisma.$transaction([
       prisma.workspaceMember.create({
         data: {

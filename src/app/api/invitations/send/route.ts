@@ -37,7 +37,6 @@ export async function POST(req: Request) {
 
     const { email, role, workspaceId } = requestBody;
     
-    // Validate input
     if (!email || !role || !workspaceId) {
       return new NextResponse(
         JSON.stringify({ message: 'Campos obrigatórios faltando: email, cargo e ID do workspace são necessários' }),
@@ -50,7 +49,6 @@ export async function POST(req: Request) {
       );
     }
 
-    // Check if user is already a member
     const existingMember = await prisma.workspaceMember.findFirst({
       where: {
         workspaceId: parseInt(workspaceId as string),
@@ -72,7 +70,6 @@ export async function POST(req: Request) {
       );
     }
 
-    // Check for existing pending invitation
     const existingInvitation = await prisma.invitation.findFirst({
       where: {
         email,
@@ -96,12 +93,9 @@ export async function POST(req: Request) {
       );
     }
 
-    // Generate token
     const token = randomBytes(32).toString('hex');
     const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 7); // 7 days expiry
-
-    // Create invitation
+    expiresAt.setDate(expiresAt.getDate() + 7);
     const invitation = await prisma.invitation.create({
       data: {
         email,
@@ -112,7 +106,6 @@ export async function POST(req: Request) {
       },
     });
 
-    // Get workspace info
     const workspace = await prisma.workspace.findUnique({
       where: { id: parseInt(workspaceId as string) },
     });
@@ -129,7 +122,6 @@ export async function POST(req: Request) {
       );
     }
 
-    // Enviar e-mail de convite
     try {
       await sendInvitationEmail({
         to: email,
@@ -139,7 +131,6 @@ export async function POST(req: Request) {
     } catch (error) {
       console.error('Erro ao enviar email:', error);
       
-      // Delete the invitation if email sending fails
       await prisma.invitation.delete({
         where: { id: invitation.id }
       });

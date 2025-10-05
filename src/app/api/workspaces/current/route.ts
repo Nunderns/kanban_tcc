@@ -11,16 +11,12 @@ export async function GET(request: Request) {
     if (!session?.user?.email) {
       return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
     }
-
-    // Obter o workspaceSlug da URL
     const url = new URL(request.url);
     const workspaceSlug = url.searchParams.get('workspaceSlug');
 
     if (!workspaceSlug) {
       return NextResponse.json({ error: "Workspace não especificado" }, { status: 400 });
     }
-
-    // Buscar o workspace específico baseado no slug
     const workspace = await prisma.workspace.findUnique({
       where: { slug: workspaceSlug },
       include: {

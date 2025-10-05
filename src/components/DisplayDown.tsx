@@ -2,7 +2,6 @@
 import { useState, useRef, useEffect } from "react";
 import { IoMdOptions } from "react-icons/io";
 
-// Type for all possible display options
 export type DisplayOption = 'ID' | 'Estado' | 'Prioridade' | 'Data de início' | 'Prazo' | 'Responsável' | 'Módulo' | 'Ciclo' | 'Etiquetas';
 
 interface DisplayDropdownProps {

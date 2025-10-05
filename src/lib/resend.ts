@@ -1,8 +1,3 @@
-// src/lib/resend.ts
-// ============================================================================
-// Módulo de e-mail com Resend: init assíncrono, dry-run controlado e mock seguro
-// ============================================================================
-
 type EmailPayload = {
   from: string;
   to: string | string[];
@@ -14,10 +9,6 @@ type EmailPayload = {
 type EmailResponse =
   | { data: { id: string }; error?: undefined }
   | { error: { message: string; statusCode: number }; data?: undefined };
-
-// ----------------------------------------------------------------------------
-// Variáveis de ambiente
-// ----------------------------------------------------------------------------
 const NODE_ENV = process.env.NODE_ENV || "development";
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const RESEND_FROM_EMAIL =
@@ -25,9 +16,6 @@ const RESEND_FROM_EMAIL =
 const NEXTAUTH_URL = process.env.NEXTAUTH_URL || "http://localhost:3000";
 const FORCE_SEND = process.env.FORCE_SEND_EMAILS === "1";
 
-// ----------------------------------------------------------------------------
-// Mock client (para desenvolvimento / ausência de API key)
-// ----------------------------------------------------------------------------
 const createMockResendClient = () => ({
   emails: {
     send: async (payload: EmailPayload): Promise<EmailResponse> => {
@@ -50,9 +38,6 @@ const createMockResendClient = () => ({
   },
 });
 
-// ----------------------------------------------------------------------------
-// Tipagem local do cliente
-// ----------------------------------------------------------------------------
 interface ResendEmailResponse {
   data?: { id: string };
   error?: { message: string; statusCode?: number };
@@ -71,7 +56,6 @@ interface ResendClientWithEmails {
   };
 }
 
-// ----------------------------------------------------------------------------
 let resendClient: ResendClientWithEmails | null = null;
 
 const initResend = async (): Promise<ResendClientWithEmails> => {
@@ -93,10 +77,8 @@ const initResend = async (): Promise<ResendClientWithEmails> => {
       emails: {
         send: async (payload: EmailPayload): Promise<EmailResponse> => {
           try {
-            // Chamada correta do SDK do Resend
             const resp = await real.emails.send(payload);
 
-            // Formato esperado do SDK: { data?: { id: string }, error?: { message, name? } }
             if (resp && typeof resp === 'object' && 'error' in resp && resp.error) {
               const message = resp.error.message || 'Failed to send email';
               const statusCode = resp.statusCode || 500;
@@ -113,14 +95,11 @@ const initResend = async (): Promise<ResendClientWithEmails> => {
             let statusCode = 500;
             
             if (err && typeof err === 'object') {
-              // Extract error message
               if ('message' in err && typeof err.message === 'string') {
                 message = err.message;
               } else if ('toString' in err && typeof err.toString === 'function') {
                 message = err.toString();
               }
-              
-              // Extract status code
               if ('statusCode' in err && typeof err.statusCode === 'number') {
                 statusCode = err.statusCode;
               }
@@ -144,10 +123,6 @@ const initResend = async (): Promise<ResendClientWithEmails> => {
   }
 };
 
-// ----------------------------------------------------------------------------
-/**
- * Envia um e-mail de boas-vindas para um novo usuário
- */
 export async function sendWelcomeEmail(params: {
   to: string;
   name?: string;
@@ -203,9 +178,6 @@ export const resend = {
       const client = await initResend();
       const isProd = NODE_ENV === "production";
       if (!isProd && !FORCE_SEND) {
-        console.log("\n=== EMAIL NOT SENT (Development Mode) ===");
-        console.log("To:", Array.isArray(payload.to) ? payload.to : [payload.to]);
-        console.log("Subject:", payload.subject);
         return { data: { id: "simulated-email-id" } };
       }
       return client.emails.send(payload);
@@ -213,7 +185,6 @@ export const resend = {
   },
 };
 
-// ----------------------------------------------------------------------------
 export const sendInvitationEmail = async (params: {
   to: string | string[];
   token: string;
@@ -222,16 +193,14 @@ export const sendInvitationEmail = async (params: {
   inviterEmail?: string;
   temporaryPassword?: string;
 }) => {
-  console.log("=== STARTING EMAIL SEND PROCESS ===");
-
   const { to, token, workspaceName, inviterName } = params;
   const recipients = Array.isArray(to) ? to : [to];
   const slug = workspaceName
     .toLowerCase()
-    .replace(/[^a-z0-9\s-]/g, '') // Remove special characters except spaces and dashes
-    .replace(/\s+/g, '-') // Replace spaces with dashes
-    .replace(/-+/g, '-') // Replace multiple dashes with single dash
-    .replace(/^-|-$/g, ''); // Remove leading/trailing dashes
+    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
 
   if (!slug || slug.length === 0) {
     throw new Error('Workspace inválida: ' + workspaceName);
@@ -253,8 +222,6 @@ export const sendInvitationEmail = async (params: {
   }
 
   const client = await initResend();
-  console.log("Sending email via Resend...");
-
   const res = await client.emails.send({
     from: `TaskFlow <${RESEND_FROM_EMAIL}>`,
     to: recipients,
@@ -304,11 +271,10 @@ export const sendInvitationEmail = async (params: {
     throw new Error(`Failed to send email: ${res.error.message}`);
   }
 
-  console.log("Email sent successfully:", res.data);
   return res.data;
 };
 
-// ----------------------------------------------------------------------------
+
 export const sendHtmlEmail = async (payload: {
   to: string | string[];
   subject: string;
@@ -322,10 +288,6 @@ export const sendHtmlEmail = async (payload: {
   const canSendForReal = (isProd || FORCE_SEND) && !!RESEND_API_KEY;
 
   if (!canSendForReal) {
-    console.log("\n=== EMAIL NOT SENT (Development Mode) ===");
-    console.log("To:", Array.isArray(to) ? to : [to]);
-    console.log("Subject:", subject);
-    console.log("Preview:", html.slice(0, 120) + "...");
     return { id: "simulated-email-id" };
   }
 

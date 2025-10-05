@@ -78,9 +78,7 @@ function RegisterPageContent() {
     const data = await res.json();
     if (res.ok) {
       toast.success("Conta criada com sucesso!");
-      
-      // Se houver um convite, aceitá-lo automaticamente
-      // Autentica e só então tenta aceitar o convite
+
       let loggedIn = false;
       try {
         const signInRes = await signIn("credentials", { redirect: false, email, password });
@@ -110,7 +108,6 @@ function RegisterPageContent() {
           console.error("Error accepting invitation:", error);
         }
       }
-      // Se não logou, leve ao login preservando o convite para pós-login
       if (!loggedIn && invitationId) {
         const qp = new URLSearchParams({ invitation_id: invitationId, email, workspace: workspace ?? "" }).toString();
         return router.push(`/login?callbackUrl=/register?${qp}`);

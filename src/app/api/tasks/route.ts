@@ -43,12 +43,8 @@ const handleServerError = (error: unknown) => {
 
 export async function GET(req: NextRequest) {
   try {
-    console.log('Tasks API: GET request received');
     const session = await auth();
-    console.log('Session:', session ? 'Authenticated' : 'Not authenticated');
-
     if (!session?.user?.id) {
-      console.error('Unauthorized: No session or user ID');
       return NextResponse.json({ 
         error: "Unauthorized",
         details: "No active session or user ID found" 
@@ -65,8 +61,6 @@ export async function GET(req: NextRequest) {
     const projectIdParam = req.nextUrl.searchParams.get("projectId");
     const projectId = projectIdParam ? parseInt(projectIdParam) : undefined;
     
-    console.log('Query params:', { status, workspaceId, projectId });
-
     const userId = typeof session.user.id === 'string' 
       ? parseInt(session.user.id, 10) 
       : session.user.id;
@@ -94,9 +88,6 @@ export async function GET(req: NextRequest) {
       where.projectId = projectId;
     }
     
-    console.log('Database query:', JSON.stringify(where, null, 2));
-
-    console.log('Querying database for tasks...');
     const tasks = await prisma.task.findMany({
       where: {
         userId,
@@ -138,8 +129,6 @@ export async function GET(req: NextRequest) {
       take: 100
     });
     
-    console.log(`Found ${tasks.length} tasks`);
-
     return NextResponse.json(
       tasks.map((task: TaskWithIncludes) => ({
         id: task.id.toString(),
@@ -211,8 +200,6 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     
-    console.log('2. Session authenticated for user ID:', session.user.id);
-
     const searchParams = req.nextUrl.searchParams;
     const taskId = searchParams.get('id');
     

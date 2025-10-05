@@ -12,14 +12,12 @@ export default function Header() {
     const pathname = usePathname();
     const { theme, setTheme } = useTheme();
 
-    // Only render the theme toggle after mounting to avoid hydration mismatch
     useEffect(() => {
         setMounted(true);
     }, []);
 
     const pagesWithHeader = ["/funcionalidades", "/cases", "/"];
 
-    // A lógica para verificar se a página deve renderizar o header
     const shouldRenderHeader = pagesWithHeader.includes(pathname);
 
     useEffect(() => {
@@ -54,14 +52,6 @@ export default function Header() {
                             className={`transition-text ${isScrolled ? "text-foreground hover:text-primary" : "text-white hover:text-primary-foreground/90"}`}
                         >
                             Funcionalidades
-                        </Link>
-                    </li>
-                    <li>
-                        <Link
-                            href="/blog"
-                            className={`transition-text ${isScrolled ? "text-foreground hover:text-primary" : "text-white hover:text-primary-foreground/90"}`}
-                        >
-                            Blog
                         </Link>
                     </li>
                     <li>

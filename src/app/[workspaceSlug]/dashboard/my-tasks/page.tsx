@@ -474,7 +474,6 @@ function KanbanPage() {
     }
   };
 
-  // Sortable card with animated transform
   const SortableCard = ({ item }: { item: WorkItem }) => {
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: String(item.id) });
     const style = {
@@ -485,12 +484,9 @@ function KanbanPage() {
       opacity: isDragging ? 0 : 1,
     } as React.CSSProperties;
 
-    // Helper function to check if a property should be shown
     const shouldShow = (property: DisplayOption) => {
       return displayOptions.visibleProperties.includes(property);
     };
-
-    // Helper function to render property value
     const renderProperty = (property: string) => {
       switch (property) {
         case 'ID':
@@ -769,10 +765,8 @@ function KanbanPage() {
     item={selectedItem}
     onClose={() => {
       setSelectedItem(null);
-      // Update URL without the task parameter
       const searchParams = new URLSearchParams(window.location.search);
       searchParams.delete('task');
-      // Use the current pathname to maintain the workspace slug
       const currentPath = window.location.pathname;
       router.replace(`${currentPath}?${searchParams.toString()}`, { scroll: false });
     }}

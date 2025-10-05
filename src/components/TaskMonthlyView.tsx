@@ -48,16 +48,13 @@ export default function TaskMonthlyView({ tasks, onTaskClick }: TaskMonthlyViewP
     }
   };
 
-  // Create calendar grid
   const firstDayOfMonth = monthStart.getDay();
   const calendarDays = [];
   
-  // Add empty cells for days before month starts
   for (let i = 0; i < firstDayOfMonth; i++) {
     calendarDays.push(null);
   }
   
-  // Add actual days of the month
   calendarDays.push(...monthDays);
 
   return (
