@@ -27,6 +27,7 @@ function DisplayDropdown({
   const displayOptions = [
     "ID",
     "Estado",
+    "Prioridade",
     "Data de início",
     "Prazo",
     "Responsável",
