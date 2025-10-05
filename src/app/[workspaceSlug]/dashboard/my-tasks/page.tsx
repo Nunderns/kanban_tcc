@@ -571,8 +571,23 @@ function KanbanPage() {
       >
         <div className="text-sm font-medium mb-2">{item.title}</div>
         {shouldShow('ID') && <div className="text-xs text-gray-500 mb-2">#{item.id}</div>}
-        <div className="flex flex-wrap gap-2 text-xs">
-          {(['Estado', 'Data de início', 'Prazo', 'Responsável', 'Módulo', 'Ciclo', 'Etiquetas'] as DisplayOption[])
+        <div className="flex flex-wrap gap-2 items-center text-xs">
+          {shouldShow('Prioridade') && (
+            <div className="flex items-center gap-1 border border-gray-300 dark:border-gray-600 rounded-full px-2 py-1 text-gray-800 dark:text-gray-200">
+              {getPriorityIcon(item.priority)}
+            </div>
+          )}
+          {item.creator && (
+            <div className="flex items-center gap-1 border border-gray-300 dark:border-gray-600 rounded-full px-2 py-1 text-gray-800 dark:text-gray-200">
+              <div className="w-4 h-4 rounded-full bg-purple-100 dark:bg-purple-900 flex items-center justify-center">
+                <FaUser className="text-purple-500 text-[10px]" />
+              </div>
+              <span className="text-gray-700 dark:text-gray-300 text-xs">
+                {item.creator.split(' ')[0]}
+              </span>
+            </div>
+          )}
+          {(['Estado', 'Data de início', 'Prazo', 'Responsável', 'Módulo', 'Ciclo', 'Etiquetas'] as const)
             .filter(prop => shouldShow(prop))
             .map(prop => (
               <div key={prop}>
