@@ -141,7 +141,7 @@ export default function WorkItemSidebar({ item, onClose, onUpdate }: Props) {
     }
   }, [item.id]);
 
-  const fetchWorkspaceMembers = async () => {
+  const fetchWorkspaceMembers = useCallback(async () => {
     try {
       setLoadingMembers(true);
       const response = await fetch('/api/workspace/members');
@@ -154,19 +154,22 @@ export default function WorkItemSidebar({ item, onClose, onUpdate }: Props) {
     } finally {
       setLoadingMembers(false);
     }
-  };
+  }, []);
 
+  // Atualiza o localItem apenas quando o item prop muda
   useEffect(() => {
-    if (JSON.stringify(item) !== JSON.stringify(localItem)) {
+    const itemChanged = JSON.stringify(item) !== JSON.stringify(localItem);
+    if (itemChanged) {
       console.log('Updating localItem from prop item:', item);
       setLocalItem({...item});
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [item]);
 
   useEffect(() => {
     fetchActivities();
     fetchWorkspaceMembers();
-  }, [fetchActivities]);
+  }, [fetchActivities, fetchWorkspaceMembers, item.id]);
 
   const handleChange = (field: keyof WorkItem, value: string | string[] | null | undefined) => {
     setLocalItem(prev => ({

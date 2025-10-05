@@ -71,14 +71,14 @@ export default function CriarEspacoTrabalho() {
         "workspaceSelecionado",
         JSON.stringify({
           id: data.id,
-          nome: data.name,
+          nome: data.nome || data.name,
           slug: data.slug,
-          companySize: data.companySize,
+          companySize: data.tamanhoEmpresa || data.companySize,
         })
       );
 
       toast.success("Espaço criado com sucesso!");
-      router.push("/dashboard");
+      router.push(`/${data.slug}/dashboard`);
     } catch (error) {
       console.error(error);
       toast.error("Erro ao criar espaço de trabalho.");

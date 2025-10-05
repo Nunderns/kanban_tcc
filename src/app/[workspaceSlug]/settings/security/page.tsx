@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { usePathname } from "next/navigation";
-import { Sidebar } from "@/components/Sidebar";
 import Link from "next/link";
 
 export default function SecuritySettings() {
@@ -63,9 +62,6 @@ export default function SecuritySettings() {
 
   return (
     <div className="min-h-screen bg-white text-gray-900 flex">
-      <Sidebar />
-
-      {/* Settings Sidebar */}
       <aside className="w-64 border-r border-gray-200 p-4 space-y-2 text-sm">
         <h2 className="text-gray-500 font-semibold uppercase mb-2">Settings</h2>
         {links.map(({ href, label }) => (

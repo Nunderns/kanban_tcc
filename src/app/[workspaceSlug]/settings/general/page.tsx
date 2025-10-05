@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
-import { Sidebar } from "@/components/Sidebar";
 import Link from "next/link";
 export default function WorkspaceSettings() {
   const pathname = usePathname();
@@ -53,26 +52,23 @@ export default function WorkspaceSettings() {
   }, []);
 
   const links = [
-    { href: "/dashboard/settings/general", label: "Geral" },
-    { href: "/dashboard/settings/members", label: "Membros" },
-    { href: "/dashboard/settings/project-states", label: "Estados do Projeto" },
-    { href: "/dashboard/settings/integrations", label: "Integrações" },
-    { href: "/dashboard/settings/imports", label: "Importações" },
-    { href: "/dashboard/settings/exports", label: "Exportações" },
-    { href: "/dashboard/settings/webhooks", label: "Webhooks" },
-    { href: "/dashboard/settings/api-tokens", label: "Tokens de API" },
-    { href: "/dashboard/settings/worklogs", label: "Registros de Trabalho" },
-    { href: "/dashboard/settings/teamspaces", label: "Espaços de Equipe" },
-    { href: "/dashboard/settings/initiatives", label: "Iniciativas" },
-    { href: "/dashboard/settings/customers", label: "Clientes" },
-    { href: "/dashboard/settings/templates", label: "Modelos" },
+    { href: `/${slug}/settings/general`, label: "Geral" },
+    { href: `/${slug}/settings/members`, label: "Membros" },
+    { href: `/${slug}/settings/project-states`, label: "Estados do Projeto" },
+    { href: `/${slug}/settings/integrations`, label: "Integrações" },
+    { href: `/${slug}/settings/imports`, label: "Importações" },
+    { href: `/${slug}/settings/exports`, label: "Exportações" },
+    { href: `/${slug}/settings/webhooks`, label: "Webhooks" },
+    { href: `/${slug}/settings/api-tokens`, label: "Tokens de API" },
+    { href: `/${slug}/settings/worklogs`, label: "Registros de Trabalho" },
+    { href: `/${slug}/settings/teamspaces`, label: "Espaços de Equipe" },
+    { href: `/${slug}/settings/initiatives`, label: "Iniciativas" },
+    { href: `/${slug}/settings/customers`, label: "Clientes" },
+    { href: `/${slug}/settings/templates`, label: "Modelos" },
   ];
 
   return (
     <div className="min-h-screen flex bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
-      <Sidebar />
-
-      {/* Sidebar de Configurações */}
       <aside className="w-64 border-r border-gray-200 dark:border-gray-700 p-4 space-y-2 text-sm">
         <h2 className="text-gray-500 dark:text-gray-400 font-semibold uppercase mb-2">
           Configurações
@@ -199,10 +195,53 @@ export default function WorkspaceSettings() {
         {/* Excluir workspace */}
         <div className="mt-10 border-t border-gray-200 dark:border-gray-700 pt-6">
           <p className="text-sm text-red-600 dark:text-red-400 font-medium mb-2">
-            Excluir este workspace
+            Área de perigo
           </p>
-          <button className="text-sm text-gray-700 dark:text-gray-300 hover:text-red-600 dark:hover:text-red-400 transition-colors">
-            Mostrar opções de exclusão
+          <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+            A exclusão é permanente. Todo o conteúdo será removido e não poderá ser recuperado.
+          </p>
+          <button
+            onClick={async (e) => {
+              e.preventDefault();
+              if (confirm('Tem certeza que deseja excluir permanentemente este workspace? Esta ação não pode ser desfeita.')) {
+                try {
+                  const workspacesRes = await fetch('/api/workspaces', {
+                    credentials: 'include',
+                  });
+                  interface Workspace {
+                    id: number;
+                    name: string;
+                    slug: string;
+                  }
+                  
+                  const workspaces: Workspace[] = await workspacesRes.json();
+                  
+                  const otherWorkspace = workspaces.find((ws: Workspace) => ws.slug !== slug);
+                  
+                  const deleteRes = await fetch(`/api/workspaces/${slug}`, {
+                    method: 'DELETE',
+                    credentials: 'include',
+                  });
+
+                  if (deleteRes.ok) {
+                    if (otherWorkspace) {
+                      window.location.href = `/${otherWorkspace.slug}/dashboard`;
+                    } else {
+                      window.location.href = '/create-workspace';
+                    }
+                  } else {
+                    const error = await deleteRes.json();
+                    alert(`Erro ao excluir workspace: ${error.message || 'Tente novamente mais tarde.'}`);
+                  }
+                } catch (err) {
+                  console.error('Erro ao excluir workspace:', err);
+                  alert('Ocorreu um erro ao tentar excluir o workspace.');
+                }
+              }
+            }}
+            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+          >
+            Excluir este workspace
           </button>
         </div>
       </main>
