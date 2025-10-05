@@ -1,20 +1,18 @@
 "use client";
 
-import { Suspense } from "react";
 import { DndContext, DragOverlay, closestCenter, PointerSensor, useSensor, useSensors, type DragEndEvent, useDroppable } from "@dnd-kit/core";
-import { SortableContext, useSortable, arrayMove, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import Sidebar from "@/components/Sidebar";
+import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import CreateTaskModal from "@/components/CreateTaskModal";
 import FilterDropdown from "@/components/FilterDropdown";
-import DisplayDropdown from "@/components/DisplayDown";
+import DisplayDropdown, { DisplayOption } from "@/components/DisplayDown";
 import WorkItemSidebar from "@/components/WorkItemSidebar";
 import TaskListView from "@/components/TaskListView";
 import TaskWeeklyView from "@/components/TaskWeeklyView";
 import TaskMonthlyView from "@/components/TaskMonthlyView";
 import TaskDailyView from "@/components/TaskDailyView";
 import { useSession } from "next-auth/react";
-import { useCallback, useEffect, useState, useRef, useMemo } from "react";
+import { useCallback, useEffect, useState, useRef, useMemo, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { format } from "date-fns";
 import { parseLocalDate } from "@/lib/utils";
@@ -31,7 +29,6 @@ import {
 } from "react-icons/fa";
 import { IoFunnelOutline } from "react-icons/io5";
 
-// Wrapper component to handle Suspense
 function KanbanPageContent() {
   return (
     <Suspense fallback={<div>Carregando...</div>}>
@@ -54,6 +51,8 @@ export type WorkItem = {
   startDate?: string;
   dueDate?: string;
   assignees?: string[];
+  assignedUserId?: string;
+  assignedUserName?: string;
   module?: string;
   cycle?: string;
   labels?: string[];
@@ -79,7 +78,6 @@ function KanbanPage() {
   const router = useRouter();
   const [showFilter, setShowFilter] = useState(false);
   
-  // Handle task selection from URL
   useEffect(() => {
     const taskId = searchParams?.get('task');
     if (taskId && workItems.length > 0) {
@@ -91,7 +89,6 @@ function KanbanPage() {
   }, [searchParams, workItems]);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
   
-  // Filter states
   const [filters, setFilters] = useState({
     priority: [] as string[],
     status: [] as string[],
@@ -102,16 +99,16 @@ function KanbanPage() {
     dueDate: [] as string[],
   });
   
-  // Display options state
-  const [displayOptions, setDisplayOptions] = useState({
+  const [displayOptions, setDisplayOptions] = useState<{
+    showSubtasks: boolean;
+    visibleProperties: DisplayOption[];
+  }>({
     showSubtasks: true,
     visibleProperties: ["ID", "Responsável", "Data de início", "Prazo", "Prioridade", "Estado"],
   });
   
-  // View type state
   const [viewType, setViewType] = useState<"kanban" | "list" | "weekly" | "monthly" | "daily">("kanban");
   
-  // Map status for filtering (UI -> Internal)
   const statusMap: Record<string, string> = {
     'Backlog': 'BACKLOG',
     'Não iniciado': 'TODO',
@@ -120,7 +117,6 @@ function KanbanPage() {
     'Cancelado': 'CANCELLED'
   };
 
-  // Column-level droppable to allow dropping anywhere in a column (including empty columns)
   const ColumnDroppable = ({ status, children }: { status: Status; children: React.ReactNode }) => {
     const { setNodeRef, isOver } = useDroppable({ id: `column-${status}` });
     return (
@@ -130,7 +126,6 @@ function KanbanPage() {
     );
   };
 
-  // Map priority for filtering (UI -> Internal)
   const priorityMap: Record<string, string> = {
     'Urgent': 'HIGH',
     'High': 'HIGH',
@@ -139,21 +134,18 @@ function KanbanPage() {
     'None': 'NONE'
   };
   
-  // Reverse maps for filtering (Internal -> UI)
   const reverseStatusMap = Object.entries(statusMap).reduce((acc, [key, value]) => {
     acc[value] = key;
     return acc;
   }, {} as Record<string, string>);
   
   const reversePriorityMap = Object.entries(priorityMap).reduce((acc, [key, value]) => {
-    // Para evitar sobrescrever valores, mantenha apenas o primeiro mapeamento
     if (!acc[value]) {
       acc[value] = key;
     }
     return acc;
   }, {} as Record<string, string>);
   
-  // Apply filters to tasks
   const filteredTasks = useMemo(() => {
     if (!workItems.length) return [];
     
@@ -174,33 +166,27 @@ function KanbanPage() {
     
     const isDateInRange = (date: Date | string | undefined, range: string): boolean => {
       if (!date) return false;
-      
-      // Função para normalizar datas para o início do dia (meia-noite) para comparação
+
       const normalizeDate = (d: Date) => {
         const normalized = new Date(d);
         normalized.setHours(0, 0, 0, 0);
         return normalized;
       };
       
-      // Converter a data da tarefa para objeto Date se for string
       let taskDate: Date;
       if (typeof date === 'string') {
-        // Tenta converter do formato dd/MM/yyyy
         if (date.includes('/')) {
           const [day, month, year] = date.split('/').map(Number);
           taskDate = new Date(year, month - 1, day);
         } else {
-          // Tenta converter do formato ISO
           taskDate = new Date(date);
         }
       } else {
         taskDate = new Date(date);
       }
       
-      // Se a data for inválida, retorna falso
       if (isNaN(taskDate.getTime())) return false;
       
-      // Normaliza a data da tarefa para meia-noite
       taskDate = normalizeDate(taskDate);
       
       switch (range) {
@@ -223,13 +209,10 @@ function KanbanPage() {
             try {
               const dateStr = range.replace('data:', '');
               let filterDate: Date;
-              
-              // Verifica se a data está no formato dd/MM/yyyy
               if (dateStr.includes('/')) {
                 const [day, month, year] = dateStr.split('/').map(Number);
                 filterDate = new Date(year, month - 1, day);
               } else {
-                // Tenta converter do formato ISO
                 filterDate = new Date(dateStr);
               }
               
@@ -246,7 +229,6 @@ function KanbanPage() {
     
     const filtered = workItems.filter(task => {
       
-      // Filter by priority
       if (filters.priority.length > 0) {
         const taskPriorityName = reversePriorityMap[task.priority] || '';
         if (!filters.priority.includes(taskPriorityName)) {
@@ -254,7 +236,6 @@ function KanbanPage() {
         }
       }
       
-      // Filter by status
       if (filters.status.length > 0) {
         const taskStatusName = reverseStatusMap[task.status] || '';
         if (!filters.status.includes(taskStatusName)) {
@@ -262,7 +243,6 @@ function KanbanPage() {
         }
       }
       
-      // Filter by start date
       if (filters.startDate.length > 0) {
         const hasMatchingStartDate = filters.startDate.some(range => 
           isDateInRange(task.startDate, range)
@@ -270,7 +250,6 @@ function KanbanPage() {
         if (!hasMatchingStartDate) return false;
       }
       
-      // Filter by due date
       if (filters.dueDate.length > 0) {
         const hasMatchingDueDate = filters.dueDate.some(range => 
           isDateInRange(task.dueDate, range)
@@ -284,7 +263,6 @@ function KanbanPage() {
     return filtered;
   }, [workItems, filters, reverseStatusMap, reversePriorityMap]);
   
-  // Handle filter changes
   const handleFilterChange = (filterType: keyof typeof filters, value: string, checked: boolean) => {
     setFilters(prev => ({
       ...prev,
@@ -294,14 +272,17 @@ function KanbanPage() {
     }));
   };
   
-  // Handle display option changes
-  const handleDisplayOptionChange = (option: string, checked: boolean) => {
-    setDisplayOptions(prev => ({
-      ...prev,
-      visibleProperties: checked
-        ? [...prev.visibleProperties, option]
-        : prev.visibleProperties.filter(item => item !== option)
-    }));
+  const handleDisplayOptionChange = (option: DisplayOption, checked: boolean) => {
+    setDisplayOptions(prev => {
+      const newProperties = checked
+        ? Array.from(new Set([...prev.visibleProperties, option])) as DisplayOption[]
+        : prev.visibleProperties.filter((item): item is DisplayOption => item !== option);
+      
+      return {
+        ...prev,
+        visibleProperties: newProperties
+      };
+    });
   };
 
   const [targetStatus, setTargetStatus] = useState<Status>("BACKLOG");
@@ -309,15 +290,11 @@ function KanbanPage() {
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [activeId, setActiveId] = useState<string | null>(null);
 
-  // dnd-kit sensors
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
   );
-
-  // Helper: update task status locally and persist
   const updateTaskStatus = useCallback(
     async (taskId: string, oldStatus: Status, newStatus: Status) => {
-      // Ensure ID comparison works whether IDs are numbers or strings
       setWorkItems((prev) =>
         prev.map((t) =>
           String(t.id) === String(taskId) ? { ...t, status: newStatus } : t
@@ -331,7 +308,6 @@ function KanbanPage() {
           body: JSON.stringify({ status: newStatus }),
         });
 
-        // Log activity for status change
         await fetch(`/api/tasks/${taskId}/activities`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -376,8 +352,6 @@ function KanbanPage() {
       await updateTaskStatus(activeId, sourceStatus, destinationStatus);
       return;
     }
-
-    // Reorder within same column (local only)
     const columnItems = workItems.filter(i => i.status === sourceStatus);
     const ids = columnItems.map(i => String(i.id));
     const oldIndex = ids.indexOf(activeId);
@@ -385,7 +359,6 @@ function KanbanPage() {
     if (oldIndex === -1 || newIndex === -1 || oldIndex === newIndex) return;
 
     const reordered = arrayMove(columnItems, oldIndex, newIndex);
-    // Merge back into workItems keeping other columns untouched
     setWorkItems(prev => {
       const others = prev.filter(i => i.status !== sourceStatus);
       return [...others, ...reordered];
@@ -449,7 +422,7 @@ function KanbanPage() {
     return () => window.removeEventListener('workspaceChanged', handler);
   }, [fetchWorkItems]);
 
-  const handleCreateTask = async ({ title, description }: { title: string; description: string }) => {
+  const handleCreateTask = async ({ title, description, assignedUserId }: { title: string; description: string; assignedUserId?: string }) => {
     if (status !== "authenticated" || !userId) return;
     try {
       const stored = localStorage.getItem("workspaceSelecionado");
@@ -467,7 +440,8 @@ function KanbanPage() {
           priority: "NONE",
           assignees: [],
           labels: [],
-          workspaceId: wsId
+          workspaceId: wsId,
+          assignedUserId
         })
       });
 
@@ -500,7 +474,6 @@ function KanbanPage() {
     }
   };
 
-  // Sortable card with animated transform
   const SortableCard = ({ item }: { item: WorkItem }) => {
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: String(item.id) });
     const style = {
@@ -511,6 +484,82 @@ function KanbanPage() {
       opacity: isDragging ? 0 : 1,
     } as React.CSSProperties;
 
+    const shouldShow = (property: DisplayOption) => {
+      return displayOptions.visibleProperties.includes(property);
+    };
+    const renderProperty = (property: string) => {
+      switch (property) {
+        case 'ID':
+          return (
+            <div className="text-xs text-gray-500 dark:text-gray-400 mb-1 font-semibold">
+              PRIME-{item.id}
+            </div>
+          );
+        case 'Título':
+          return (
+            <h3 className="text-base font-semibold mb-3 text-gray-900 dark:text-white">
+              {item.title}
+            </h3>
+          );
+        case 'Estado':
+          return (
+            <div className="flex items-center gap-1 border border-gray-300 dark:border-gray-600 rounded-full px-2 py-1 text-gray-800 dark:text-gray-200">
+              <FaSyncAlt className="text-gray-500" />
+              <span className="capitalize">{item.status.toLowerCase()}</span>
+            </div>
+          );
+        case 'Prioridade':
+          return (
+            <div className="flex items-center gap-1 border border-gray-300 dark:border-gray-600 rounded-full px-2 py-1 text-gray-800 dark:text-gray-200">
+              {getPriorityIcon(item.priority)}
+              <span className="capitalize">{item.priority.toLowerCase()}</span>
+            </div>
+          );
+        case 'Data de início':
+          return item.startDate && !isNaN(parseLocalDate(item.startDate).getTime()) ? (
+            <div className="flex items-center gap-1 border border-gray-300 dark:border-gray-600 rounded-full px-2 py-1 text-gray-800 dark:text-gray-200">
+              <FaCalendarAlt className="text-gray-500" />
+              <span>{format(parseLocalDate(item.startDate), "MMM dd, yyyy")}</span>
+            </div>
+          ) : null;
+        case 'Prazo':
+          return item.dueDate ? (
+            <div className="flex items-center gap-1 border border-red-400 text-red-500 rounded-full px-2 py-1">
+              <FaCalendarAlt className="text-red-500" />
+              <span>{format(parseLocalDate(item.dueDate), "MMM dd, yyyy")}</span>
+            </div>
+          ) : null;
+        case 'Responsável':
+          return item.assignedUserId ? (
+            <div className="flex items-center gap-1 border border-blue-300 dark:border-blue-600 rounded-full px-2 py-1 text-blue-800 dark:text-blue-200 bg-blue-50 dark:bg-blue-900/20">
+              <FaUser className="text-blue-500" />
+              <span>{item.assignedUserName || 'Responsável'}</span>
+            </div>
+          ) : null;
+        case 'Módulo':
+          return item.module ? (
+            <div className="flex items-center gap-1 border border-gray-300 dark:border-gray-600 rounded-full px-2 py-1 text-gray-800 dark:text-gray-200">
+              <span>{item.module}</span>
+            </div>
+          ) : null;
+        case 'Ciclo':
+          return item.cycle ? (
+            <div className="flex items-center gap-1 border border-gray-300 dark:border-gray-600 rounded-full px-2 py-1 text-gray-800 dark:text-gray-200">
+              <span>{item.cycle}</span>
+            </div>
+          ) : null;
+        case 'Etiquetas':
+          return item.labels && item.labels.length > 0 ? (
+            <div className="flex items-center gap-1 border border-gray-300 dark:border-gray-600 rounded-full px-2 py-1 text-gray-800 dark:text-gray-200">
+              <FaTag className="text-gray-500" />
+              <span className="dark:text-gray-200">{item.labels.join(", ")}</span>
+            </div>
+          ) : null;
+        default:
+          return null;
+      }
+    };
+
     return (
       <div
         ref={setNodeRef}
@@ -520,51 +569,32 @@ function KanbanPage() {
         className="bg-white dark:bg-gray-800 text-black dark:text-white p-4 rounded-lg border border-gray-300 dark:border-gray-700 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition cursor-grab active:cursor-grabbing"
         onClick={() => setSelectedItem(item)}
       >
-      <div className="text-xs text-gray-500 dark:text-gray-400 mb-1 font-semibold">PRIME-{item.id}</div>
-      <h3 className="text-base font-semibold mb-3 text-gray-900 dark:text-white">{item.title}</h3>
-      <div className="flex flex-wrap gap-2 text-xs">
-        <div className="flex items-center gap-1 border border-gray-300 dark:border-gray-600 rounded-full px-2 py-1 text-gray-800 dark:text-gray-200">
-          <FaSyncAlt className="text-gray-500" />
-          <span className="capitalize">{item.status.toLowerCase()}</span>
+        <div className="text-sm font-medium mb-2">{item.title}</div>
+        {shouldShow('ID') && <div className="text-xs text-gray-500 mb-2">#{item.id}</div>}
+        <div className="flex flex-wrap gap-2 items-center text-xs">
+          {shouldShow('Prioridade') && (
+            <div className="flex items-center gap-1 border border-gray-300 dark:border-gray-600 rounded-full px-2 py-1 text-gray-800 dark:text-gray-200">
+              {getPriorityIcon(item.priority)}
+            </div>
+          )}
+          {item.creator && (
+            <div className="flex items-center gap-1 border border-gray-300 dark:border-gray-600 rounded-full px-2 py-1 text-gray-800 dark:text-gray-200">
+              <div className="w-4 h-4 rounded-full bg-purple-100 dark:bg-purple-900 flex items-center justify-center">
+                <FaUser className="text-purple-500 text-[10px]" />
+              </div>
+              <span className="text-gray-700 dark:text-gray-300 text-xs">
+                {item.creator.split(' ')[0]}
+              </span>
+            </div>
+          )}
+          {(['Estado', 'Data de início', 'Prazo', 'Responsável', 'Módulo', 'Ciclo', 'Etiquetas'] as const)
+            .filter(prop => shouldShow(prop))
+            .map(prop => (
+              <div key={prop}>
+                {renderProperty(prop)}
+              </div>
+            ))}
         </div>
-        <div className="flex items-center gap-1 border border-gray-300 dark:border-gray-600 rounded-full px-2 py-1 text-gray-800 dark:text-gray-200">
-          {getPriorityIcon(item.priority)}
-        </div>
-        {item.startDate && !isNaN(parseLocalDate(item.startDate).getTime()) && (
-          <div className="flex items-center gap-1 border border-gray-300 dark:border-gray-600 rounded-full px-2 py-1 text-gray-800 dark:text-gray-200">
-            <FaCalendarAlt className="text-gray-500" />
-            <span>Início: {format(parseLocalDate(item.startDate), "MMM dd, yyyy")}</span>
-          </div>
-        )}
-        {item.dueDate && (
-          <div className="flex items-center gap-1 border border-red-400 text-red-500 rounded-full px-2 py-1">
-            <FaCalendarAlt />
-            <span>Prazo: {format(parseLocalDate(item.dueDate), "MMM dd, yyyy")}</span>
-          </div>
-        )}
-        {item.creator && (
-          <div className="flex items-center gap-1 border border-gray-300 dark:border-gray-600 rounded-full px-2 py-1 text-gray-800 dark:text-gray-200">
-            <FaUser className="text-gray-500" />
-            <span>{item.creator}</span>
-          </div>
-        )}
-        {item.module && (
-          <div className="flex items-center gap-1 border border-gray-300 dark:border-gray-600 rounded-full px-2 py-1 text-gray-800 dark:text-gray-200">
-            <span>{item.module}</span>
-          </div>
-        )}
-        {item.cycle && (
-          <div className="flex items-center gap-1 border border-gray-300 dark:border-gray-600 rounded-full px-2 py-1 text-gray-800 dark:text-gray-200">
-            <span>{item.cycle}</span>
-          </div>
-        )}
-        {item.labels && item.labels.length > 0 && (
-          <div className="flex items-center gap-1 border border-gray-300 dark:border-gray-600 rounded-full px-2 py-1 text-gray-800 dark:text-gray-200">
-            <FaTag className="text-gray-500" />
-            <span className="dark:text-gray-200">{item.labels.join(", ")}</span>
-          </div>
-        )}
-      </div>
       </div>
     );
   };
@@ -574,7 +604,6 @@ function KanbanPage() {
 
   return (
     <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white">
-      <Sidebar />
       <div className="flex-1 flex flex-col">
         <div className="flex justify-between items-center p-4 border-b border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800">
           <h1 className="text-xl font-bold">{workspaceName} &gt; Item de Trabalho</h1>
@@ -751,10 +780,10 @@ function KanbanPage() {
     item={selectedItem}
     onClose={() => {
       setSelectedItem(null);
-      // Update URL without the task parameter
       const searchParams = new URLSearchParams(window.location.search);
       searchParams.delete('task');
-      router.replace(`/dashboard/my-tasks?${searchParams.toString()}`);
+      const currentPath = window.location.pathname;
+      router.replace(`${currentPath}?${searchParams.toString()}`, { scroll: false });
     }}
     onUpdate={(updated: WorkItem) => {
       setWorkItems(prev => prev.map(i => (i.id === updated.id ? updated : i)));

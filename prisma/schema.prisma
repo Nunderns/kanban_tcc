@@ -28,6 +28,8 @@ model User {
   sessions         Session[]
   workspaces       Workspace[]
   workspaceMembers WorkspaceMember[]
+  invitations      Invitation[]
+  assignedTasks    Task[]            @relation("TaskAssignedUser")
 }
 
 model Project {
@@ -48,6 +50,8 @@ model Invitation {
   token      String   @unique
   workspaceId Int
   workspace  Workspace @relation(fields: [workspaceId], references: [id])
+  inviterId  Int
+  inviter    User     @relation(fields: [inviterId], references: [id])
   expiresAt  DateTime
   status     String   @default("pending") // pending, accepted, expired
   createdAt  DateTime @default(now())
@@ -74,11 +78,14 @@ model Task {
   project     Project?       @relation(fields: [projectId], references: [id])
   workspaceId Int?
   workspace   Workspace?     @relation(fields: [workspaceId], references: [id])
+  assignedUserId Int?
+  assignedUser User?         @relation("TaskAssignedUser", fields: [assignedUserId], references: [id])
   activities  TaskActivity[]
   
   @@index([userId])
   @@index([projectId])
   @@index([workspaceId])
+  @@index([assignedUserId])
 }
 
 enum Status {

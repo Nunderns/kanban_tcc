@@ -1,7 +1,8 @@
 "use client";
 
-import { WorkItem, Priority } from "@/app/dashboard/my-tasks/page";
-import { FaCircle, FaRegCircle, FaUser, FaTag, FaCalendarAlt } from "react-icons/fa";
+import { WorkItem, Priority } from "@/app/[workspaceSlug]/dashboard/my-tasks/page";
+import { FaUser, FaTag, FaCalendarAlt } from "react-icons/fa";
+import { Circle, CircleDot } from "lucide-react";
 import { format } from "date-fns";
 import { parseLocalDate } from "@/lib/utils";
 
@@ -13,11 +14,12 @@ interface TaskListViewProps {
 
 export default function TaskListView({ tasks, onTaskClick, visibleProperties }: TaskListViewProps) {
   const getPriorityIcon = (priority: Priority) => {
+    const iconClass = "w-3 h-3";
     switch (priority) {
-      case "HIGH": return <FaCircle className="text-red-500 text-xs" />;
-      case "MEDIUM": return <FaCircle className="text-yellow-500 text-xs" />;
-      case "LOW": return <FaCircle className="text-green-500 text-xs" />;
-      default: return <FaRegCircle className="text-gray-500 text-xs" />;
+      case "HIGH": return <CircleDot className={`${iconClass} text-red-500`} />;
+      case "MEDIUM": return <CircleDot className={`${iconClass} text-yellow-500`} />;
+      case "LOW": return <CircleDot className={`${iconClass} text-green-500`} />;
+      default: return <Circle className={`${iconClass} text-gray-400`} />;
     }
   };
 
@@ -35,32 +37,55 @@ export default function TaskListView({ tasks, onTaskClick, visibleProperties }: 
       case "ID":
         return <span className="text-xs text-gray-500 font-semibold">PRIME-{task.id}</span>;
       case "Responsável":
+        return task.assignedUserName ? (
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center">
+              <FaUser className="text-blue-500 text-xs" />
+            </div>
+            <span className="text-sm text-gray-800 dark:text-gray-200">{task.assignedUserName}</span>
+          </div>
+        ) : (
+          <div className="text-sm text-gray-400">Não atribuído</div>
+        );
+      case "Criador":
         return task.creator ? (
-          <div className="flex items-center gap-1">
-            <FaUser className="text-gray-500 text-xs" />
-            <span className="text-sm">{task.creator}</span>
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded-full bg-purple-100 flex items-center justify-center">
+              <FaUser className="text-purple-500 text-xs" />
+            </div>
+            <span className="text-sm text-gray-800 dark:text-gray-200">{task.creator}</span>
           </div>
-        ) : "-";
-      case "Data de início":
-        return task.startDate ? (
-          <div className="flex items-center gap-1">
-            <FaCalendarAlt className="text-gray-500 text-xs" />
-            <span className="text-sm">{formatDate(task.startDate)}</span>
-          </div>
-        ) : "-";
-      case "Prazo":
-        return task.dueDate ? (
-          <div className="flex items-center gap-1 text-red-600">
-            <FaCalendarAlt className="text-xs" />
-            <span className="text-sm">{formatDate(task.dueDate)}</span>
-          </div>
-        ) : "-";
+        ) : (
+          <div className="text-sm text-gray-400">-</div>
+        );
       case "Prioridade":
         return (
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-2">
             {getPriorityIcon(task.priority)}
-            <span className="text-sm capitalize">{task.priority.toLowerCase()}</span>
+            <span className="text-sm text-gray-800 dark:text-gray-200 capitalize">
+              {task.priority === "HIGH" ? "Alta" : 
+               task.priority === "MEDIUM" ? "Média" : 
+               task.priority === "LOW" ? "Baixa" : "Não definida"}
+            </span>
           </div>
+        );
+      case "Data de início":
+        return task.startDate ? (
+          <div className="flex items-center gap-2">
+            <FaCalendarAlt className="text-gray-400 text-sm" />
+            <span className="text-sm text-gray-700 dark:text-gray-300">{formatDate(task.startDate)}</span>
+          </div>
+        ) : (
+          <div className="text-sm text-gray-400">Não definida</div>
+        );
+      case "Prazo":
+        return task.dueDate ? (
+          <div className="flex items-center gap-2">
+            <FaCalendarAlt className="text-gray-400 text-sm" />
+            <span className="text-sm text-gray-700 dark:text-gray-300">{formatDate(task.dueDate)}</span>
+          </div>
+        ) : (
+          <div className="text-sm text-gray-400">Não definido</div>
         );
       case "Estado":
         return (

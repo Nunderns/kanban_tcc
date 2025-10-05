@@ -2,10 +2,12 @@
 import { useState, useRef, useEffect } from "react";
 import { IoMdOptions } from "react-icons/io";
 
+export type DisplayOption = 'ID' | 'Estado' | 'Prioridade' | 'Data de início' | 'Prazo' | 'Responsável' | 'Módulo' | 'Ciclo' | 'Etiquetas';
+
 interface DisplayDropdownProps {
-  visibleProperties: string[];
+  visibleProperties: DisplayOption[];
   showSubtasks: boolean;
-  onDisplayOptionChange: (option: string, checked: boolean) => void;
+  onDisplayOptionChange: (option: DisplayOption, checked: boolean) => void;
   onToggleSubtasks: (checked: boolean) => void;
   viewType: "kanban" | "list" | "weekly" | "monthly" | "daily";
   onViewTypeChange: (viewType: "kanban" | "list" | "weekly" | "monthly" | "daily") => void;
@@ -21,21 +23,18 @@ function DisplayDropdown({
 }: DisplayDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
+  // Display options from the image
   const displayOptions = [
     "ID",
-    "Responsável",
+    "Estado",
+    "Prioridade",
     "Data de início",
     "Prazo",
-    "Etiquetas",
-    "Prioridade",
-    "Estado",
-    "Subtarefas",
-    "Anexos",
-    "Link",
-    "Estimativa",
+    "Responsável",
     "Módulo",
     "Ciclo",
-  ];
+    "Etiquetas"
+  ] as const;
 
   const viewTypeOptions = [
     { id: "kanban", label: "Kanban" },

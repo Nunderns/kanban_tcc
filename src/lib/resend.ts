@@ -1,8 +1,3 @@
-// src/lib/resend.ts
-// ============================================================================
-// Módulo de e-mail com Resend: init assíncrono, dry-run controlado e mock seguro
-// ============================================================================
-
 type EmailPayload = {
   from: string;
   to: string | string[];
@@ -14,10 +9,6 @@ type EmailPayload = {
 type EmailResponse =
   | { data: { id: string }; error?: undefined }
   | { error: { message: string; statusCode: number }; data?: undefined };
-
-// ----------------------------------------------------------------------------
-// Variáveis de ambiente
-// ----------------------------------------------------------------------------
 const NODE_ENV = process.env.NODE_ENV || "development";
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const RESEND_FROM_EMAIL =
@@ -25,9 +16,6 @@ const RESEND_FROM_EMAIL =
 const NEXTAUTH_URL = process.env.NEXTAUTH_URL || "http://localhost:3000";
 const FORCE_SEND = process.env.FORCE_SEND_EMAILS === "1";
 
-// ----------------------------------------------------------------------------
-// Mock client (para desenvolvimento / ausência de API key)
-// ----------------------------------------------------------------------------
 const createMockResendClient = () => ({
   emails: {
     send: async (payload: EmailPayload): Promise<EmailResponse> => {
@@ -50,9 +38,6 @@ const createMockResendClient = () => ({
   },
 });
 
-// ----------------------------------------------------------------------------
-// Tipagem local do cliente
-// ----------------------------------------------------------------------------
 interface ResendEmailResponse {
   data?: { id: string };
   error?: { message: string; statusCode?: number };
@@ -71,7 +56,6 @@ interface ResendClientWithEmails {
   };
 }
 
-// ----------------------------------------------------------------------------
 let resendClient: ResendClientWithEmails | null = null;
 
 const initResend = async (): Promise<ResendClientWithEmails> => {
@@ -93,10 +77,8 @@ const initResend = async (): Promise<ResendClientWithEmails> => {
       emails: {
         send: async (payload: EmailPayload): Promise<EmailResponse> => {
           try {
-            // Chamada correta do SDK do Resend
             const resp = await real.emails.send(payload);
 
-            // Formato esperado do SDK: { data?: { id: string }, error?: { message, name? } }
             if (resp && typeof resp === 'object' && 'error' in resp && resp.error) {
               const message = resp.error.message || 'Failed to send email';
               const statusCode = resp.statusCode || 500;
@@ -113,14 +95,11 @@ const initResend = async (): Promise<ResendClientWithEmails> => {
             let statusCode = 500;
             
             if (err && typeof err === 'object') {
-              // Extract error message
               if ('message' in err && typeof err.message === 'string') {
                 message = err.message;
               } else if ('toString' in err && typeof err.toString === 'function') {
                 message = err.toString();
               }
-              
-              // Extract status code
               if ('statusCode' in err && typeof err.statusCode === 'number') {
                 statusCode = err.statusCode;
               }
@@ -144,10 +123,6 @@ const initResend = async (): Promise<ResendClientWithEmails> => {
   }
 };
 
-// ----------------------------------------------------------------------------
-/**
- * Envia um e-mail de boas-vindas para um novo usuário
- */
 export async function sendWelcomeEmail(params: {
   to: string;
   name?: string;
@@ -203,9 +178,6 @@ export const resend = {
       const client = await initResend();
       const isProd = NODE_ENV === "production";
       if (!isProd && !FORCE_SEND) {
-        console.log("\n=== EMAIL NOT SENT (Development Mode) ===");
-        console.log("To:", Array.isArray(payload.to) ? payload.to : [payload.to]);
-        console.log("Subject:", payload.subject);
         return { data: { id: "simulated-email-id" } };
       }
       return client.emails.send(payload);
@@ -213,19 +185,28 @@ export const resend = {
   },
 };
 
-// ----------------------------------------------------------------------------
 export const sendInvitationEmail = async (params: {
   to: string | string[];
   token: string;
   workspaceName: string;
+  inviterName?: string;
+  inviterEmail?: string;
+  temporaryPassword?: string;
 }) => {
-  console.log("=== STARTING EMAIL SEND PROCESS ===");
-
-  const { to, token, workspaceName } = params;
+  const { to, token, workspaceName, inviterName } = params;
   const recipients = Array.isArray(to) ? to : [to];
-  const inviteLink = `${NEXTAUTH_URL}/invite?token=${encodeURIComponent(
-    token
-  )}`;
+  const slug = workspaceName
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
+
+  if (!slug || slug.length === 0) {
+    throw new Error('Workspace inválida: ' + workspaceName);
+  }
+  
+  const inviteLink = `${NEXTAUTH_URL}/register?email=${encodeURIComponent(recipients[0])}&invitation_id=${encodeURIComponent(token)}&workspace=${encodeURIComponent(slug)}`;
 
   const isProd = NODE_ENV === "production";
   const canSendForReal = (isProd || FORCE_SEND) && !!RESEND_API_KEY;
@@ -241,22 +222,47 @@ export const sendInvitationEmail = async (params: {
   }
 
   const client = await initResend();
-  console.log("Sending email via Resend...");
-
   const res = await client.emails.send({
     from: `TaskFlow <${RESEND_FROM_EMAIL}>`,
     to: recipients,
-    subject: `Você foi convidado para o workspace ${workspaceName}`,
+    subject: `${inviterName || 'Someone'} has invited you to join them in ${workspaceName} on TaskFlow`,
     html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e5e7eb; border-radius: 8px;">
-        <h2 style="color: #1f2937; margin-bottom: 20px;">Você foi convidado para o workspace ${workspaceName}</h2>
-        <p style="color: #4b5563; margin-bottom: 20px;">Clique no botão abaixo para aceitar o convite:</p>
-        <a href="${inviteLink}" style="display: inline-block; padding: 10px 20px; text-decoration: none; border-radius: 5px; margin: 20px 0; font-weight: 500; background-color:#2563eb; color:#fff;">
-          Aceitar convite
-        </a>
-        <p style="color: #6b7280; font-size: 14px; margin-top: 20px;">Se o botão não funcionar, copie e cole este link no seu navegador:</p>
-        <p style="background-color: #f3f4f6; padding: 10px; border-radius: 4px; font-family: monospace; word-break: break-all; font-size: 14px;">${inviteLink}</p>
-        <p style="color: #6b7280; font-size: 14px; margin-top: 20px;">Este link expirará em 7 dias.</p>
+      <div style="font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #1F2937;">
+        <div style="background-color: #4F46E5; padding: 32px; text-align: center; border-radius: 12px 12px 0 0;">
+          <h1 style="color: white; margin: 0; font-size: 28px; font-weight: 700;">TaskFlow</h1>
+          <p style="color: #E0E7FF; margin: 8px 0 0 0; font-size: 16px;">Seu workspace para projetos e progresso</p>
+        </div>
+        
+        <div style="padding: 40px; background-color: #ffffff; border: 1px solid #E5E7EB; border-top: none; border-radius: 0 0 12px 12px;">
+          <div style="text-align: center; margin-bottom: 32px;">
+            <div style="display: inline-block; background-color: #FEF3C7; padding: 16px 24px; border-radius: 50px; margin-bottom: 24px;">
+              <span style="color: #92400E; font-weight: 600; font-size: 18px;">🎉 You are a celebrated colleague!</span>
+            </div>
+            
+            <h2 style="color: #111827; font-size: 24px; margin-top: 0; margin-bottom: 16px; font-weight: 700;">
+              ${inviterName || 'Someone'} has invited you to join them in ${workspaceName} on TaskFlow.
+            </h2>
+            
+            <p style="color: #4B5563; font-size: 18px; line-height: 1.6; margin-bottom: 24px;">
+              Some of our users have told us it's a privilege, but we will let you be the judge of that.
+            </p>
+            
+            <div style="text-align: center; margin-top: 32px;">
+              <a href="${inviteLink}" style="display: inline-block; background-color: #4F46E5; color: white; text-decoration: none; font-weight: 600; padding: 16px 32px; border-radius: 8px; font-size: 16px; transition: background-color 0.2s;">
+                Join them on TaskFlow
+              </a>
+            </div>
+          </div>
+          
+          <div style="margin-top: 40px; padding-top: 24px; border-top: 1px solid #E5E7EB; text-align: center;">
+            <p style="color: #6B7280; font-size: 14px; margin: 0 0 8px 0;">Obrigado por se interessar por nossas soluções!</p>
+            <p style="color: #111827; font-size: 16px; margin: 0; font-weight: 600;">Um grande abraço,<br><span style="color: #4F46E5;">Time TaskFlow!</span></p>
+          </div>
+        </div>
+        
+        <div style="text-align: center; padding: 16px; color: #9CA3AF; font-size: 12px;">
+          <p style="margin: 0;">This email was sent to ${recipients[0]}. Please delete if you are not the intended recipient.</p>
+        </div>
       </div>
     `,
   });
@@ -265,11 +271,10 @@ export const sendInvitationEmail = async (params: {
     throw new Error(`Failed to send email: ${res.error.message}`);
   }
 
-  console.log("Email sent successfully:", res.data);
   return res.data;
 };
 
-// ----------------------------------------------------------------------------
+
 export const sendHtmlEmail = async (payload: {
   to: string | string[];
   subject: string;
@@ -283,10 +288,6 @@ export const sendHtmlEmail = async (payload: {
   const canSendForReal = (isProd || FORCE_SEND) && !!RESEND_API_KEY;
 
   if (!canSendForReal) {
-    console.log("\n=== EMAIL NOT SENT (Development Mode) ===");
-    console.log("To:", Array.isArray(to) ? to : [to]);
-    console.log("Subject:", subject);
-    console.log("Preview:", html.slice(0, 120) + "...");
     return { id: "simulated-email-id" };
   }
 
@@ -300,7 +301,7 @@ export const sendHtmlEmail = async (payload: {
   });
 
   if ("error" in res && res.error) {
-    throw new Error(`Failed to send email: ${res.error.message}`);
+    throw new Error(`Falha ao enviar email: ${res.error.message}`);
   }
   return res.data;
 };

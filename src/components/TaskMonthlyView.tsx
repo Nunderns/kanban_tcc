@@ -1,6 +1,6 @@
 "use client";
 
-import { WorkItem, Priority, Status } from "@/app/dashboard/my-tasks/page";
+import { WorkItem, Priority, Status } from "@/app/[workspaceSlug]/dashboard/my-tasks/page";
 import { FaCircle, FaRegCircle } from "react-icons/fa";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay } from "date-fns";
 import { parseLocalDate } from "@/lib/utils";
@@ -48,16 +48,13 @@ export default function TaskMonthlyView({ tasks, onTaskClick }: TaskMonthlyViewP
     }
   };
 
-  // Create calendar grid
   const firstDayOfMonth = monthStart.getDay();
   const calendarDays = [];
   
-  // Add empty cells for days before month starts
   for (let i = 0; i < firstDayOfMonth; i++) {
     calendarDays.push(null);
   }
   
-  // Add actual days of the month
   calendarDays.push(...monthDays);
 
   return (

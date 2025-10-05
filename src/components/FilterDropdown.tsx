@@ -34,13 +34,10 @@ interface FilterDropdownProps {
 }
 
 export default function FilterDropdown({ filters, onFilterChange }: FilterDropdownProps) {
-  // Verifica se há algum filtro ativo
   const hasActiveFilters = Object.values(filters).some(filter => filter.length > 0);
   
-  // Limpa todos os filtros
   const clearAllFilters = () => {
     Object.keys(filters).forEach(filterType => {
-      // Para cada filtro, desmarca todas as opções
       filters[filterType as keyof typeof filters].forEach(value => {
         onFilterChange(filterType as keyof FilterDropdownProps['filters'], value, false);
       });
@@ -128,7 +125,6 @@ export default function FilterDropdown({ filters, onFilterChange }: FilterDropdo
             onChange={(e) => {
               const date = e.target.value;
               if (date) {
-                // Converte a data do formato yyyy-MM-dd para dd/MM/yyyy
                 const [year, month, day] = date.split('-');
                 const formattedDate = `${day}/${month}/${year}`;
                 onFilterChange('startDate', `data:${formattedDate}`, true);
@@ -157,7 +153,6 @@ export default function FilterDropdown({ filters, onFilterChange }: FilterDropdo
             onChange={(e) => {
               const date = e.target.value;
               if (date) {
-                // Converte a data do formato yyyy-MM-dd para dd/MM/yyyy
                 const [year, month, day] = date.split('-');
                 const formattedDate = `${day}/${month}/${year}`;
                 onFilterChange('dueDate', `data:${formattedDate}`, true);
@@ -167,7 +162,6 @@ export default function FilterDropdown({ filters, onFilterChange }: FilterDropdo
         </div>
       </Section>
       
-      {/* Botão Limpar Filtros */}
       {hasActiveFilters && (
         <div className="mt-4 pt-3 border-t border-gray-700">
           <button

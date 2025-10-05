@@ -24,7 +24,6 @@ kanban_tcc/
 ├── src/
 │   ├── app/
 │   │   ├── api/              # Rotas da API (Next.js API routes)
-│   │   ├── blog/             # Página de blog
 │   │   ├── cases/            # Casos de sucesso
 │   │   ├── create-workspace/ # Criação de workspaces
 │   │   ├── dashboard/        # Tela principal do Kanban

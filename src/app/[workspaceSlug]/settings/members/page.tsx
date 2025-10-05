@@ -6,7 +6,6 @@ import { useState, useEffect } from "react";
 import { useTheme } from "next-themes";
 import Link from "next/link";
 import { Plus, X, Loader2 } from "lucide-react";
-import { Sidebar } from "@/components/Sidebar";
 import { toast } from 'react-hot-toast';
 
 type InviteField = {
@@ -37,7 +36,13 @@ function InviteModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void
     setIsLoading(true);
     setError(null);
     try {
-      const workspaceId = 1; // TODO: substituir pelo ID real do workspace
+      // Get current workspace ID
+      const workspaceResponse = await fetch('/api/workspaces/current');
+      if (!workspaceResponse.ok) {
+        throw new Error('Não foi possível obter o workspace atual');
+      }
+      const workspaceData = await workspaceResponse.json();
+      const workspaceId = workspaceData.id;
       await Promise.all(
         fields.map(async (field) => {
           if (!field.email.trim()) return null;
@@ -230,7 +235,6 @@ export default function MembersPage() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 flex">
-        <Sidebar />
         <aside className="w-64 border-r border-gray-200 dark:border-gray-700 p-4 space-y-2 text-sm">
           <h2 className="text-gray-500 dark:text-gray-400 font-semibold uppercase mb-2">Configurações</h2>
           {links.map(({ href, label }) => (
@@ -260,9 +264,6 @@ export default function MembersPage() {
 
   return (
     <div className="min-h-screen bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 flex">
-      <Sidebar />
-
-      {/* Sidebar de Configurações */}
       <aside className="w-64 border-r border-gray-200 dark:border-gray-700 p-4 space-y-2 text-sm">
         <div className="flex items-center justify-between mb-2">
           <h2 className="text-gray-500 dark:text-gray-400 font-semibold uppercase">Configurações</h2>

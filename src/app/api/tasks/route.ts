@@ -4,6 +4,33 @@ import { auth } from "@/lib/auth";
 import { NextRequest } from "next/server";
 import { parseLocalDate } from "@/lib/utils";
 
+interface TaskWithIncludes {
+  id: number;
+  title: string;
+  description: string | null;
+  status: string;
+  priority: string;
+  startDate: Date | null;
+  dueDate: Date | null;
+  assignees: string[] | null;
+  assignedUserId: number | null;
+  assignedUser: {
+    id: number;
+    name: string | null;
+    email: string | null;
+  } | null;
+  module: string | null;
+  cycle: string | null;
+  labels: string[] | null;
+  user: {
+    id: number;
+    name: string | null;
+    email: string | null;
+  };
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 const handleServerError = (error: unknown) => {
   return NextResponse.json(
     {
@@ -16,12 +43,8 @@ const handleServerError = (error: unknown) => {
 
 export async function GET(req: NextRequest) {
   try {
-    console.log('Tasks API: GET request received');
     const session = await auth();
-    console.log('Session:', session ? 'Authenticated' : 'Not authenticated');
-
     if (!session?.user?.id) {
-      console.error('Unauthorized: No session or user ID');
       return NextResponse.json({ 
         error: "Unauthorized",
         details: "No active session or user ID found" 
@@ -38,8 +61,6 @@ export async function GET(req: NextRequest) {
     const projectIdParam = req.nextUrl.searchParams.get("projectId");
     const projectId = projectIdParam ? parseInt(projectIdParam) : undefined;
     
-    console.log('Query params:', { status, workspaceId, projectId });
-
     const userId = typeof session.user.id === 'string' 
       ? parseInt(session.user.id, 10) 
       : session.user.id;
@@ -67,30 +88,65 @@ export async function GET(req: NextRequest) {
       where.projectId = projectId;
     }
     
-    console.log('Database query:', JSON.stringify(where, null, 2));
-
-    console.log('Querying database for tasks...');
     const tasks = await prisma.task.findMany({
-      where,
-      include: {
-        user: { select: { id: true, name: true, email: true } },
-        project: { select: { id: true, name: true } }
+      where: {
+        userId,
+        ...(status && { status }),
+        ...(workspaceId && { workspaceId }),
+        ...(projectId && { projectId })
       },
-      orderBy: { createdAt: "desc" },
+      include: {
+        assignedUser: {
+          select: {
+            id: true,
+            name: true,
+            email: true
+          }
+        },
+        project: {
+          select: {
+            id: true,
+            name: true
+          }
+        },
+        workspace: {
+          select: {
+            id: true,
+            name: true
+          }
+        },
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true
+          }
+        }
+      },
+      orderBy: {
+        createdAt: 'desc'
+      },
       take: 100
     });
     
-    console.log(`Found ${tasks.length} tasks`);
-
-    type TaskResult = {
-      user?: { name: string | null } | null;
-      [key: string]: unknown;
-    };
-
     return NextResponse.json(
-      (tasks as TaskResult[]).map((task) => ({
-        ...task,
-        creator: task.user?.name || "Desconhecido"
+      tasks.map((task: TaskWithIncludes) => ({
+        id: task.id.toString(),
+        title: task.title,
+        description: task.description,
+        status: task.status,
+        priority: task.priority,
+        startDate: task.startDate?.toISOString(),
+        dueDate: task.dueDate?.toISOString(),
+        assignees: task.assignees,
+        assignedUserId: task.assignedUserId?.toString(),
+        assignedUserName: task.assignedUser?.name || null,
+        module: task.module,
+        cycle: task.cycle,
+        labels: task.labels,
+        creator: task.user?.name || "Desconhecido",
+        createdAt: task.createdAt.toISOString(),
+        updatedAt: task.updatedAt.toISOString()
       }))
     );
 
@@ -122,6 +178,7 @@ export async function POST(req: NextRequest) {
         userId: typeof session.user.id === 'string' ? parseInt(session.user.id, 10) : session.user.id,
         projectId: body.projectId ? Number(body.projectId) : null,
         workspaceId: body.workspaceId ? Number(body.workspaceId) : null,
+        assignedUserId: body.assignedUserId ? Number(body.assignedUserId) : null,
         assignees: body.assignees ?? [],
         labels: body.labels ?? [],
         startDate: body.startDate ? parseLocalDate(body.startDate) : null,
@@ -143,8 +200,6 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     
-    console.log('2. Session authenticated for user ID:', session.user.id);
-
     const searchParams = req.nextUrl.searchParams;
     const taskId = searchParams.get('id');
     
@@ -164,10 +219,10 @@ export async function PATCH(req: NextRequest) {
     if (existingTask.userId !== Number(session.user.id)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
-    const updateData: Record<string, unknown> = { updatedAt: new Date() };
+    const updateData: Record<string, unknown> = {};
     
     if ('projectId' in body) {
-      updateData.project = body.projectId 
+      updateData.project = body.projectId
         ? { connect: { id: Number(body.projectId) } }
         : { disconnect: true };
     }
@@ -194,41 +249,34 @@ export async function PATCH(req: NextRequest) {
     }
     const safeBody: Record<string, unknown> = body;
     
+    if (body.assignedUserId !== undefined) {
+      updateData.assignedUserId = body.assignedUserId ? Number(body.assignedUserId) : null;
+    }
+
     updatableFields.forEach((field: UpdatableField) => {
       if (field in safeBody && safeBody[field] !== undefined) {
         (updateData as Record<string, unknown>)[field] = safeBody[field];
       }
     });
     updateData.updatedAt = new Date();
-    try {
-      const updatedTask = await prisma.task.update({
-        where: { id: Number(taskId) },
-        data: updateData,
-        include: {
-          user: { select: { id: true } },
-          project: { select: { id: true } }
-        }
-      });
-
-      console.log('7. Task updated successfully:', {
-        id: updatedTask.id,
-        title: updatedTask.title,
-        status: updatedTask.status,
-        updatedAt: updatedTask.updatedAt
-      });
-      
-      return NextResponse.json(updatedTask);
-    } catch (dbError) {
-      console.error('Database update error:', dbError);
-      if (dbError instanceof Error) {
-        console.error('Error details:', {
-          name: dbError.name,
-          message: dbError.message,
-          stack: dbError.stack
-        });
+    
+    const updatedTask = await prisma.task.update({
+      where: { id: Number(taskId) },
+      data: updateData,
+      include: {
+        user: { select: { id: true } },
+        project: { select: { id: true } }
       }
-      throw dbError;
-    }
+    });
+
+    console.log('7. Task updated successfully:', {
+      id: updatedTask.id,
+      title: updatedTask.title,
+      status: updatedTask.status,
+      updatedAt: updatedTask.updatedAt
+    });
+    
+    return NextResponse.json(updatedTask);
   } catch (error) {
     console.error('Error in PATCH /api/tasks:', error);
     

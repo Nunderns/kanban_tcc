@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-// Prisma types interfaces
 interface PrismaTask {
   id: number;
   title: string;
@@ -116,7 +115,6 @@ export async function GET() {
       );
     }
 
-    // Buscar tarefas do usuário
     const tasks = await prisma.task.findMany({
       where: { userId },
       include: {
@@ -126,13 +124,10 @@ export async function GET() {
       orderBy: { createdAt: "desc" }
     });
 
-    // Buscar projetos do usuário
     const projects = await prisma.project.findMany({
       where: { ownerId: userId },
       orderBy: { createdAt: "desc" }
     });
-
-    // Buscar workspaces do usuário
     const workspaces = await prisma.workspace.findMany({
       where: { 
         OR: [

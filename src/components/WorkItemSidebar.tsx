@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { FormattedDateInput } from "./FormattedDateInput";
-import type { WorkItem } from "@/app/dashboard/my-tasks/page";
+import type { WorkItem } from "@/app/[workspaceSlug]/dashboard/my-tasks/page";
 import { parseLocalDate } from "@/lib/utils";
 import { 
   XMarkIcon, 
@@ -15,7 +15,8 @@ import {
   CubeIcon,
   ArrowsPointingOutIcon,
   ListBulletIcon,
-  ArrowPathIcon
+  ArrowPathIcon,
+  ChevronDownIcon
 } from '@heroicons/react/24/outline';
 import { priorityColors } from "@/lib/constants";
 
@@ -30,6 +31,14 @@ interface Activity {
   createdAt: string;
 }
 
+interface WorkspaceMember {
+  id: string;
+  fullName: string;
+  displayName: string;
+  email: string;
+  role: string;
+}
+
 interface Props {
   item: WorkItem;
   onClose: () => void;
@@ -39,6 +48,9 @@ interface Props {
 export default function WorkItemSidebar({ item, onClose, onUpdate }: Props) {
   const [localItem, setLocalItem] = useState(item);
   const [activities, setActivities] = useState<Activity[]>([]);
+  const [workspaceMembers, setWorkspaceMembers] = useState<WorkspaceMember[]>([]);
+  const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
+  const [loadingMembers, setLoadingMembers] = useState(false);
 
   const formatDate = (dateString: string): string => {
     if (!dateString) return 'não definida';
@@ -50,8 +62,6 @@ export default function WorkItemSidebar({ item, onClose, onUpdate }: Props) {
       return dateString;
     }
   };
-
-  // Mapeia os nomes dos campos para algo mais amigável
   const getFieldName = (field: string): string => {
     const fieldMap: Record<string, string> = {
       'startDate': 'data de início',
@@ -76,21 +86,38 @@ export default function WorkItemSidebar({ item, onClose, onUpdate }: Props) {
     if (action === 'updated field') {
       const isDateField = field.toLowerCase().includes('date');
       const fieldName = getFieldName(field);
+      if (field === 'assignedUserId') {
+        if (newValue && (!oldValue || oldValue === 'null' || oldValue === 'undefined')) {
+          const assignedUser = workspaceMembers.find(member => member.id === newValue);
+          const userName = assignedUser?.displayName || assignedUser?.fullName || 'um usuário';
+          return `${formattedDate} - ${user} atribuiu a tarefa para ${userName}`;
+        } else if (!newValue || newValue === 'null' || newValue === 'undefined') {
+          const previousUser = workspaceMembers.find(member => member.id === oldValue);
+          const userName = previousUser?.displayName || previousUser?.fullName || 'um usuário';
+          return `${formattedDate} - ${user} removeu a atribuição de ${userName}`;
+        } else {
+          const oldUser = workspaceMembers.find(member => member.id === oldValue);
+          const newUser = workspaceMembers.find(member => member.id === newValue);
+          const oldUserName = oldUser?.displayName || oldUser?.fullName || 'um usuário';
+          const newUserName = newUser?.displayName || newUser?.fullName || 'um usuário';
+          return `${formattedDate} - ${user} transferiu a tarefa de ${oldUserName} para ${newUserName}`;
+        }
+      }
       
-      // Formata valores antigos e novos
       const formatValue = (value: string) => {
         if (isDateField) return formatDate(value);
-        if (!value) return 'não definido';
+        if (!value || value === 'null' || value === 'undefined') return 'não definido';
         return value;
       };
       
       const oldVal = formatValue(oldValue);
       const newVal = formatValue(newValue);
       
+      if (field === 'assignedUserId') return '';
+      
       return `${formattedDate} - ${user} alterou o campo ${fieldName} de "${oldVal}" para "${newVal}"`;
     }
     
-    // Outras ações (criado, excluído, etc)
     const actionMap: Record<string, string> = {
       'created': 'criou a tarefa',
       'deleted': 'excluiu a tarefa',
@@ -114,19 +141,35 @@ export default function WorkItemSidebar({ item, onClose, onUpdate }: Props) {
     }
   }, [item.id]);
 
-  // Update local state when item prop changes
+  const fetchWorkspaceMembers = useCallback(async () => {
+    try {
+      setLoadingMembers(true);
+      const response = await fetch('/api/workspace/members');
+      if (response.ok) {
+        const data = await response.json();
+        setWorkspaceMembers(data.members || []);
+      }
+    } catch (error) {
+      console.error('Error fetching workspace members:', error);
+    } finally {
+      setLoadingMembers(false);
+    }
+  }, []);
+
+  // Atualiza o localItem apenas quando o item prop muda
   useEffect(() => {
-    // Usando JSON.stringify para garantir uma comparação profunda
-    if (JSON.stringify(item) !== JSON.stringify(localItem)) {
+    const itemChanged = JSON.stringify(item) !== JSON.stringify(localItem);
+    if (itemChanged) {
       console.log('Updating localItem from prop item:', item);
       setLocalItem({...item});
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [item]);
 
   useEffect(() => {
     fetchActivities();
-  }, [fetchActivities]);
+    fetchWorkspaceMembers();
+  }, [fetchActivities, fetchWorkspaceMembers, item.id]);
 
   const handleChange = (field: keyof WorkItem, value: string | string[] | null | undefined) => {
     setLocalItem(prev => ({
@@ -137,10 +180,8 @@ export default function WorkItemSidebar({ item, onClose, onUpdate }: Props) {
 
   const handleUpdateClick = async () => {
     try {
-      // Prepare the update data
       const updateData = { ...localItem };
       
-      // Ensure assignees is an array
       if (updateData.assignees && typeof updateData.assignees === 'string') {
         updateData.assignees = (updateData.assignees as string)
           .split(',')
@@ -150,7 +191,6 @@ export default function WorkItemSidebar({ item, onClose, onUpdate }: Props) {
         updateData.assignees = [];
       }
       
-      // Update the task - include ID as query parameter
       const updateResponse = await fetch(`/api/tasks?id=${item.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -169,7 +209,6 @@ export default function WorkItemSidebar({ item, onClose, onUpdate }: Props) {
         
         console.error('Update failed with status:', updateResponse.status, 'Details:', errorData);
         
-        // Create a more detailed error message
         const errorMessage = [
           `Failed to update task (Status: ${updateResponse.status})`,
           errorData.error && `Error: ${errorData.error}`,
@@ -179,12 +218,9 @@ export default function WorkItemSidebar({ item, onClose, onUpdate }: Props) {
         throw new Error(errorMessage || 'Failed to update task');
       }
 
-      // Log activity for changed fields
       const changedFields = Object.keys(localItem).filter(
         key => JSON.stringify(localItem[key as keyof WorkItem]) !== JSON.stringify(item[key as keyof WorkItem])
       );
-
-      // Create activity log for each changed field
       await Promise.all(changedFields.map(async (field) => {
         const oldValue = item[field as keyof WorkItem];
         const newValue = localItem[field as keyof WorkItem];
@@ -202,13 +238,11 @@ export default function WorkItemSidebar({ item, onClose, onUpdate }: Props) {
         });
       }));
 
-      // Refresh activities and update parent
       await fetchActivities();
       onUpdate(localItem);
       onClose();
     } catch (error) {
       console.error('Error updating task:', error);
-      // Optionally show error message to user
     }
   };
 
@@ -232,11 +266,16 @@ export default function WorkItemSidebar({ item, onClose, onUpdate }: Props) {
     <aside className="w-[450px] bg-white dark:bg-gray-800 text-gray-900 dark:text-white border-l border-gray-200 dark:border-gray-700 p-6 overflow-y-auto h-screen fixed right-0 top-0 z-50 shadow-xl">
       <div className="flex justify-between items-center mb-6 pb-4 border-b border-gray-100 dark:border-gray-700">
         <h2 className="text-2xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
-          <span className="text-blue-600 dark:text-blue-400">#PRIME-{item.id}</span>
+          <span className="text-blue-600 dark:text-blue-400">#{item.id.startsWith('PRIME-') ? item.id : `PRIME-${item.id}`}</span>
         </h2>
         <button 
-          onClick={onClose}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onClose();
+          }}
           className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+          aria-label="Fechar"
         >
           <XMarkIcon className="h-6 w-6" />
         </button>
@@ -249,11 +288,69 @@ export default function WorkItemSidebar({ item, onClose, onUpdate }: Props) {
           className="w-full text-2xl font-bold border-0 border-b border-transparent focus:border-blue-500 dark:focus:border-blue-400 focus:ring-0 p-0 bg-transparent text-gray-900 dark:text-white"
           placeholder="Título da tarefa"
         />
-        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">PRIME-{localItem.id}</p>
+        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{localItem.id.startsWith('PRIME-') ? localItem.id : `PRIME-${localItem.id}`}</p>
         <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 flex items-center">
           <UserCircleIcon className="h-4 w-4 mr-1" />
           Criado por {item.creator || "henri.okayama"}
         </p>
+        <div className="mt-2">
+          <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Responsável</p>
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
+              className="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded p-2 text-sm flex items-center justify-between hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-white"
+            >
+              <div className="flex items-center gap-2">
+                <UserCircleIcon className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+                {localItem.assignedUserId 
+                  ? workspaceMembers.find(m => m.id === localItem.assignedUserId)?.fullName || 'Usuário selecionado'
+                  : 'Selecione um responsável'
+                }
+              </div>
+              <ChevronDownIcon className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+            </button>
+            
+            {isUserDropdownOpen && (
+              <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                <div className="p-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleChange("assignedUserId", "");
+                      setIsUserDropdownOpen(false);
+                    }}
+                    className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded flex items-center gap-2"
+                  >
+                    <UserCircleIcon className="h-4 w-4 text-gray-400 dark:text-gray-500" />
+                    Nenhum responsável
+                  </button>
+                  {loadingMembers ? (
+                    <div className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400">Carregando...</div>
+                  ) : (
+                    workspaceMembers.map((member) => (
+                      <button
+                        key={member.id}
+                        type="button"
+                        onClick={() => {
+                          handleChange("assignedUserId", member.id);
+                          setIsUserDropdownOpen(false);
+                        }}
+                        className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded flex items-center gap-2"
+                      >
+                        <UserCircleIcon className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+                        <div>
+                          <div className="font-medium">{member.fullName}</div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400">{member.email}</div>
+                        </div>
+                      </button>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       <div className="space-y-4">

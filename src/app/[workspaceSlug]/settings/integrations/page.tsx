@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { usePathname } from "next/navigation";
-import { Sidebar } from "@/components/Sidebar";
 import Link from "next/link";
 import {
   FiGithub,
@@ -24,14 +23,14 @@ interface Integration {
   icon: React.ReactNode;
   category: "code" | "chat" | "productivity" | "other";
   connected: boolean;
-  status?: "connected" | "pending" | "error";
+  status?: 'connected' | 'pending' | 'error';
   lastSync?: string;
   action: "connect" | "configure" | "disconnect" | "reconnect";
 }
 
 export default function IntegrationsSettings() {
-  const _pathname = usePathname();
-  const [searchTerm, setSearchTerm] = useState("");
+  const pathname = usePathname();
+  const [searchQuery, setSearchQuery] = useState<string>("");
   const [activeCategory, setActiveCategory] = useState<string>("all");
   const [integrations, setIntegrations] = useState<Integration[]>([
     {
@@ -112,20 +111,21 @@ export default function IntegrationsSettings() {
     },
   ]);
 
+  const workspaceSlug = pathname?.split('/')[1];
   const links = [
-    { href: "/dashboard/settings/general", label: "Geral" },
-    { href: "/dashboard/settings/members", label: "Membros" },
-    { href: "/dashboard/settings/project-states", label: "Estados do Projeto" },
-    { href: "/dashboard/settings/integrations", label: "Integrações" },
-    { href: "/dashboard/settings/imports", label: "Importações" },
-    { href: "/dashboard/settings/exports", label: "Exportações" },
-    { href: "/dashboard/settings/webhooks", label: "Webhooks" },
-    { href: "/dashboard/settings/api-tokens", label: "Tokens de API" },
-    { href: "/dashboard/settings/worklogs", label: "Registros de Trabalho" },
-    { href: "/dashboard/settings/teamspaces", label: "Espaços de Equipe" },
-    { href: "/dashboard/settings/initiatives", label: "Iniciativas" },
-    { href: "/dashboard/settings/customers", label: "Clientes" },
-    { href: "/dashboard/settings/templates", label: "Modelos" },
+    { href: `/${workspaceSlug}/settings`, label: "Geral" },
+    { href: `/${workspaceSlug}/settings/members`, label: "Membros" },
+    { href: `/${workspaceSlug}/settings/project-states`, label: "Estados do Projeto" },
+    { href: `/${workspaceSlug}/settings/integrations`, label: "Integrações" },
+    { href: `/${workspaceSlug}/settings/imports`, label: "Importações" },
+    { href: `/${workspaceSlug}/settings/exports`, label: "Exportações" },
+    { href: `/${workspaceSlug}/settings/webhooks`, label: "Webhooks" },
+    { href: `/${workspaceSlug}/settings/api-tokens`, label: "Tokens de API" },
+    { href: `/${workspaceSlug}/settings/worklogs`, label: "Registros de Trabalho" },
+    { href: `/${workspaceSlug}/settings/teamspaces`, label: "Espaços de Equipe" },
+    { href: `/${workspaceSlug}/settings/initiatives`, label: "Iniciativas" },
+    { href: `/${workspaceSlug}/settings/customers`, label: "Clientes" },
+    { href: `/${workspaceSlug}/settings/templates`, label: "Modelos" },
   ];
 
   const categories = [
@@ -137,7 +137,7 @@ export default function IntegrationsSettings() {
   ];
 
   const filteredIntegrations = integrations.filter((integration) => {
-    const q = searchTerm.toLowerCase();
+    const q = searchQuery.toLowerCase();
     const matchesSearch = integration.name.toLowerCase().includes(q) || integration.description.toLowerCase().includes(q);
     const matchesCategory = activeCategory === "all" || integration.category === activeCategory;
     return matchesSearch && matchesCategory;
@@ -232,8 +232,6 @@ export default function IntegrationsSettings() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 flex">
-      <Sidebar />
-
       <aside className="w-64 border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4 space-y-1 text-sm">
         <h2 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-4 px-2">Configurações</h2>
         <nav className="space-y-1">
@@ -242,7 +240,7 @@ export default function IntegrationsSettings() {
               key={link.href}
               href={link.href}
               className={`flex items-center px-3 py-2 rounded-md text-sm font-medium ${
-                _pathname === link.href
+                pathname === link.href
                   ? "bg-blue-50 dark:bg-blue-900 text-blue-700 dark:text-blue-300"
                   : "text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-50"
               }`}
@@ -266,8 +264,8 @@ export default function IntegrationsSettings() {
                 type="text"
                 className="block w-full pr-10 sm:text-sm rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                 placeholder="Buscar integrações..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                value={searchQuery}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
               />
               <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
                 <svg className="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">

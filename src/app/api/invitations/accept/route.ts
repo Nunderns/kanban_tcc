@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server';
 import { auth } from "@/lib/auth";
 import { prisma } from '@/lib/prisma';
 
-// Tipagem para a sessão do usuário
 interface UserSession {
   user?: {
     email?: string | null;
@@ -11,7 +10,6 @@ interface UserSession {
   };
 }
 
-// Enable debug logging
 const debug = process.env.NODE_ENV === 'development';
 
 function log(...args: unknown[]) {
@@ -31,31 +29,18 @@ export async function POST(req: Request) {
     const session = await auth();
     log(`[${requestId}] Session:`, session ? 'Found' : 'Not found');
     
-    // Registrar headers úteis para depuração
     const headers: Record<string, string> = {};
     req.headers.forEach((value, key) => {
       headers[key] = value;
     });
     log(`[${requestId}] Request headers:`, JSON.stringify(headers, null, 2));
     
-    // Check if user is authenticated
-    if (!session?.user?.email) {
-      const error = 'Usuário não autenticado';
-      log(`[${requestId}] ${error}`);
-      return NextResponse.json(
-        { 
-          error, 
-          code: 'NOT_AUTHENTICATED',
-          requestId
-        },
-        { status: 401 }
-      );
-    }
-
     let token: string | undefined;
+    let email: string | undefined;
+    let slug: string | undefined;
     
     try {
-      const requestData = await req.json() as { token?: string };
+      const requestData = await req.json() as { token?: string; email?: string; slug?: string };
       log(`[${requestId}] Request data:`, JSON.stringify(requestData, null, 2));
       
       if (!requestData?.token || typeof requestData.token !== 'string') {
@@ -73,6 +58,8 @@ export async function POST(req: Request) {
       }
       
       token = requestData.token;
+      email = requestData.email;
+      slug = requestData.slug;
       log(`[${requestId}] Token from request: Received`);
     } catch (e) {
       const error = 'Erro ao processar a requisição';
@@ -83,7 +70,6 @@ export async function POST(req: Request) {
       );
     }
     
-    // Validate token
     if (!token) {
       const error = 'Token de convite não fornecido';
       log(`[${requestId}] ${error}`);
@@ -97,7 +83,6 @@ export async function POST(req: Request) {
       );
     }
 
-    // Find the invitation
     log(`[${requestId}] Looking for invitation with token:`, token.substring(0, 8) + '...');
     const invitation = await prisma.invitation.findUnique({
       where: { token },
@@ -113,7 +98,6 @@ export async function POST(req: Request) {
     
     log(`[${requestId}] Found invitation:`, invitation ? 'Yes' : 'No');
     
-    // Check if invitation exists and is not expired
     if (!invitation) {
       const error = 'Convite inválido ou expirado';
       log(`[${requestId}] ${error}`);
@@ -128,7 +112,6 @@ export async function POST(req: Request) {
       );
     }
     
-    // Type guard para garantir que o workspace está presente
     if (!invitation.workspace) {
       const error = 'Workspace não encontrado para o convite';
       log(`[${requestId}] ${error}:`, invitation.id);
@@ -143,7 +126,6 @@ export async function POST(req: Request) {
       );
     }
     
-    // Garantir que o workspaceId está definido
     if (!invitation.workspaceId) {
       const error = 'ID do workspace não encontrado';
       log(`[${requestId}] ${error} para o convite:`, invitation.id);
@@ -158,7 +140,48 @@ export async function POST(req: Request) {
       );
     }
     
-    // Check if invitation is already used
+    if (email && invitation.email !== email) {
+      const error = 'O email do convite não corresponde ao email fornecido';
+      log(`[${requestId}] ${error}`, { 
+        invitationEmail: invitation.email, 
+        providedEmail: email 
+      });
+      return NextResponse.json(
+        { 
+          error, 
+          code: 'EMAIL_MISMATCH',
+          requestId
+        },
+        { status: 400 }
+      );
+    }
+    
+    if (slug) {
+      const expectedSlug = invitation.workspace.name
+        .toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, ''); 
+      
+      if (slug !== expectedSlug) {
+        const error = 'O slug do workspace não corresponde ao esperado';
+        log(`[${requestId}] ${error}`, { 
+          expectedSlug, 
+          providedSlug: slug,
+          workspaceName: invitation.workspace.name
+        });
+        return NextResponse.json(
+          { 
+            error, 
+            code: 'SLUG_MISMATCH',
+            requestId
+          },
+          { status: 400 }
+        );
+      }
+    }
+    
     if (invitation.status !== 'pending') {
       const error = 'Este convite já foi utilizado';
       log(`[${requestId}] ${error}`, { 
@@ -197,12 +220,13 @@ export async function POST(req: Request) {
       );
     }
 
-    // Check if user is already a member of the workspace
+    const invitationEmail = invitation.email;
+    
     log(`[${requestId}] Checking for existing workspace membership`);
     const existingMember = await prisma.workspaceMember.findFirst({
       where: {
         workspaceId: invitation.workspaceId,
-        user: { email: session.user.email }
+        user: { email: invitationEmail }
       },
       select: {
         id: true,
@@ -213,7 +237,7 @@ export async function POST(req: Request) {
 
     if (existingMember) {
       const message = 'Você já é membro deste workspace';
-      const redirectUrl = '/dashboard/my-tasks'; // Redirect to tasks dashboard
+      const redirectUrl = '[workspaceSlug]/dashboard/my-tasks';
       log(`[${requestId}] ${message}`, { 
         redirectUrl,
         existingMembership: existingMember
@@ -233,22 +257,23 @@ export async function POST(req: Request) {
       });
     }
 
-    // Get the current user
     const userSession = session as UserSession;
-    const userEmail = userSession?.user?.email;
+    const sessionEmail = userSession?.user?.email;
     
-    if (!userEmail) {
-      const error = 'Usuário não autenticado';
+    if (!sessionEmail && !email) {
+      const error = 'Usuário não autenticado e email não fornecido';
       log(`[${requestId}] ${error}`);
       return NextResponse.json(
-        { error, code: 'NOT_AUTHENTICATED' },
+        { error, code: 'NOT_AUTHENTICATED_NO_EMAIL' },
         { status: 401 }
       );
     }
-
-    log(`[${requestId}] Fetching user with email:`, userEmail);
-    const user = await prisma.user.findUnique({
-      where: { email: userEmail },
+    
+    const targetEmail = sessionEmail || email || invitationEmail;
+    
+    log(`[${requestId}] Fetching user with email:`, targetEmail);
+    let user = await prisma.user.findUnique({
+      where: { email: targetEmail },
       include: { 
         workspaces: {
           select: {
@@ -260,17 +285,37 @@ export async function POST(req: Request) {
     });
     
     if (!user) {
-      const error = 'Usuário não encontrado';
-      log(`[${requestId}] ${error}`, { email: userEmail });
-      return NextResponse.json(
-        { 
-          error,
-          code: 'USER_NOT_FOUND',
-          requestId,
-          email: userEmail
-        },
-        { status: 404 }
-      );
+      log(`[${requestId}] Creating new user for email:`, targetEmail);
+      
+      try {
+        const newUser = await prisma.user.create({
+          data: {
+            email: targetEmail,
+            name: targetEmail.split('@')[0].charAt(0).toUpperCase() + targetEmail.split('@')[0].slice(1),
+            emailVerified: new Date(),
+          }
+        });
+        
+        log(`[${requestId}] New user created:`, { 
+          userId: newUser.id, 
+          email: newUser.email,
+          name: newUser.name
+        });
+        
+        user = newUser;
+      } catch (error) {
+        const errorMessage = 'Erro ao criar novo usuário';
+        log(`[${requestId}] ${errorMessage}:`, error);
+        return NextResponse.json(
+          { 
+            error: errorMessage,
+            code: 'USER_CREATION_FAILED',
+            requestId,
+            email: targetEmail
+          },
+          { status: 500 }
+        );
+      }
     }
     
     log(`[${requestId}] User found:`, { 
@@ -279,25 +324,17 @@ export async function POST(req: Request) {
       hasImage: 'image' in user ? !!user.image : false
     });
     
-    // Verificar se o e-mail do convite corresponde ao e-mail do usuário autenticado
-    if (invitation.email.toLowerCase() !== userEmail.toLowerCase()) {
-      const error = 'Este convite não é para o seu endereço de e-mail';
-      log(`[${requestId}] ${error}`, { 
-        invitationEmail: invitation.email, 
-        userEmail 
-      });
-      return NextResponse.json(
-        { 
-          error,
-          code: 'INVALID_INVITATION_RECIPIENT',
-          details: 'O convite foi enviado para um endereço de e-mail diferente',
-          requestId
-        },
-        { status: 403 }
-      );
+    log(`[${requestId}] Email check:`, { 
+      invitationEmail, 
+      sessionEmail: sessionEmail || 'N/A',
+      match: sessionEmail ? invitationEmail.toLowerCase() === sessionEmail.toLowerCase() : false
+    });
+    
+    if (sessionEmail && invitationEmail.toLowerCase() !== sessionEmail.toLowerCase()) {
+      log(`[${requestId}] Email mismatch but allowing acceptance for existing user`);
+      // Continue with the process - don't return error
     }
 
-    // Add user to workspace
     log('Adding user to workspace');
     try {
       if (!user) {
@@ -308,7 +345,6 @@ export async function POST(req: Request) {
         throw new Error('ID do workspace não encontrado');
       }
 
-      // Usar uma transação para garantir a atomicidade das operações
       log('Starting transaction to accept invitation and add user to workspace');
       log('Invitation ID:', invitation.id);
       log('User ID:', user.id);
@@ -317,16 +353,14 @@ export async function POST(req: Request) {
       
       try {
         await prisma.$transaction([
-          // Atualizar o convite primeiro para evitar condições de corrida
           prisma.invitation.update({
             where: { id: invitation.id },
             data: { 
               status: 'accepted',
-              expiresAt: new Date() // Invalidar o token
+              expiresAt: new Date()
             }
           }),
           
-          // Adicionar usuário ao workspace
           prisma.workspaceMember.create({
             data: {
               userId: user.id,
@@ -340,29 +374,11 @@ export async function POST(req: Request) {
       } catch (transactionError) {
         const errorMessage = transactionError instanceof Error ? transactionError.message : 'Erro desconhecido na transação';
         log('Transaction failed:', errorMessage);
-        throw transactionError; // Será capturado pelo bloco catch externo
+        throw transactionError; 
       }
-      
-      // Nota: Comentado o log de auditoria até que o modelo AuditLog seja definido
-      /*
-      await prisma.auditLog.create({
-        data: {
-          action: 'INVITATION_ACCEPTED',
-          userId: user.id,
-          workspaceId: invitation.workspaceId,
-          metadata: {
-            invitationId: invitation.id,
-            invitedEmail: invitation.email,
-            role: invitation.role
-          }
-        }
-      });
-      */
-
-      const redirectUrl = '/dashboard/my-tasks'; // Redirect to tasks dashboard
+      const redirectUrl = '/dashboard/my-tasks'; 
       log('Success! Redirecting to:', redirectUrl);
       
-      // Buscar detalhes atualizados do workspace para a resposta
       const updatedWorkspace = await prisma.workspace.findUnique({
         where: { id: invitation.workspaceId },
         select: {
@@ -371,13 +387,11 @@ export async function POST(req: Request) {
           _count: {
             select: { 
               members: true
-              // Apenas membros, pois é o único contador disponível no modelo
             }
           }
         }
       });
       
-      // Verificar se o workspace foi encontrado
       if (!updatedWorkspace) {
         const error = 'Workspace não encontrado após aceitação do convite';
         log(`[${requestId}] ${error}`);
@@ -392,7 +406,6 @@ export async function POST(req: Request) {
         );
       }
       
-      // Verificar se o usuário foi realmente adicionado ao workspace
       const isMember = await prisma.workspaceMember.findFirst({
         where: {
           userId: user.id,
@@ -424,7 +437,6 @@ export async function POST(req: Request) {
         );
       }
       
-      // Criar tipo para a resposta de sucesso
       interface SuccessResponseData {
         success: boolean;
         redirectUrl: string;
@@ -434,21 +446,20 @@ export async function POST(req: Request) {
         data: {
           workspace: typeof updatedWorkspace;
           user: {
-            id: string | number;  // Handle both string and number types for ID
+            id: string | number;
             email: string | null;
             name: string | null;
           };
           role: string;
           acceptedAt: string;
           membership: {
-            id: string | number;  // Handle both string and number types for ID
+            id: string | number;
             role: string;
             joinedAt: string;
           };
         };
       }
 
-      // Ensure consistent typing for membership ID
       const membershipId = typeof isMember.id === 'number' 
         ? isMember.id.toString() 
         : isMember.id;
@@ -471,7 +482,7 @@ export async function POST(req: Request) {
           membership: {
             id: membershipId,
             role: isMember.role,
-            joinedAt: isMember.joinedAt.toISOString() // Convert Date to ISO string
+            joinedAt: isMember.joinedAt.toISOString()
           }
         }
       };
@@ -496,12 +507,11 @@ export async function POST(req: Request) {
         timestamp: new Date().toISOString()
       });
       
-      // Handle specific Prisma errors
       if (error && typeof error === 'object' && 'code' in error) {
         const prismaError = error as { code: string; meta?: Record<string, unknown> };
         
         switch (prismaError.code) {
-          case 'P2002': // Unique constraint violation
+          case 'P2002':
             log(`[${requestId}] Duplicate membership detected`, { 
               userId: user?.id,
               workspaceId: invitation?.workspaceId,
@@ -517,7 +527,7 @@ export async function POST(req: Request) {
               } : undefined
             }, { status: 400 });
             
-          case 'P2003': // Foreign key constraint violation
+          case 'P2003':
             log(`[${requestId}] Foreign key constraint failed`, { 
               errorMeta: prismaError.meta,
               userId: user?.id,
@@ -533,7 +543,7 @@ export async function POST(req: Request) {
               } : undefined
             }, { status: 400 });
             
-          case 'P2025': // Record not found
+          case 'P2025':
             log(`[${requestId}] Record not found in database`, { 
               errorMeta: prismaError.meta,
               userId: user?.id,
@@ -551,14 +561,12 @@ export async function POST(req: Request) {
         }
       }
       
-      // For all other errors, re-throw to be caught by the outer catch
       throw error;
     }
 
   } catch (error) {
     console.error('Error accepting invitation:', error);
     
-    // Tratar erros específicos do Prisma
     if (error && typeof error === 'object' && 'code' in error) {
       const prismaError = error as { code: string; meta?: Record<string, unknown> };
       
@@ -579,7 +587,6 @@ export async function POST(req: Request) {
       }
     }
     
-    // Tratar outros erros
     const errorMessage = error instanceof Error ? error.message : 'Erro ao processar o convite';
     log('Error details:', errorMessage);
     

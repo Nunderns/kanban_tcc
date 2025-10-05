@@ -36,20 +36,13 @@ export async function GET() {
       );
     }
     
-    // session.user.id is a string (see auth.tsx); convert to number for Prisma
     const userId = Number(session.user.id);
     if (Number.isNaN(userId)) {
-      console.error('Invalid user ID, expected number but got:', session.user.id);
       return NextResponse.json(
         { error: 'Invalid user ID' },
         { status: 400, headers: { 'Content-Type': 'application/json' } }
       );
     }
-
-    console.log('Fetching activities for user (numeric id):', userId);
-
-    // Get the current user's workspaces
-    console.log('Fetching workspaces for user:', userId);
     const workspaces = await prisma.workspaceMember.findMany({
       where: { userId },
       select: { workspaceId: true }
@@ -58,20 +51,14 @@ export async function GET() {
       throw err;
     });
     
-    console.log('Workspaces found:', workspaces);
-    
     if (!workspaces || workspaces.length === 0) {
-      console.log('No workspaces found for user:', session.user.id);
       return NextResponse.json([], { 
         headers: { 'Content-Type': 'application/json' } 
       });
     }
     
     const workspaceIds = workspaces.map((ws: WorkspaceMember) => ws.workspaceId);
-    console.log('Found workspaces:', workspaceIds);
 
-    // Get activities for the current user's workspaces
-    console.log('Fetching activities for workspace IDs:', workspaceIds);
     const activities = await prisma.taskActivity.findMany({
       where: {
         task: {
@@ -93,9 +80,6 @@ export async function GET() {
       take: 50
     });
     
-    console.log(`Found ${activities.length} activities`);
-
-    // Format the response
     const formattedActivities = activities.map((activity: TaskActivity) => {
       try {
         return {
@@ -112,9 +96,7 @@ export async function GET() {
         console.error('Error formatting activity:', error, activity);
         return null;
       }
-    }).filter(Boolean); // Remove any null entries from formatting errors
-    
-    console.log('Formatted activities:', formattedActivities.length);
+    }).filter(Boolean);
 
     return NextResponse.json(formattedActivities, {
       headers: { 'Content-Type': 'application/json' }

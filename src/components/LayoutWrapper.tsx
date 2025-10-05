@@ -7,7 +7,7 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
   const pathname = usePathname();
   
   // Defina as páginas onde o Footer deve aparecer
-  const pagesWithFooter = ["/", "/funcionalidades", "/blog", "/cases", "/sobre-taskflow"];
+  const pagesWithFooter = ["/", "/funcionalidades", "/cases", "/sobre-taskflow"];
   const showFooter = pagesWithFooter.includes(pathname);
 
   return (

@@ -34,7 +34,6 @@ export async function POST(req: Request) {
       );
     }
 
-    // Get the current user
     const user = await prisma.user.findUnique({
       where: { email: userEmail },
     });
@@ -46,7 +45,6 @@ export async function POST(req: Request) {
       );
     }
 
-    // Verify current password
     if (!user.password) {
       return NextResponse.json(
         { message: 'Usuário não possui senha definida' },
@@ -63,10 +61,8 @@ export async function POST(req: Request) {
       );
     }
 
-    // Hash the new password
     const hashedPassword = await bcrypt.hash(newPassword, 12);
 
-    // Update the password
     await prisma.user.update({
       where: { id: user.id },
       data: { password: hashedPassword },

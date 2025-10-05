@@ -2,7 +2,6 @@
 
 import { Suspense, useEffect, useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Sidebar } from "@/components/Sidebar";
 import NotificationsDropdown from "@/components/NotificationsDropdown";
 import Link from "next/link";
 import axios from "axios";
@@ -26,9 +25,9 @@ import { Button } from "@/components/ui/button";
 import { useSession, signOut } from "next-auth/react";
 import { useTheme } from "next-themes";
 import { Sun, Moon, Monitor } from "lucide-react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams, useParams } from "next/navigation";
 import WorkItemSidebar from "@/components/WorkItemSidebar";
-import type { WorkItem } from "@/app/dashboard/my-tasks/page";
+import type { WorkItem } from "@/app/[workspaceSlug]/dashboard/my-tasks/page";
 
 const Progress = ({ value, className = "" }: { value: number; className?: string }) => (
   <div className={`w-full bg-gray-200 rounded-full h-2.5 ${className}`}>
@@ -62,6 +61,7 @@ interface Member {
 }
 
 function DashboardContent() {
+  const params = useParams();
   const { data: session } = useSession();
   const { theme, setTheme } = useTheme();
   const [isLoading, setIsLoading] = useState(true);
@@ -157,14 +157,12 @@ function DashboardContent() {
   const searchParams = useSearchParams();
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
-  // Handle task selection from URL
   useEffect(() => {
     const taskId = searchParams?.get('task');
     if (taskId && stats.tasks.length > 0) {
       const task = stats.tasks.find(t => t.id === taskId);
       if (task) {
         setSelectedTask(task);
-        // Only update URL if we're not already on the tasks page
         if (!window.location.pathname.includes('/my-tasks')) {
           const params = new URLSearchParams(window.location.search);
           params.delete('task');
@@ -302,47 +300,38 @@ function DashboardContent() {
   };
 
 
-  // Sort projects based on current sort configuration
   const sortedProjects = useMemo(() => {
     const sortableItems = [...(stats.projects || [])];
     if (sortConfig === null) return sortableItems;
     
     return [...sortableItems].sort((a, b) => {
-      // Get values safely with type checking
       const aValue = a[sortConfig.key as keyof Project];
       const bValue = b[sortConfig.key as keyof Project];
       
-      // Handle undefined values
       if (aValue === undefined && bValue === undefined) return 0;
       if (aValue === undefined) return sortConfig.direction === 'asc' ? -1 : 1;
       if (bValue === undefined) return sortConfig.direction === 'asc' ? 1 : -1;
       
-      // Convert to strings for consistent comparison
       const aStr = String(aValue).toLowerCase();
       const bStr = String(bValue).toLowerCase();
       
-      // Handle numeric comparison for progress
       if (sortConfig.key === 'progress' || sortConfig.key === 'totalTasks' || sortConfig.key === 'completedTasks') {
         const aNum = Number(aValue);
         const bNum = Number(bValue);
         return sortConfig.direction === 'asc' ? aNum - bNum : bNum - aNum;
       }
       
-      // String comparison for other fields
       if (aStr < bStr) return sortConfig.direction === 'asc' ? -1 : 1;
       if (aStr > bStr) return sortConfig.direction === 'asc' ? 1 : -1;
       return 0;
     });
   }, [stats.projects, sortConfig]);
   
-  // Filter projects based on search query and status filter
   const filteredAndSortedProjects = useMemo(() => {
     return sortedProjects.filter(project => {
-      // Filter by search query
       const matchesSearch = project.name.toLowerCase().includes(searchProjectQuery.toLowerCase()) ||
                           (project.description && project.description.toLowerCase().includes(searchProjectQuery.toLowerCase()));
       
-      // Filter by status
       let matchesFilter = true;
       if (projectFilter === 'in-progress') {
         matchesFilter = project.progress > 0 && project.progress < 100;
@@ -356,7 +345,6 @@ function DashboardContent() {
     });
   }, [sortedProjects, searchProjectQuery, projectFilter]);
   
-  // Function to handle sort request
   const requestSort = (key: string) => {
     let direction: 'asc' | 'desc' = 'asc';
     if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
@@ -365,7 +353,6 @@ function DashboardContent() {
     setSortConfig({ key, direction });
   };
   
-  // Function to get sort indicator
   const getSortIndicator = (key: string) => {
     if (sortConfig.key !== key) return null;
     return sortConfig.direction === 'asc' ? '↑' : '↓';
@@ -381,13 +368,11 @@ function DashboardContent() {
 
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-gray-25 to-gray-50">
-      <Sidebar />
       {selectedTask && (
         <WorkItemSidebar
           item={selectedTask as unknown as WorkItem}
           onClose={() => {
             setSelectedTask(null);
-            // Update URL without the task parameter
             const params = new URLSearchParams(window.location.search);
             params.delete('task');
             router.replace(`/dashboard?${params.toString()}`);
@@ -509,10 +494,10 @@ function DashboardContent() {
                     <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{session?.user?.email}</p>
                   </div>
                   <div className="mt-2 grid gap-2">
-                    <Link href="/dashboard/settings">
+                    <Link href={`/espaco-${params.workspaceSlug}/settings`}>
                       <Button variant="outline" size="sm" className="w-full justify-start">Perfil</Button>
                     </Link>
-                    <Link href="/dashboard/settings#preferences">
+                    <Link href={`/espaco-${params.workspaceSlug}/settings#preferences`}>
                       <Button variant="outline" size="sm" className="w-full justify-start">Preferências</Button>
                     </Link>
                     <div className="my-1 h-px bg-gray-200 dark:bg-gray-700" />
@@ -590,10 +575,8 @@ function DashboardContent() {
           </nav>
         </div>
 
-        {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {isLoading ? (
-            // Skeleton loaders for stats cards
             Array(4).fill(0).map((_, index) => (
               <Card key={`skeleton-${index}`} className="overflow-hidden">
                 <CardContent className="p-6">
@@ -696,7 +679,7 @@ function DashboardContent() {
                       <CardDescription>{stats.tasks.length} tarefas atribuídas</CardDescription>
                     </div>
                     <Link 
-                      href="/dashboard/my-tasks"
+                      href={`/espaco-${params.workspaceSlug}/dashboard/my-tasks`}
                       className="text-sm text-blue-600 hover:underline flex items-center"
                     >
                       Ver todas <FiChevronRight className="ml-1" />
@@ -711,8 +694,7 @@ function DashboardContent() {
                         className="p-4 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors duration-200 rounded-lg group cursor-pointer"
                         whileHover={{ scale: 1.01, boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' }}
                         onClick={() => {
-                          // Navigate to tasks page with the task ID
-                          router.push(`/dashboard/my-tasks?task=${task.id}`);
+                          router.push(`/espaco-${params.workspaceSlug}/dashboard/my-tasks?task=${task.id}`);
                         }}
                       >
                         <div className="flex items-start">

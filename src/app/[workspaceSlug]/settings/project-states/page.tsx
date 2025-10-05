@@ -1,6 +1,5 @@
 "use client";
 
-import { Sidebar } from "@/components/Sidebar";
 import { usePathname } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
@@ -161,7 +160,6 @@ export default function ProjectStatesPage() {
 
   return (
     <div className="flex h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
-      <Sidebar />
       <div className="flex flex-1">
         <aside className="w-64 bg-white dark:bg-gray-900 p-6 border-r border-gray-300 dark:border-gray-700 text-gray-800 dark:text-gray-200">
           <h2 className="text-lg font-semibold mb-4 border-b border-gray-300 dark:border-gray-700 pb-2">Configurações</h2>

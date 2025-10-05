@@ -1,6 +1,6 @@
 "use client";
 
-import { WorkItem, Priority, Status } from "@/app/dashboard/my-tasks/page";
+import { WorkItem, Priority, Status } from "@/app/[workspaceSlug]/dashboard/my-tasks/page";
 import { FaCircle, FaRegCircle, FaCalendarAlt } from "react-icons/fa";
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay } from "date-fns";
 import { parseLocalDate } from "@/lib/utils";
@@ -49,7 +49,6 @@ export default function TaskWeeklyView({ tasks, onTaskClick }: TaskWeeklyViewPro
     }
   };
 
-  // Calcular posição e largura para tarefas que span multiple dias
   const getTaskPosition = (task: WorkItem) => {
     if (!task.startDate && !task.dueDate) return null;
     
@@ -57,31 +56,25 @@ export default function TaskWeeklyView({ tasks, onTaskClick }: TaskWeeklyViewPro
       const startDate = task.startDate ? parseLocalDate(task.startDate) : parseLocalDate(task.dueDate!);
       const dueDate = task.dueDate ? parseLocalDate(task.dueDate) : startDate;
       
-      // Normalizar datas para meia-noite no fuso horário local
       const normalizedStartDate = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
       const normalizedDueDate = new Date(dueDate.getFullYear(), dueDate.getMonth(), dueDate.getDate());
       
-      // Normalizar datas da semana para meia-noite
       const weekStartNormalized = new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate());
       const weekEndNormalized = new Date(weekEnd.getFullYear(), weekEnd.getMonth(), weekEnd.getDate());
       
-      // Se a tarefa não intersecta a semana, não mostrar
       if (normalizedDueDate.getTime() < weekStartNormalized.getTime() || 
           normalizedStartDate.getTime() > weekEndNormalized.getTime()) {
         return null;
       }
       
-      // Calcular o start day (máximo entre início da tarefa e início da semana)
       const taskStartInWeek = normalizedStartDate.getTime() < weekStartNormalized.getTime() 
         ? weekStartNormalized 
         : normalizedStartDate;
       
-      // Calcular o end day (mínimo entre fim da tarefa e fim da semana)
       const taskEndInWeek = normalizedDueDate.getTime() > weekEndNormalized.getTime() 
         ? weekEndNormalized 
         : normalizedDueDate;
       
-      // Calcular posição (0-6) e largura (1-7)
       const startDayIndex = Math.floor((taskStartInWeek.getTime() - weekStartNormalized.getTime()) / (1000 * 60 * 60 * 24));
       const endDayIndex = Math.floor((taskEndInWeek.getTime() - weekStartNormalized.getTime()) / (1000 * 60 * 60 * 24));
       const width = endDayIndex - startDayIndex + 1;
@@ -99,7 +92,6 @@ export default function TaskWeeklyView({ tasks, onTaskClick }: TaskWeeklyViewPro
     }
   };
 
-  // Agrupar tarefas por posição para evitar sobreposição
   const getTaskRows = () => {
     const positionedTasks = tasks
       .map(task => ({
@@ -113,7 +105,6 @@ export default function TaskWeeklyView({ tasks, onTaskClick }: TaskWeeklyViewPro
     positionedTasks.forEach(item => {
       let placed = false;
       
-      // Tentar colocar em uma linha existente
       for (let i = 0; i < rows.length; i++) {
         const canPlace = rows[i].every(existingItem => {
           const existing = existingItem.position;
@@ -132,7 +123,6 @@ export default function TaskWeeklyView({ tasks, onTaskClick }: TaskWeeklyViewPro
         }
       }
       
-      // Se não couber em nenhuma linha existente, criar nova linha
       if (!placed) {
         rows.push([item]);
       }

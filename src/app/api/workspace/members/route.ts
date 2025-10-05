@@ -13,7 +13,6 @@ export async function GET() {
       );
     }
 
-    // Buscar o workspace do usuário
     const user = await prisma.user.findUnique({
       where: { email: session.user.email },
       include: {
@@ -34,7 +33,6 @@ export async function GET() {
 
     const workspaceId = user.workspaceMembers[0].workspaceId;
 
-    // Buscar todos os membros do workspace
     const workspaceMembers = await prisma.workspaceMember.findMany({
       where: { workspaceId },
       include: {
@@ -48,7 +46,6 @@ export async function GET() {
       },
     });
 
-    // Formatar a resposta
     type MemberWithUser = {
       userId: number;
       role: string;
