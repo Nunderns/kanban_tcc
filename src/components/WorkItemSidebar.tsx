@@ -43,9 +43,10 @@ interface Props {
   item: WorkItem;
   onClose: () => void;
   onUpdate: (updated: WorkItem) => void;
+  workspaceSlug?: string;
 }
 
-export default function WorkItemSidebar({ item, onClose, onUpdate }: Props) {
+export default function WorkItemSidebar({ item, onClose, onUpdate, workspaceSlug }: Props) {
   const [localItem, setLocalItem] = useState(item);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [workspaceMembers, setWorkspaceMembers] = useState<WorkspaceMember[]>([]);
@@ -142,9 +143,11 @@ export default function WorkItemSidebar({ item, onClose, onUpdate }: Props) {
   }, [item.id]);
 
   const fetchWorkspaceMembers = useCallback(async () => {
+    if (!workspaceSlug) return;
+    
     try {
       setLoadingMembers(true);
-      const response = await fetch('/api/workspace/members');
+      const response = await fetch(`/api/workspace/members?workspaceSlug=${workspaceSlug}`);
       if (response.ok) {
         const data = await response.json();
         setWorkspaceMembers(data.members || []);
@@ -154,7 +157,7 @@ export default function WorkItemSidebar({ item, onClose, onUpdate }: Props) {
     } finally {
       setLoadingMembers(false);
     }
-  }, []);
+  }, [workspaceSlug]);
 
   // Atualiza o localItem apenas quando o item prop muda
   useEffect(() => {
@@ -172,10 +175,24 @@ export default function WorkItemSidebar({ item, onClose, onUpdate }: Props) {
   }, [fetchActivities, fetchWorkspaceMembers, item.id]);
 
   const handleChange = (field: keyof WorkItem, value: string | string[] | null | undefined) => {
-    setLocalItem(prev => ({
-      ...prev,
-      [field]: value
-    }));
+    setLocalItem(prev => {
+      const updatedItem = {
+        ...prev,
+        [field]: value
+      };
+
+      // When assignedUserId changes, also update assignedUserName
+      if (field === 'assignedUserId' && typeof value === 'string') {
+        const assignedUser = workspaceMembers.find(member => member.id === value);
+        if (assignedUser) {
+          updatedItem.assignedUserName = assignedUser.displayName || assignedUser.fullName || '';
+        } else {
+          updatedItem.assignedUserName = '';
+        }
+      }
+
+      return updatedItem;
+    });
   };
 
   const handleUpdateClick = async () => {

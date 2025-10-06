@@ -2,7 +2,24 @@ import { NextResponse } from 'next/server';
 import { auth } from "@/lib/auth";
 import { prisma } from '@/lib/prisma';
 
-export async function GET() {
+type Member = {
+  userId: number;
+  role: string;
+  user: {
+    id: number;
+    name: string | null;
+    email: string | null;
+  };
+};
+
+type Invitation = {
+  id: number;
+  email: string;
+  role: string;
+  status: string;
+};
+
+export async function GET(request: Request) {
   try {
     const session = await auth();
     
@@ -13,54 +30,77 @@ export async function GET() {
       );
     }
 
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
+    // Get workspace slug from URL
+    const url = new URL(request.url);
+    const workspaceSlug = url.searchParams.get('workspaceSlug');
+
+    if (!workspaceSlug) {
+      return NextResponse.json(
+        { error: 'Workspace não especificado' },
+        { status: 400 }
+      );
+    }
+
+    // Get the workspace by slug
+    const workspace = await prisma.workspace.findFirst({
+      where: { slug: workspaceSlug },
       include: {
-        workspaceMembers: {
+        members: {
           include: {
-            workspace: true
-          }
-        }
-      }
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+              },
+            },
+          },
+        },
+        invitations: {
+          where: {
+            status: 'PENDING',
+          },
+          select: {
+            id: true,
+            email: true,
+            role: true,
+            status: true,
+          },
+        },
+      },
     });
 
-    if (!user?.workspaceMembers?.[0]?.workspaceId) {
+    if (!workspace) {
       return NextResponse.json(
         { error: 'Workspace não encontrado' },
         { status: 404 }
       );
     }
 
-    const workspaceId = user.workspaceMembers[0].workspaceId;
-
-    const workspaceMembers = await prisma.workspaceMember.findMany({
-      where: { workspaceId },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
-        },
-      },
-    });
-
-    type MemberWithUser = {
-      userId: number;
-      role: string;
-      user: { id: number; name: string | null; email: string | null };
-    };
-
-    const formattedMembers = (workspaceMembers as MemberWithUser[]).map((member) => ({
-      id: member.userId.toString(),
+    // Format active members
+    const activeMembers = (workspace.members as Member[]).map((member) => ({
+      id: member.user.id.toString(),
       fullName: member.user.name || 'Usuário sem nome',
       displayName: member.user.email?.split('@')[0] || 'usuario',
       email: member.user.email || '',
-      role: member.role
+      role: member.role,
+      status: 'ACTIVE',
     }));
 
-    return NextResponse.json({ members: formattedMembers });
+    // Format pending invitations
+    const pendingInvitations = (workspace.invitations as Invitation[]).map((invitation) => ({
+      id: `invite-${invitation.id}`,
+      fullName: 'Convite pendente',
+      displayName: invitation.email.split('@')[0],
+      email: invitation.email,
+      role: invitation.role,
+      status: 'PENDING',
+    }));
+
+    // Combine and sort members (active first, then pending)
+    const allMembers = [...activeMembers, ...pendingInvitations];
+
+    return NextResponse.json({ members: allMembers });
 
   } catch (error) {
     console.error('Error fetching workspace members:', error);
