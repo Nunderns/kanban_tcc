@@ -10,9 +10,9 @@ export default async function WorkspaceLayout({
   children: ReactNode;
   params: Promise<{ workspaceSlug: string }>;
 }) {
-  const session = await getServerSession();
   const { workspaceSlug } = await params;
-  
+  const session = await getServerSession();
+
   if (!session) {
     redirect('/login');
   }
@@ -20,9 +20,7 @@ export default async function WorkspaceLayout({
   return (
     <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
       <Sidebar workspaceSlug={workspaceSlug} />
-      <main className="flex-1 overflow-y-auto p-6">
-        {children}
-      </main>
+      <main className="flex-1 overflow-y-auto p-6">{children}</main>
     </div>
   );
 }
