@@ -42,7 +42,7 @@ export async function POST(req: Request) {
     const workspace = await db.workspace.create({
       data: {
         name: `Espaço de trabalho do ${name}`,
-        slug: `espaco-${name.toLowerCase().replace(/\s+/g, "-")}`,
+        slug: `${name.toLowerCase().replace(/\s+/g, "-")}`,
         companySize: 1,
         userId: user.id,
       },

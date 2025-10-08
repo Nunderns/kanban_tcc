@@ -433,10 +433,10 @@ function DashboardContent() {
                     <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{session?.user?.email}</p>
                   </div>
                   <div className="mt-2 grid gap-2">
-                    <Link href={`/espaco-${params.workspaceSlug}/settings`}>
+                    <Link href={`/${params.workspaceSlug}/settings`}>
                       <Button variant="outline" size="sm" className="w-full justify-start">Perfil</Button>
                     </Link>
-                    <Link href={`/espaco-${params.workspaceSlug}/settings#preferences`}>
+                    <Link href={`/${params.workspaceSlug}/settings#preferences`}>
                       <Button variant="outline" size="sm" className="w-full justify-start">Preferências</Button>
                     </Link>
                     <div className="my-1 h-px bg-gray-200 dark:bg-gray-700" />
@@ -618,7 +618,7 @@ function DashboardContent() {
                       <CardDescription>{stats.tasks.length} tarefas atribuídas</CardDescription>
                     </div>
                     <Link 
-                      href={`/espaco-${params.workspaceSlug}/dashboard/my-tasks`}
+                      href={`/${params.workspaceSlug}/dashboard/my-tasks`}
                       className="text-sm text-blue-600 hover:underline flex items-center"
                     >
                       Ver todas <FiChevronRight className="ml-1" />
@@ -633,7 +633,7 @@ function DashboardContent() {
                         className="p-4 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors duration-200 rounded-lg group cursor-pointer"
                         whileHover={{ scale: 1.01, boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' }}
                         onClick={() => {
-                          router.push(`/espaco-${params.workspaceSlug}/dashboard/my-tasks?task=${task.id}`);
+                          router.push(`/${params.workspaceSlug}/dashboard/my-tasks?task=${task.id}`);
                         }}
                       >
                         <div className="flex items-start">
