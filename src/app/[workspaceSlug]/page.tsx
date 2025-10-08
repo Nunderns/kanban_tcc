@@ -1,7 +1,10 @@
 import { getServerSession } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { format, formatDistanceToNow } from 'date-fns';
+import { toZonedTime } from 'date-fns-tz';
 import { ptBR } from 'date-fns/locale';
+
+const BRAZIL_TIMEZONE = 'America/Sao_Paulo';
 import { redirect } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
@@ -51,7 +54,7 @@ export default async function WorkspacePage({ params }: WorkspacePageProps) {
   const { workspaceSlug } = await params;
 
   const session = await getServerSession();
-  const now = new Date();
+  const now = toZonedTime(new Date(), BRAZIL_TIMEZONE);
 
   if (!session) return redirect('/login');
 
@@ -72,7 +75,9 @@ export default async function WorkspacePage({ params }: WorkspacePageProps) {
     take: 10,
   });
 
-  const formattedDate = format(now, "EEEE, d 'de' MMMM '·' HH:mm", { locale: ptBR });
+  const formattedDate = format(now, "EEEE, d 'de' MMMM '·' HH:mm", { 
+    locale: ptBR
+  });
   const greeting = getGreeting(now);
 
   return (
