@@ -6,7 +6,7 @@ import CreateTaskModal from "@/components/CreateTaskModal";
 
 type View = "kanban" | "list" | "calendar" | "table" | "timeline";
 
-export default function ProjectViewClient({ projectId, projectName }: { projectId: number; projectName: string }) {
+export default function ProjectViewClient({ projectId, projectName, workspaceSlug }: { projectId: number; projectName: string; workspaceSlug: string }) {
   const [view, setView] = useState<View>("kanban");
   const [statusFilter, setStatusFilter] = useState<Status | "ALL">("ALL");
   const [tasks, setTasks] = useState<BoardTask[]>([]);
@@ -194,7 +194,12 @@ export default function ProjectViewClient({ projectId, projectName }: { projectI
         </div>
       )}
 
-      <CreateTaskModal isOpen={isCreateOpen} onClose={() => setIsCreateOpen(false)} onSubmit={onCreate} />
+      <CreateTaskModal 
+        isOpen={isCreateOpen} 
+        onClose={() => setIsCreateOpen(false)} 
+        onSubmit={onCreate}
+        workspaceSlug={workspaceSlug}
+      />
     </div>
   );
 }

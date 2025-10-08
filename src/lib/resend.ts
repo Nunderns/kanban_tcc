@@ -152,7 +152,7 @@ export async function sendWelcomeEmail(params: {
         
         <p style="margin-bottom: 24px; line-height: 1.6;">Se precisar de ajuda ou tiver alguma dúvida, é só responder a este e-mail. Nossa equipe está à disposição para ajudar!</p>
         
-        <a href="${process.env.NEXTAUTH_URL}/dashboard" style="display: inline-block; background-color: #4F46E5; color: white; text-decoration: none; font-weight: 500; padding: 12px 24px; border-radius: 6px; margin: 8px 0 24px 0;">
+        <a href="${process.env.NEXTAUTH_URL}/[workspaceSlug]/dashboard" style="display: inline-block; background-color: #4F46E5; color: white; text-decoration: none; font-weight: 500; padding: 12px 24px; border-radius: 6px; margin: 8px 0 24px 0;">
           Acessar Minha Conta
         </a>
         
@@ -220,55 +220,54 @@ export const sendInvitationEmail = async (params: {
       inviteLink,
     };
   }
-
   const client = await initResend();
   const res = await client.emails.send({
     from: `TaskFlow <${RESEND_FROM_EMAIL}>`,
     to: recipients,
-    subject: `${inviterName || 'Someone'} has invited you to join them in ${workspaceName} on TaskFlow`,
+    subject: `${inviterName || 'Alguém'} convidou você para o workspace ${workspaceName} no TaskFlow`,
     html: `
       <div style="font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #1F2937;">
         <div style="background-color: #4F46E5; padding: 32px; text-align: center; border-radius: 12px 12px 0 0;">
           <h1 style="color: white; margin: 0; font-size: 28px; font-weight: 700;">TaskFlow</h1>
-          <p style="color: #E0E7FF; margin: 8px 0 0 0; font-size: 16px;">Seu workspace para projetos e progresso</p>
+          <p style="color: #E0E7FF; margin: 8px 0 0 0; font-size: 16px;">Seu workspace para projetos e produtividade</p>
         </div>
         
         <div style="padding: 40px; background-color: #ffffff; border: 1px solid #E5E7EB; border-top: none; border-radius: 0 0 12px 12px;">
           <div style="text-align: center; margin-bottom: 32px;">
             <div style="display: inline-block; background-color: #FEF3C7; padding: 16px 24px; border-radius: 50px; margin-bottom: 24px;">
-              <span style="color: #92400E; font-weight: 600; font-size: 18px;">🎉 You are a celebrated colleague!</span>
+              <span style="color: #92400E; font-weight: 600; font-size: 18px;">🎉 Você foi convidado(a) para um workspace!</span>
             </div>
             
             <h2 style="color: #111827; font-size: 24px; margin-top: 0; margin-bottom: 16px; font-weight: 700;">
-              ${inviterName || 'Someone'} has invited you to join them in ${workspaceName} on TaskFlow.
+              ${inviterName || 'Alguém'} te convidou para o workspace ${workspaceName} no TaskFlow.
             </h2>
             
             <p style="color: #4B5563; font-size: 18px; line-height: 1.6; margin-bottom: 24px;">
-              Some of our users have told us it's a privilege, but we will let you be the judge of that.
+              Junte-se a nós para colaborar em projetos e aumentar a produtividade da sua equipe.
             </p>
             
             <div style="text-align: center; margin-top: 32px;">
               <a href="${inviteLink}" style="display: inline-block; background-color: #4F46E5; color: white; text-decoration: none; font-weight: 600; padding: 16px 32px; border-radius: 8px; font-size: 16px; transition: background-color 0.2s;">
-                Join them on TaskFlow
+                Acessar o TaskFlow
               </a>
             </div>
           </div>
           
           <div style="margin-top: 40px; padding-top: 24px; border-top: 1px solid #E5E7EB; text-align: center;">
-            <p style="color: #6B7280; font-size: 14px; margin: 0 0 8px 0;">Obrigado por se interessar por nossas soluções!</p>
-            <p style="color: #111827; font-size: 16px; margin: 0; font-weight: 600;">Um grande abraço,<br><span style="color: #4F46E5;">Time TaskFlow!</span></p>
+            <p style="color: #6B7280; font-size: 14px; margin: 0 0 8px 0;">Obrigado por se juntar à nossa plataforma!</p>
+            <p style="color: #111827; font-size: 16px; margin: 0; font-weight: 600;">Atenciosamente,<br><span style="color: #4F46E5;">Equipe TaskFlow</span></p>
           </div>
         </div>
         
         <div style="text-align: center; padding: 16px; color: #9CA3AF; font-size: 12px;">
-          <p style="margin: 0;">This email was sent to ${recipients[0]}. Please delete if you are not the intended recipient.</p>
+          <p style="margin: 0;">Este e-mail foi enviado para ${recipients[0]}. Caso não tenha sido você quem solicitou, por favor desconsidere esta mensagem.</p>
         </div>
       </div>
     `,
   });
 
   if ("error" in res && res.error) {
-    throw new Error(`Failed to send email: ${res.error.message}`);
+    throw new Error(`Falha ao enviar e-mail: ${res.error.message}`);
   }
 
   return res.data;

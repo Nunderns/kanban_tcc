@@ -63,6 +63,8 @@ export type WorkItem = {
 function KanbanPage() {
   const { data: session, status } = useSession();
   const userId = session?.user?.id;
+  const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
+  const workspaceSlug = pathname.split('/')[1];
 
   const [workspaceName] = useState("Primeiro Projeto");
   const [collapsedColumns, setCollapsedColumns] = useState<Record<Status, boolean>>({
@@ -340,7 +342,6 @@ function KanbanPage() {
     let destinationStatus: Status = sourceStatus;
     if (overId.startsWith("column-")) {
       const column = overId.replace("column-", "");
-      // Defensive cast; only change if it's a valid Status
       if (["BACKLOG","TODO","IN_PROGRESS","DONE"].includes(column)) {
         destinationStatus = column as Status;
       }
@@ -769,7 +770,7 @@ function KanbanPage() {
           />
         ) : viewType === "daily" ? (
           <TaskDailyView 
-            tasks={filteredTasks} 
+            tasks={filteredTasks}
             onTaskClick={setSelectedItem}
           />
         ) : null}
@@ -778,6 +779,7 @@ function KanbanPage() {
 {selectedItem && (
   <WorkItemSidebar
     item={selectedItem}
+    workspaceSlug={workspaceSlug}
     onClose={() => {
       setSelectedItem(null);
       const searchParams = new URLSearchParams(window.location.search);
@@ -785,7 +787,7 @@ function KanbanPage() {
       const currentPath = window.location.pathname;
       router.replace(`${currentPath}?${searchParams.toString()}`, { scroll: false });
     }}
-    onUpdate={(updated: WorkItem) => {
+    onUpdate={(updated) => {
       setWorkItems(prev => prev.map(i => (i.id === updated.id ? updated : i)));
       setSelectedItem(updated);
     }}
@@ -795,6 +797,7 @@ function KanbanPage() {
   isOpen={isCreateModalOpen}
   onClose={() => setIsCreateModalOpen(false)}
   onSubmit={handleCreateTask}
+  workspaceSlug={workspaceSlug}
 />
       
       {/* Estilos CSS para animações */}

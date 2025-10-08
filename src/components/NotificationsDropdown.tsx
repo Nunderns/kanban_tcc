@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import Link from 'next/link';
 import { Bell, X, AlertTriangle, Info, CheckCircle, Clock } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { checkTasksForNotifications, mergeAndDeduplicateNotifications, Task } from '@/lib/notifications';
@@ -312,13 +313,13 @@ const NotificationsDropdown = () => {
 
             {notifications.length > 0 && (
               <div className="p-3 text-center border-t border-gray-100 bg-gray-50">
-                <a
+                <Link
                   href="/notifications"
                   className="text-sm font-medium text-blue-600 hover:text-blue-700"
                   onClick={() => setIsOpen(false)}
                 >
                   Ver todas as notificações
-                </a>
+                </Link>
               </div>
             )}
           </motion.div>
