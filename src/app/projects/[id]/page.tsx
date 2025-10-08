@@ -4,14 +4,16 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import ProjectViewClient from "@/components/ProjectViewClient";
 
-type RouteParams = { id: string };
+type RouteParams = { 
+  id: string;
+  workspaceSlug: string;
+};
 
 export default async function ProjectPage({
   params,
 }: {
   params: Promise<RouteParams>;
 }) {
-  // Next 15+ (params assíncrono)
   const { id } = await params;
 
   const session = await auth();
@@ -43,13 +45,15 @@ export default async function ProjectPage({
     notFound();
   }
 
+  const { workspaceSlug } = await params;
+
   return (
     <div className="p-6">
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">
           {project.name}
         </h1>
-        <Link href="/dashboard" className="text-sm text-indigo-600 hover:underline">
+        <Link href={`/${workspaceSlug}/dashboard`} className="text-sm text-indigo-600 hover:underline">
           Voltar ao Dashboard
         </Link>
       </div>
@@ -63,7 +67,11 @@ export default async function ProjectPage({
         <p>Atualizado em: {new Date(project.updatedAt).toLocaleString()}</p>
       </div>
 
-      <ProjectViewClient projectId={project.id} projectName={project.name} />
+      <ProjectViewClient 
+        projectId={project.id} 
+        projectName={project.name} 
+        workspaceSlug={workspaceSlug}
+      />
     </div>
   );
 }

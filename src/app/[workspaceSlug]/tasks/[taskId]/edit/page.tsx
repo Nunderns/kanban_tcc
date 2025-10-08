@@ -53,9 +53,9 @@ export default function EditTaskPage() {
         const taskRes = await fetch(`/api/tasks/${taskId}`);
         if (!taskRes.ok) throw new Error('Falha ao carregar a tarefa');
         const taskData = await taskRes.json();
-        const membersRes = await fetch(`/api/workspace/members?workspaceSlug=${workspaceSlug}`);
-        if (!membersRes.ok) throw new Error('Falha ao carregar membros');
-        const membersData = await membersRes.json();
+        const response = await fetch(`/api/workspaces/${workspaceSlug}/members`);
+        if (!response.ok) throw new Error('Falha ao carregar membros');
+        const membersData = await response.json();
 
         setTask(taskData);
 

@@ -342,7 +342,6 @@ function KanbanPage() {
     let destinationStatus: Status = sourceStatus;
     if (overId.startsWith("column-")) {
       const column = overId.replace("column-", "");
-      // Defensive cast; only change if it's a valid Status
       if (["BACKLOG","TODO","IN_PROGRESS","DONE"].includes(column)) {
         destinationStatus = column as Status;
       }
@@ -798,6 +797,7 @@ function KanbanPage() {
   isOpen={isCreateModalOpen}
   onClose={() => setIsCreateModalOpen(false)}
   onSubmit={handleCreateTask}
+  workspaceSlug={workspaceSlug}
 />
       
       {/* Estilos CSS para animações */}
