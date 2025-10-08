@@ -191,8 +191,6 @@ export default function WorkspaceSettings() {
             Atualizar workspace
           </button>
         </div>
-
-        {/* Excluir workspace */}
         <div className="mt-10 border-t border-gray-200 dark:border-gray-700 pt-6">
           <p className="text-sm text-red-600 dark:text-red-400 font-medium mb-2">
             Área de perigo
@@ -214,9 +212,9 @@ export default function WorkspaceSettings() {
                     slug: string;
                   }
                   
-                  const workspaces: Workspace[] = await workspacesRes.json();
-                  
-                  const otherWorkspace = workspaces.find((ws: Workspace) => ws.slug !== slug);
+                  const data = await workspacesRes.json();
+                  const workspaces: Workspace[] = Array.isArray(data) ? data : data.workspaces || [];
+                  const otherWorkspace = workspaces.find((ws) => ws.slug !== slug);
                   
                   const deleteRes = await fetch(`/api/workspaces/${slug}`, {
                     method: 'DELETE',
