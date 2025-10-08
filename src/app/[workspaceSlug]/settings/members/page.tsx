@@ -39,7 +39,6 @@ function InviteModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void
     setIsLoading(true);
     setError(null);
     try {
-      // Get current workspace ID
       const workspaceResponse = await fetch(`/api/workspaces/current?workspaceSlug=${workspaceSlug}`);
       if (!workspaceResponse.ok) {
         throw new Error('Não foi possível obter o workspace atual');
@@ -223,7 +222,7 @@ export default function MembersPage() {
       try {
         const pathname = window.location.pathname;
         const workspaceSlug = pathname.split('/')[1];
-        const response = await fetch(`/api/workspace/members?workspaceSlug=${workspaceSlug}`);
+        const response = await fetch(`/api/workspaces/${workspaceSlug}/members`);
         if (!response.ok) throw new Error('Erro ao carregar membros');
         const data = await response.json();
         setMembers(data.members);

@@ -2,7 +2,7 @@
 
 import FilterDropdown from "@/components/FilterDropdown";
 import DisplayDropdown, { DisplayOption } from "@/components/DisplayDown";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { FaFilter, FaTimes, FaUser, FaChevronDown } from "react-icons/fa";
 
 export type Priority = "NONE" | "LOW" | "MEDIUM" | "HIGH";
@@ -36,10 +36,12 @@ function CreateTaskModal({
   isOpen,
   onClose,
   onSubmit,
+  workspaceSlug
 }: {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (task: { title: string; description: string; assignedUserId?: string }) => Promise<void>;
+  workspaceSlug: string
 }) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -107,10 +109,10 @@ function CreateTaskModal({
     setViewType(newViewType);
   };
 
-  const fetchWorkspaceMembers = async () => {
+  const fetchWorkspaceMembers = useCallback(async () => {
     try {
       setLoadingMembers(true);
-      const response = await fetch('/api/workspace/members');
+      const response = await fetch(`/api/workspaces/${workspaceSlug}/members`);
       if (response.ok) {
         const data = await response.json();
         setWorkspaceMembers(data.members || []);
@@ -120,13 +122,13 @@ function CreateTaskModal({
     } finally {
       setLoadingMembers(false);
     }
-  };
+  }, [workspaceSlug]);
 
   useEffect(() => {
     if (isOpen) {
       fetchWorkspaceMembers();
     }
-  }, [isOpen]);
+  }, [isOpen, fetchWorkspaceMembers]);
 
   const modalRef = useRef<HTMLDivElement>(null);
 

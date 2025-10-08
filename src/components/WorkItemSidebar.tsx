@@ -1,6 +1,17 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from 'react';
+
+const formatUserName = (username: string): string => {
+  if (!username) return 'Usuário';
+  
+  const namePart = username.split('@')[0];
+  const withSpaces = namePart.replace(/[._-]/g, ' ');
+  return withSpaces
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+};
 import { FormattedDateInput } from "./FormattedDateInput";
 import type { WorkItem } from "@/app/[workspaceSlug]/dashboard/my-tasks/page";
 import { parseLocalDate } from "@/lib/utils";
@@ -83,7 +94,10 @@ export default function WorkItemSidebar({ item, onClose, onUpdate, workspaceSlug
   const formatActivity = (activity: Activity): string => {
     const { user, action, field, oldValue, newValue, createdAt } = activity;
     const formattedDate = new Date(createdAt).toLocaleString('pt-BR');
-    
+
+    if (field === 'assignedUserName') {
+      return '';
+      }
     if (action === 'updated field') {
       const isDateField = field.toLowerCase().includes('date');
       const fieldName = getFieldName(field);
@@ -147,7 +161,7 @@ export default function WorkItemSidebar({ item, onClose, onUpdate, workspaceSlug
     
     try {
       setLoadingMembers(true);
-      const response = await fetch(`/api/workspace/members?workspaceSlug=${workspaceSlug}`);
+      const response = await fetch(`/api/workspaces/${workspaceSlug}/members`);
       if (response.ok) {
         const data = await response.json();
         setWorkspaceMembers(data.members || []);
@@ -158,15 +172,19 @@ export default function WorkItemSidebar({ item, onClose, onUpdate, workspaceSlug
       setLoadingMembers(false);
     }
   }, [workspaceSlug]);
-
-  // Atualiza o localItem apenas quando o item prop muda
+  const prevItemRef = useRef<WorkItem | undefined>(undefined);
+  
   useEffect(() => {
-    const itemChanged = JSON.stringify(item) !== JSON.stringify(localItem);
-    if (itemChanged) {
-      console.log('Updating localItem from prop item:', item);
-      setLocalItem({...item});
+    if (JSON.stringify(prevItemRef.current) !== JSON.stringify(item)) {
+      setLocalItem(prev => {
+        if (JSON.stringify(prev) !== JSON.stringify(item)) {
+          return { ...item };
+        }
+        return prev;
+      });
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    
+    prevItemRef.current = item;
   }, [item]);
 
   useEffect(() => {
@@ -181,7 +199,6 @@ export default function WorkItemSidebar({ item, onClose, onUpdate, workspaceSlug
         [field]: value
       };
 
-      // When assignedUserId changes, also update assignedUserName
       if (field === 'assignedUserId' && typeof value === 'string') {
         const assignedUser = workspaceMembers.find(member => member.id === value);
         if (assignedUser) {
@@ -308,7 +325,7 @@ export default function WorkItemSidebar({ item, onClose, onUpdate, workspaceSlug
         <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{localItem.id.startsWith('PRIME-') ? localItem.id : `PRIME-${localItem.id}`}</p>
         <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 flex items-center">
           <UserCircleIcon className="h-4 w-4 mr-1" />
-          Criado por {item.creator || "henri.okayama"}
+          Criado por {formatUserName(item.creator || "henri.okayama")}
         </p>
         <div className="mt-2">
           <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Responsável</p>
@@ -321,7 +338,7 @@ export default function WorkItemSidebar({ item, onClose, onUpdate, workspaceSlug
               <div className="flex items-center gap-2">
                 <UserCircleIcon className="h-4 w-4 text-gray-500 dark:text-gray-400" />
                 {localItem.assignedUserId 
-                  ? workspaceMembers.find(m => m.id === localItem.assignedUserId)?.fullName || 'Usuário selecionado'
+                  ? formatUserName(workspaceMembers.find(m => m.id === localItem.assignedUserId)?.fullName || localItem.assignedUserName || 'Usuário')
                   : 'Selecione um responsável'
                 }
               </div>
