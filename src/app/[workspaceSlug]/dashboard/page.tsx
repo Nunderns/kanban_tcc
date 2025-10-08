@@ -88,69 +88,13 @@ function DashboardContent() {
     tasks: Task[];
     members: Member[];
   }>({
-    totalProjects: 3,
-    totalTasks: 12,
-    assignedTasks: 8,
-    completedTasks: 4,
-    projects: [
-      {
-        id: '1',
-        name: 'Projeto Kanban',
-        progress: 65,
-        totalTasks: 15,
-        completedTasks: 10,
-        lastUpdated: 'hoje',
-        color: 'blue'
-      },
-      {
-        id: '2',
-        name: 'Design de Interface',
-        progress: 30,
-        totalTasks: 8,
-        completedTasks: 2,
-        lastUpdated: 'ontem',
-        color: 'purple'
-      },
-      {
-        id: '3',
-        name: 'Documentação',
-        progress: 15,
-        totalTasks: 20,
-        completedTasks: 3,
-        lastUpdated: '2 dias atrás',
-        color: 'green'
-      }
-    ],
-    tasks: [
-      {
-        id: '1',
-        title: 'Implementar arrastar e soltar',
-        description: 'Adicionar funcionalidade de arrastar e soltar para as tarefas',
-        status: 'IN_PROGRESS' as const,
-        priority: 'MEDIUM' as const,
-        remainingDays: 2
-      },
-      {
-        id: '2',
-        title: 'Criar design responsivo',
-        description: 'Ajustar o layout para diferentes tamanhos de tela',
-        status: 'TODO' as const,
-        priority: 'HIGH' as const,
-        remainingDays: 1
-      }
-    ],
-    members: [
-      {
-        id: '1',
-        name: 'João Silva',
-        email: 'joao@exemplo.com'
-      },
-      {
-        id: '2',
-        name: 'Maria Santos',
-        email: 'maria@exemplo.com'
-      }
-    ]
+    totalProjects: 0,
+    totalTasks: 0,
+    assignedTasks: 0,
+    completedTasks: 0,
+    projects: [],
+    tasks: [],
+    members: []
   });
 
   const router = useRouter();
@@ -456,8 +400,6 @@ function DashboardContent() {
                   )}
                 </div>
               )}
-              
-              {/* No results message */}
               {showSuggestions && searchQuery.trim() !== '' && filteredTasks.length === 0 && (
                 <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50">
                   <div className="px-4 py-3 text-center text-gray-500 dark:text-gray-400">
@@ -467,12 +409,9 @@ function DashboardContent() {
                 </div>
               )}
             </div>
-            
-            {/* Botão de notificações */}
             <div className="relative">
               <NotificationsDropdown />
             </div>
-            {/* Avatar do usuário */}
             <div className="relative">
               <Popover>
                 <PopoverTrigger asChild>

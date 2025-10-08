@@ -80,7 +80,7 @@ export default function Header() {
                             aria-label="Toggle theme"
                         >
                             {!mounted ? (
-                                <div className="w-5 h-5" /> // Empty div with same dimensions to prevent layout shift
+                                <div className="w-5 h-5" />
                             ) : theme === 'dark' ? (
                                 <Sun className="w-5 h-5" />
                             ) : (
