@@ -24,7 +24,6 @@ model User {
   tasks            Task[]
   projects         Project[]
   notifications    Notification[]
-  settings         Settings?
   sessions         Session[]
   workspaces       Workspace[]
   workspaceMembers WorkspaceMember[]
