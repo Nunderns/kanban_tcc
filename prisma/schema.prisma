@@ -24,7 +24,6 @@ model User {
   tasks            Task[]
   projects         Project[]
   notifications    Notification[]
-  settings         Settings?
   sessions         Session[]
   workspaces       Workspace[]
   workspaceMembers WorkspaceMember[]
@@ -108,16 +107,6 @@ model Notification {
   userId    Int
   user      User     @relation(fields: [userId], references: [id])
   createdAt DateTime @default(now())
-}
-
-model Settings {
-  id                   Int      @id @default(autoincrement())
-  userId               Int      @unique
-  user                 User     @relation(fields: [userId], references: [id])
-  darkMode             Boolean  @default(false)
-  notificationsEnabled Boolean  @default(true)
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
 }
 
 model Session {
