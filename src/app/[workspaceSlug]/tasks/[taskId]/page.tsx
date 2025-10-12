@@ -108,10 +108,6 @@ export default async function TaskDetailPage({
               <span className="px-2 py-1 text-xs bg-gray-800 text-gray-300 rounded">
                 {getStatusLabel(task.status)}
               </span>
-              <TaskActions 
-                taskId={task.id} 
-                workspaceSlug={workspaceSlug}
-              />
             </div>
           </div>
 
