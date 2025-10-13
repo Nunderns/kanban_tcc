@@ -57,14 +57,7 @@ export default function WorkspaceSettings() {
     { href: `/${slug}/settings/project-states`, label: "Estados do Projeto" },
     { href: `/${slug}/settings/integrations`, label: "Integrações" },
     { href: `/${slug}/settings/imports`, label: "Importações" },
-    { href: `/${slug}/settings/exports`, label: "Exportações" },
-    { href: `/${slug}/settings/webhooks`, label: "Webhooks" },
-    { href: `/${slug}/settings/api-tokens`, label: "Tokens de API" },
-    { href: `/${slug}/settings/worklogs`, label: "Registros de Trabalho" },
-    { href: `/${slug}/settings/teamspaces`, label: "Espaços de Equipe" },
-    { href: `/${slug}/settings/initiatives`, label: "Iniciativas" },
-    { href: `/${slug}/settings/customers`, label: "Clientes" },
-    { href: `/${slug}/settings/templates`, label: "Modelos" },
+    { href: `/${slug}/settings/exports`, label: "Exportações" }
   ];
 
   return (

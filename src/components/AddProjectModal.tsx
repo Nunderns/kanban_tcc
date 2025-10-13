@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { X, Plus, Palette, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-// Using cookie-based auth; no need to access session here
 
 interface AddProjectModalProps {
   isOpen: boolean;

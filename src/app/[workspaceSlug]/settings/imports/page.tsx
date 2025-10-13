@@ -38,14 +38,7 @@ export default function ImportSettings() {
     { href: `/${workspaceSlug}/settings/project-states`, label: "Estados do Projeto" },
     { href: `/${workspaceSlug}/settings/integrations`, label: "Integrações" },
     { href: `/${workspaceSlug}/settings/imports`, label: "Importações" },
-    { href: `/${workspaceSlug}/settings/exports`, label: "Exportações" },
-    { href: `/${workspaceSlug}/settings/webhooks`, label: "Webhooks" },
-    { href: `/${workspaceSlug}/settings/api-tokens`, label: "Tokens de API" },
-    { href: `/${workspaceSlug}/settings/worklogs`, label: "Registros de Trabalho" },
-    { href: `/${workspaceSlug}/settings/teamspaces`, label: "Espaços de Equipe" },
-    { href: `/${workspaceSlug}/settings/initiatives`, label: "Iniciativas" },
-    { href: `/${workspaceSlug}/settings/customers`, label: "Clientes" },
-    { href: `/${workspaceSlug}/settings/templates`, label: "Modelos" },
+    { href: `/${workspaceSlug}/settings/exports`, label: "Exportações" }
   ];
 
   const formatOptions = [
