@@ -170,14 +170,7 @@ export default function ProjectStatesPage() {
               { href: "project-states", label: "Estados do Projeto" },
               { href: "integrations", label: "Integrações" },
               { href: "imports", label: "Importações" },
-              { href: "exports", label: "Exportações" },
-              { href: "webhooks", label: "Webhooks" },
-              { href: "api-tokens", label: "Tokens de API" },
-              { href: "worklogs", label: "Registros de Trabalho" },
-              { href: "teamspaces", label: "Espaços de Equipe" },
-              { href: "initiatives", label: "Iniciativas" },
-              { href: "clients", label: "Clientes" },
-              { href: "templates", label: "Modelos" },
+              { href: "exports", label: "Exportações" }
             ].map((item) => (
               <li key={item.href}>
                 <Link

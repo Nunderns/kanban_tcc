@@ -203,10 +203,7 @@ export default function TaskWeeklyView({ tasks, onTaskClick }: TaskWeeklyViewPro
           Semana de {format(weekStart, "dd/MM")} - {format(weekEnd, "dd/MM/yyyy")}
         </h2>
       </div>
-      
-      {/* Container principal com posicionamento relativo */}
       <div className="relative">
-        {/* Cabeçalho dos dias da semana */}
         <div className="grid grid-cols-7 gap-2 mb-2">
           {weekDays.map((day, index) => {
             const isToday = isSameDay(day, today);
@@ -226,10 +223,7 @@ export default function TaskWeeklyView({ tasks, onTaskClick }: TaskWeeklyViewPro
             );
           })}
         </div>
-        
-        {/* Área de tarefas com altura mínima para acomodar os retângulos */}
         <div className="relative min-h-[500px] border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-900/20 overflow-hidden">
-          {/* Linhas de fundo para cada dia */}
           <div className="absolute inset-0 grid grid-cols-7 gap-2">
             {weekDays.map((_, index) => (
               <div 
@@ -240,8 +234,6 @@ export default function TaskWeeklyView({ tasks, onTaskClick }: TaskWeeklyViewPro
               />
             ))}
           </div>
-          
-          {/* Renderizar retângulos de tarefas */}
           {taskRows.map((row, rowIndex) => (
             <div key={rowIndex}>
               {row.map(({ task, position }) => (
@@ -254,8 +246,6 @@ export default function TaskWeeklyView({ tasks, onTaskClick }: TaskWeeklyViewPro
               ))}
             </div>
           ))}
-          
-          {/* Mensagem quando não há tarefas */}
           {taskRows.length === 0 && (
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="text-center text-gray-500 dark:text-gray-400">
