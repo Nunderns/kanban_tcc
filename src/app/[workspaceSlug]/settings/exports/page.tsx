@@ -58,6 +58,7 @@ interface ExportWorkspace {
 
 export default function ExportSettings() {
   const pathname = usePathname();
+  const workspaceSlug = pathname.split('/')[1];
   const [selectedFormat, setSelectedFormat] = useState<ExportFormat>("csv");
   const [exportStatus, setExportStatus] = useState<ExportStatus>("idle");
   const [includeAttachments, setIncludeAttachments] = useState(false);
@@ -66,12 +67,11 @@ export default function ExportSettings() {
   const [error, setError] = useState<string | null>(null);
 
   const links = [
-    { href: "/[workspaceSlug]/settings/general", label: "Geral" },
-    { href: "/[workspaceSlug]/settings/members", label: "Membros" },
-    { href: "/[workspaceSlug]/settings/project-states", label: "Estados do Projeto" },
-    { href: "/[workspaceSlug]/settings/integrations", label: "Integrações" },
-    { href: "/[workspaceSlug]/settings/imports", label: "Importações" },
-    { href: "/[workspaceSlug]/settings/exports", label: "Exportações" }
+    { href: `/${workspaceSlug}/settings/general`, label: "Geral" },
+    { href: `/${workspaceSlug}/settings/members`, label: "Membros" },
+    { href: `/${workspaceSlug}/settings/project-states`, label: "Estados do Projeto" },
+    { href: `/${workspaceSlug}/settings/imports`, label: "Importações" },
+    { href: `/${workspaceSlug}/settings/exports`, label: "Exportações" }
   ];
 
   const formatOptions = [

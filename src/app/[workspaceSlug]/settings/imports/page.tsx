@@ -36,7 +36,6 @@ export default function ImportSettings() {
     { href: `/${workspaceSlug}/settings`, label: "Geral" },
     { href: `/${workspaceSlug}/settings/members`, label: "Membros" },
     { href: `/${workspaceSlug}/settings/project-states`, label: "Estados do Projeto" },
-    { href: `/${workspaceSlug}/settings/integrations`, label: "Integrações" },
     { href: `/${workspaceSlug}/settings/imports`, label: "Importações" },
     { href: `/${workspaceSlug}/settings/exports`, label: "Exportações" }
   ];
