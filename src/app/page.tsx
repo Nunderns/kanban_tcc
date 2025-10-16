@@ -6,21 +6,22 @@ import Image from "next/image";
 export default function HomePage() {
   const router = useRouter();
   return (
-    <div className="flex flex-col items-center min-h-screen w-full transition-colors duration-200">
-      <section className="min-h-[80vh] flex items-center justify-center w-full bg-gradient-to-br from-primary/95 via-primary/90 to-primary/80 dark:from-primary/90 dark:via-primary/80 dark:to-primary/70 transition-bg">
+    <div className="flex flex-col items-center w-full transition-colors duration-200">
+      {/* Hero Section */}
+      <section className="min-h-[90vh] md:min-h-[80vh] flex items-center justify-center w-full bg-gradient-to-br from-primary/95 via-primary/90 to-primary/80 dark:from-primary/90 dark:via-primary/80 dark:to-primary/70 transition-bg px-4 sm:px-6">
         <div className="absolute inset-0 bg-[url('/images/pattern.svg')] bg-center opacity-[0.03] dark:opacity-[0.05]" />
-        <div className="container mx-auto px-4 text-center relative z-10">
+        <div className="container mx-auto px-2 sm:px-4 text-center relative z-10">
           <div className="max-w-4xl mx-auto">
-            <h1 className="text-5xl md:text-6xl font-bold leading-tight mb-6 text-white">
-              Transforme sua agência em uma <span className="text-primary-foreground/90">máquina de resultados</span>
+            <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold leading-tight mb-4 sm:mb-6 text-white">
+              Transforme sua agência em uma <span className="text-primary-foreground/90 block sm:inline">máquina de resultados</span>
             </h1>
-            <p className="text-xl text-white/90 max-w-3xl mx-auto leading-relaxed mb-8">
-              O TaskFlow é a plataforma completa para gerenciar sua agência com eficiência. Integre projetos, clientes e equipe em um único ecossistema, elimine retrabalhos e impulsione sua produtividade com ferramentas poderosas e fáceis de usar.
+            <p className="text-lg sm:text-xl text-white/90 max-w-3xl mx-auto leading-relaxed mb-6 sm:mb-8 px-2 sm:px-0">
+              O TaskFlow é a plataforma completa para gerenciar sua agência com eficiência. Integre projetos, clientes e equipe em um único ecossistema.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center transition-all">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center transition-all">
               <button 
                 onClick={() => router.push("/login")} 
-                className="px-8 py-4 bg-white text-primary font-bold rounded-lg shadow-lg hover:bg-gray-50 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5"
+                className="px-6 sm:px-8 py-3 sm:py-4 bg-white text-primary text-sm sm:text-base font-bold rounded-lg shadow-lg hover:bg-gray-50 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5"
               >
                 Agende uma demonstração
               </button>
