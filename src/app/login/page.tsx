@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useSession, signIn } from "next-auth/react";
 import { toast } from "react-hot-toast";
-import { FaSpinner, FaGoogle } from "react-icons/fa";
+import { FaSpinner, FaGoogle, FaTimes } from "react-icons/fa";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -14,6 +14,9 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState({ email: "", password: "" });
   const [isLoading, setIsLoading] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [forgotPasswordEmail, setForgotPasswordEmail] = useState("");
+  const [isSendingReset, setIsSendingReset] = useState(false);
 
   useEffect(() => {
     if (status === "authenticated") {
@@ -75,19 +78,51 @@ export default function LoginPage() {
     signIn("google", { callbackUrl: "/post-login" });
   };
 
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!forgotPasswordEmail) {
+      toast.error("Por favor, insira seu email");
+      return;
+    }
+
+    setIsSendingReset(true);
+    try {
+      const response = await fetch("/api/auth/forgot-password", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email: forgotPasswordEmail }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        toast.success("Email de recuperação enviado com sucesso!");
+        setShowForgotPassword(false);
+        setForgotPasswordEmail("");
+      } else {
+        toast.error(data.message || "Erro ao enviar email de recuperação");
+      }
+    } catch (error) {
+      console.error("Error sending reset email:", error);
+      toast.error("Erro ao processar sua solicitação");
+    } finally {
+      setIsSendingReset(false);
+    }
+  };
+
   if (status === "loading") {
     return <p className="p-10 text-lg">Carregando...</p>;
   }
 
   return (
     <div className="flex flex-col lg:flex-row h-screen bg-white dark:bg-gray-900 transition-colors">
-      {/* Seção esquerda (formulário) */}
       <div className="w-full lg:w-1/2 flex flex-col items-center justify-center p-6 sm:p-10">
         <h1 className="text-3xl sm:text-4xl font-semibold mb-6 text-black dark:text-white">
           TaskFlow
         </h1>
 
-        {/* Google Sign In Button */}
         <button
           onClick={handleGoogleSignIn}
           disabled={isLoading}
@@ -97,7 +132,6 @@ export default function LoginPage() {
           {isLoading ? "Entrando com Google..." : "Entrar com Google"}
         </button>
 
-        {/* Divider */}
         <div className="relative w-full max-w-xs my-4">
           <div className="absolute inset-0 flex items-center">
             <div className="w-full border-t border-gray-300 dark:border-gray-600" />
@@ -109,7 +143,6 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* Formulário */}
         <form className="w-full max-w-xs" onSubmit={handleLogin}>
           <label className="block mb-2 text-gray-800 dark:text-gray-200 font-medium">
             Email
@@ -162,7 +195,7 @@ export default function LoginPage() {
             )}
           </button>
 
-          <div className="mt-4 text-center">
+          <div className="mt-4 text-center space-y-2">
             <p className="text-sm text-gray-600 dark:text-gray-400">
               Não tem uma conta?{" "}
               <Link
@@ -172,6 +205,13 @@ export default function LoginPage() {
                 Cadastre-se
               </Link>
             </p>
+            <button
+              type="button"
+              onClick={() => setShowForgotPassword(true)}
+              className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+            >
+              Esqueceu sua senha?
+            </button>
           </div>
         </form>
       </div>
@@ -234,6 +274,71 @@ export default function LoginPage() {
           </div>
         </div>
       </div>
+      {showForgotPassword && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md relative shadow-xl">
+            <button
+              onClick={() => {
+                setShowForgotPassword(false);
+                setForgotPasswordEmail("");
+              }}
+              className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white transition-colors"
+              aria-label="Fechar"
+            >
+              <FaTimes className="h-5 w-5" />
+            </button>
+            
+            <div className="space-y-4">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                Recuperar Senha
+              </h2>
+              
+              <p className="text-gray-600 dark:text-gray-300">
+                Digite seu endereço de email e enviaremos um link para redefinir sua senha.
+              </p>
+              
+              <form onSubmit={handleForgotPassword} className="space-y-4">
+                <div>
+                  <label 
+                    htmlFor="forgot-email" 
+                    className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1"
+                  >
+                    Email
+                  </label>
+                  <input
+                    id="forgot-email"
+                    name="email"
+                    type="email"
+                    autoComplete="email"
+                    value={forgotPasswordEmail}
+                    onChange={(e) => setForgotPasswordEmail(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-400"
+                    placeholder="seu@email.com"
+                    required
+                  />
+                </div>
+                
+                <div className="pt-2">
+                  <button
+                    type="submit"
+                    disabled={isSendingReset}
+                    className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {isSendingReset ? (
+                      <>
+                        <FaSpinner className="animate-spin mr-2 h-4 w-4" />
+                        Enviando...
+                      </>
+                    ) : (
+                      "Enviar link de recuperação"
+                    )}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
