@@ -126,6 +126,7 @@ const initResend = async (): Promise<ResendClientWithEmails> => {
 export async function sendWelcomeEmail(params: {
   to: string;
   name?: string;
+  workspaceSlug: string;
 }) {
   const { to, name = 'usuário' } = params;
   
@@ -152,7 +153,7 @@ export async function sendWelcomeEmail(params: {
         
         <p style="margin-bottom: 24px; line-height: 1.6;">Se precisar de ajuda ou tiver alguma dúvida, é só responder a este e-mail. Nossa equipe está à disposição para ajudar!</p>
         
-        <a href="${process.env.NEXTAUTH_URL}/[workspaceSlug]/dashboard" style="display: inline-block; background-color: #4F46E5; color: white; text-decoration: none; font-weight: 500; padding: 12px 24px; border-radius: 6px; margin: 8px 0 24px 0;">
+        <a href="${process.env.NEXTAUTH_URL}/${params.workspaceSlug}/dashboard" style="display: inline-block; background-color: #4F46E5; color: white; text-decoration: none; font-weight: 500; padding: 12px 24px; border-radius: 6px; margin: 8px 0 24px 0;">
           Acessar Minha Conta
         </a>
         
