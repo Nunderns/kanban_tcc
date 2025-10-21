@@ -201,12 +201,197 @@ export default function SettingsPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  const [emailNotifications, setEmailNotifications] = useState<boolean>(true);
-  const [notifyPropertyChanges, setNotifyPropertyChanges] = useState<boolean>(true);
-  const [notifyStateChange, setNotifyStateChange] = useState<boolean>(true);
-  const [notifyWorkItemCompleted, setNotifyWorkItemCompleted] = useState<boolean>(false);
-  const [notifyComments, setNotifyComments] = useState<boolean>(true);
-  const [notifyMentions, setNotifyMentions] = useState<boolean>(true);
+  const [notificationSettings, setNotificationSettings] = useState({
+    emailNotifications: true,
+    notifyPropertyChanges: true,
+    notifyStateChange: true,
+    notifyWorkItemCompleted: false,
+    notifyComments: true,
+    notifyMentions: true,
+  });
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  useEffect(() => {
+    const loadNotificationSettings = async () => {
+      try {
+        const response = await fetch('/api/user/notifications');
+        if (response.ok) {
+          const data = await response.json();
+          setNotificationSettings(prev => ({
+            ...prev,
+            ...data
+          }));
+        }
+      } catch (error) {
+        console.error('Failed to load notification settings:', error);
+      }
+    };
+
+    if (activeSection === 'notifications') {
+      loadNotificationSettings();
+    }
+  }, [activeSection]);
+
+  const handleNotificationChange = (key: keyof typeof notificationSettings) => {
+    const newValue = !notificationSettings[key];
+    
+    if (key === 'emailNotifications' && !newValue) {
+      setNotificationSettings(prev => ({
+        ...prev,
+        emailNotifications: false,
+        notifyPropertyChanges: false,
+        notifyStateChange: false,
+        notifyWorkItemCompleted: false,
+        notifyComments: false,
+        notifyMentions: false
+      }));
+    } else {
+      setNotificationSettings(prev => ({
+        ...prev,
+        [key]: newValue
+      }));
+    }
+  };
+
+  const loadNotificationSettings = async () => {
+    try {
+      console.log('Fetching notification settings...');
+      const response = await fetch('/api/user/notifications', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        },
+        credentials: 'include'
+      });
+      
+      console.log('Response status:', response.status);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Failed to load settings:', {
+          status: response.status,
+          statusText: response.statusText,
+          errorText
+        });
+        throw new Error(`Falha ao carregar configurações: ${response.status} ${response.statusText}`);
+      }
+      
+      const responseData = await response.json().catch(error => {
+        console.error('Error parsing JSON response:', error);
+        throw new Error('Resposta inválida do servidor');
+      });
+      
+      console.log('Received notification settings:', responseData);
+      
+      if (responseData && typeof responseData === 'object') {
+        setNotificationSettings({
+          emailNotifications: responseData.emailNotifications ?? true,
+          notifyPropertyChanges: responseData.notifyPropertyChanges ?? true,
+          notifyStateChange: responseData.notifyStateChange ?? true,
+          notifyWorkItemCompleted: responseData.notifyWorkItemCompleted ?? false,
+          notifyComments: responseData.notifyComments ?? true,
+          notifyMentions: responseData.notifyMentions ?? true
+        });
+      } else {
+        throw new Error('Formato de resposta inválido');
+      }
+    } catch (error) {
+      console.error('Error loading notification settings:', error);
+      setNotificationSettings({
+        emailNotifications: true,
+        notifyPropertyChanges: true,
+        notifyStateChange: true,
+        notifyWorkItemCompleted: false,
+        notifyComments: true,
+        notifyMentions: true
+      });
+      
+      setSaveStatus({
+        type: 'error',
+        message: 'Erro ao carregar configurações. Usando configurações padrão.'
+      });
+      
+      const timer = setTimeout(() => setSaveStatus(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  };
+
+  useEffect(() => {
+    if (activeSection === 'notifications') {
+      loadNotificationSettings();
+    }
+  }, [activeSection]);
+
+  const saveNotificationSettings = async () => {
+    if (isSaving) return;
+    
+    setIsSaving(true);
+    setSaveStatus(null);
+    
+    try {
+      const response = await fetch('/api/user/notifications', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          emailNotifications: notificationSettings.emailNotifications,
+          notifyPropertyChanges: notificationSettings.notifyPropertyChanges,
+          notifyStateChange: notificationSettings.notifyStateChange,
+          notifyWorkItemCompleted: notificationSettings.notifyWorkItemCompleted,
+          notifyComments: notificationSettings.notifyComments,
+          notifyMentions: notificationSettings.notifyMentions
+        }),
+      });
+
+      const responseData = await response.json();
+      
+      if (!response.ok) {
+        const errorMessage = responseData.error || 'Falha ao salvar configurações';
+        console.error('API Error:', errorMessage, responseData);
+        throw new Error(errorMessage);
+      }
+      
+      if (responseData.success && typeof responseData === 'object') {
+        const {
+          emailNotifications,
+          notifyPropertyChanges,
+          notifyStateChange,
+          notifyWorkItemCompleted,
+          notifyComments,
+          notifyMentions
+        } = responseData;
+
+        setNotificationSettings({
+          emailNotifications: Boolean(emailNotifications ?? true),
+          notifyPropertyChanges: Boolean(notifyPropertyChanges ?? true),
+          notifyStateChange: Boolean(notifyStateChange ?? true),
+          notifyWorkItemCompleted: Boolean(notifyWorkItemCompleted ?? false),
+          notifyComments: Boolean(notifyComments ?? true),
+          notifyMentions: Boolean(notifyMentions ?? true)
+        });
+      }
+      
+      setSaveStatus({ 
+        type: 'success', 
+        message: 'Configurações salvas com sucesso!' 
+      });
+    } catch (error) {
+      console.error('Error saving notification settings:', error);
+      setSaveStatus({ 
+        type: 'error', 
+        message: error instanceof Error ? error.message : 'Erro ao salvar configurações' 
+      });
+    } finally {
+      setIsSaving(false);
+      const timer = setTimeout(() => setSaveStatus(null), 3000);
+      return () => clearTimeout(timer);
+    }
+  };
   
   const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -458,6 +643,16 @@ export default function SettingsPage() {
       case 'notifications':
         return (
           <div className="space-y-6">
+            {saveStatus && (
+              <div className={`p-3 rounded-md ${
+                saveStatus.type === 'success' 
+                  ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' 
+                  : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+              }`}>
+                {saveStatus.message}
+              </div>
+            )}
+            
             <Card>
               <CardHeader>
                 <CardTitle>Notificações por e-mail</CardTitle>
@@ -473,8 +668,8 @@ export default function SettingsPage() {
                     <input
                       type="checkbox"
                       className="sr-only peer"
-                      checked={emailNotifications ?? false}
-                      onChange={() => setEmailNotifications(v => !v)}
+                      checked={notificationSettings.emailNotifications}
+                      onChange={() => handleNotificationChange('emailNotifications')}
                     />
                     <div className="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                   </label>
@@ -489,11 +684,11 @@ export default function SettingsPage() {
                     <input
                       type="checkbox"
                       className="sr-only peer"
-                      checked={notifyPropertyChanges ?? false}
-                      onChange={() => setNotifyPropertyChanges(v => !v)}
-                      disabled={!emailNotifications}
+                      checked={notificationSettings.notifyPropertyChanges}
+                      onChange={() => handleNotificationChange('notifyPropertyChanges')}
+                      disabled={!notificationSettings.emailNotifications}
                     />
-                    <div className="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                    <div className={`w-11 h-6 ${!notificationSettings.emailNotifications ? 'bg-gray-100 dark:bg-gray-800' : 'bg-gray-200 dark:bg-gray-700'} peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600`}></div>
                   </label>
                 </div>
 
@@ -506,11 +701,11 @@ export default function SettingsPage() {
                     <input
                       type="checkbox"
                       className="sr-only peer"
-                      checked={notifyStateChange ?? false}
-                      onChange={() => setNotifyStateChange(v => !v)}
-                      disabled={!emailNotifications}
+                      checked={notificationSettings.notifyStateChange}
+                      onChange={() => handleNotificationChange('notifyStateChange')}
+                      disabled={!notificationSettings.emailNotifications}
                     />
-                    <div className="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                    <div className={`w-11 h-6 ${!notificationSettings.emailNotifications ? 'bg-gray-100 dark:bg-gray-800' : 'bg-gray-200 dark:bg-gray-700'} peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600`}></div>
                   </label>
                 </div>
 
@@ -523,11 +718,11 @@ export default function SettingsPage() {
                     <input
                       type="checkbox"
                       className="sr-only peer"
-                      checked={notifyWorkItemCompleted ?? false}
-                      onChange={() => setNotifyWorkItemCompleted(v => !v)}
-                      disabled={!emailNotifications}
+                      checked={notificationSettings.notifyWorkItemCompleted}
+                      onChange={() => handleNotificationChange('notifyWorkItemCompleted')}
+                      disabled={!notificationSettings.emailNotifications}
                     />
-                    <div className="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                    <div className={`w-11 h-6 ${!notificationSettings.emailNotifications ? 'bg-gray-100 dark:bg-gray-800' : 'bg-gray-200 dark:bg-gray-700'} peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600`}></div>
                   </label>
                 </div>
 
@@ -540,11 +735,11 @@ export default function SettingsPage() {
                     <input
                       type="checkbox"
                       className="sr-only peer"
-                      checked={notifyComments ?? false}
-                      onChange={() => setNotifyComments(v => !v)}
-                      disabled={!emailNotifications}
+                      checked={notificationSettings.notifyComments}
+                      onChange={() => handleNotificationChange('notifyComments')}
+                      disabled={!notificationSettings.emailNotifications}
                     />
-                    <div className="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                    <div className={`w-11 h-6 ${!notificationSettings.emailNotifications ? 'bg-gray-100 dark:bg-gray-800' : 'bg-gray-200 dark:bg-gray-700'} peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600`}></div>
                   </label>
                 </div>
 
@@ -557,17 +752,22 @@ export default function SettingsPage() {
                     <input
                       type="checkbox"
                       className="sr-only peer"
-                      checked={notifyMentions ?? false}
-                      onChange={() => setNotifyMentions(v => !v)}
-                      disabled={!emailNotifications}
+                      checked={notificationSettings.notifyMentions}
+                      onChange={() => handleNotificationChange('notifyMentions')}
+                      disabled={!notificationSettings.emailNotifications}
                     />
-                    <div className="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                    <div className={`w-11 h-6 ${!notificationSettings.emailNotifications ? 'bg-gray-100 dark:bg-gray-800' : 'bg-gray-200 dark:bg-gray-700'} peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600`}></div>
                   </label>
                 </div>
 
                 <div className="pt-2">
-                  <Button type="button" variant="outline" onClick={() => { /* TODO: persist settings */ }}>
-                    Salvar preferências
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={saveNotificationSettings}
+                    disabled={isSaving}
+                  >
+                    {isSaving ? 'Salvando...' : 'Salvar preferências'}
                   </Button>
                 </div>
               </CardContent>

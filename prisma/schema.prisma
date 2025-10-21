@@ -14,23 +14,24 @@ datasource db {
 }
 
 model User {
-  id               Int               @id @default(autoincrement())
-  name             String
-  email            String            @unique
-  password         String
-  resetToken       String?           @unique
-  resetTokenExpiry DateTime?
-  googleId         String?           @unique
-  createdAt        DateTime          @default(now())
-  updatedAt        DateTime          @updatedAt
-  tasks            Task[]
-  projects         Project[]
-  notifications    Notification[]
-  sessions         Session[]
-  workspaces       Workspace[]
-  workspaceMembers WorkspaceMember[]
-  invitations      Invitation[]
-  assignedTasks    Task[]            @relation("TaskAssignedUser")
+  id                  Int               @id @default(autoincrement())
+  name                String
+  email               String            @unique
+  password            String
+  resetToken          String?           @unique
+  resetTokenExpiry    DateTime?
+  googleId            String?           @unique
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+  tasks               Task[]
+  projects            Project[]
+  notifications       Notification[]
+  sessions            Session[]
+  workspaces          Workspace[]
+  workspaceMembers    WorkspaceMember[]
+  invitations         Invitation[]
+  assignedTasks       Task[]            @relation("TaskAssignedUser")
+  notificationSettings Json?
 }
 
 model Project {
