@@ -155,7 +155,7 @@ export default function CriarEspacoTrabalho() {
                 }`}
               >
                 <option value="">Selecione uma opção</option>
-                <option value="1">Just myself</option>
+                <option value="1">Apenas Eu</option>
                 <option value="5">1-5 pessoas</option>
                 <option value="20">6-20 pessoas</option>
                 <option value="50">21-50 pessoas</option>

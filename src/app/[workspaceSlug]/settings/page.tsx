@@ -473,25 +473,15 @@ export default function SettingsPage() {
                     <p className="text-sm text-gray-900 dark:text-gray-400">{email}</p>
                   </div>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-4">
                   <div>
-                    <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Nome
+                    <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Nome Completo
                     </label>
                     <input
-                      id="firstName"
+                      id="fullName"
                       className="w-full rounded-md border border-gray-200 dark:border-gray-700 px-3 py-2 dark:bg-gray-800 dark:text-white"
-                      defaultValue={name.split(" ")[0] || ""}
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Sobrenome
-                    </label>
-                    <input
-                      id="lastName"
-                      className="w-full rounded-md border border-gray-200 dark:border-gray-700 px-3 py-2 dark:bg-gray-800 dark:text-white"
-                      defaultValue={name.split(" ").slice(1).join(" ") || ""}
+                      defaultValue={name}
                     />
                   </div>
                   <div className="md:col-span-2">

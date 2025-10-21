@@ -196,7 +196,6 @@ export default function MembersPage() {
   const links = [
     { href: "/dashboard/settings/general", label: "Geral" },
     { href: "/dashboard/settings/members", label: "Membros" },
-    { href: "/dashboard/settings/project-states", label: "Estados do Projeto" },
     { href: "/dashboard/settings/imports", label: "Importações" },
     { href: "/dashboard/settings/exports", label: "Exportações" }
   ];

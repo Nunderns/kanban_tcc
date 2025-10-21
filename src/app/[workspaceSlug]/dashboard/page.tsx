@@ -187,7 +187,7 @@ function DashboardContent() {
       const newTask = {
         title: taskData.title,
         description: taskData.description,
-        status: 'TODO' as const,
+        status: 'BACKLOG' as const,
         workspaceId: workspaceData.id,
         ...(taskData.assignedUserId && { assignedUserId: taskData.assignedUserId })
       };
@@ -647,9 +647,7 @@ function DashboardContent() {
           )}
         </div>
 
-        {/* Tasks and Projects */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-          {/* Tasks List */}
           <Card className="lg:col-span-2">
             {isLoading ? (
               <div>
