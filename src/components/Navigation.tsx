@@ -47,10 +47,6 @@ const routes: NavItem[] = [
                 href: "/dashboard/settings/general"
             },
             {
-                label: "Estados do Projeto",
-                href: "/dashboard/settings/project-states"
-            },
-            {
                 label: "Membros",
                 href: "/dashboard/settings/members"
             }
