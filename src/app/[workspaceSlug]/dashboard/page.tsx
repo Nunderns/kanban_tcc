@@ -19,6 +19,7 @@ import {
 } from "react-icons/fi";
 import { motion } from "framer-motion";
 import { Skeleton } from "@/components/ui/skeleton";
+import CreateTaskModal from "@/components/CreateTaskModal";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
@@ -44,6 +45,7 @@ interface Task extends WorkItem {
 
 interface Project {
   id: string;
+  slug: string;
   name: string;
   description?: string;
   progress: number;
@@ -73,6 +75,7 @@ function DashboardContent() {
   const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1);
   const [isAddingTask, setIsAddingTask] = useState(false);
   const [isAddingMember, setIsAddingMember] = useState(false);
+  const [isCreateTaskModalOpen, setIsCreateTaskModalOpen] = useState(false);
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' }>({ 
     key: 'lastUpdated', 
     direction: 'desc' 
@@ -156,12 +159,68 @@ function DashboardContent() {
   }, [searchQuery, stats.tasks]);
 
 
-  const handleAddTask = () => {
-    setIsAddingTask(true);
-    console.log('Opening new task form...');
-    setTimeout(() => {
+  const handleOpenTaskModal = () => {
+    setIsCreateTaskModalOpen(true);
+  };
+
+  const handleCloseTaskModal = () => {
+    setIsCreateTaskModalOpen(false);
+  };
+
+  const handleCreateTask = async (taskData: { title: string; description: string; assignedUserId?: string }) => {
+    try {
+      setIsAddingTask(true);
+      
+      const workspaceSlug = params.workspaceSlug;
+      
+      const workspaceResponse = await fetch(`/api/workspaces/current?workspaceSlug=${workspaceSlug}`);
+      
+      if (!workspaceResponse.ok) {
+        throw new Error('Não foi possível carregar as informações do workspace');
+      }
+      
+      const workspaceData = await workspaceResponse.json();
+      
+      if (!workspaceData || !workspaceData.id) {
+        throw new Error('Dados do workspace inválidos');
+      }
+      const newTask = {
+        title: taskData.title,
+        description: taskData.description,
+        status: 'TODO' as const,
+        workspaceId: workspaceData.id,
+        ...(taskData.assignedUserId && { assignedUserId: taskData.assignedUserId })
+      };
+
+      const response = await fetch('/api/tasks', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(newTask),
+      });
+      
+      const responseData = await response.json();
+      
+      if (!response.ok) {
+        console.error('Erro na resposta da API:', responseData);
+        throw new Error(responseData.error || 'Erro ao criar a tarefa');
+      }
+      
+      try {
+        const { data } = await axios.get("/api/dashboard");
+        setStats(data);
+      } catch (refreshError) {
+        console.error('Erro ao atualizar a lista de tarefas:', refreshError);
+      }
+      
+      setIsCreateTaskModalOpen(false);
+      router.push(`/${workspaceSlug}/my-tasks`);
+    } catch (error) {
+      console.error('Erro ao criar tarefa:', error);
+    } finally {
       setIsAddingTask(false);
-    }, 1000);
+    }
   };
 
   const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -304,7 +363,6 @@ function DashboardContent() {
 
   const handleAddMember = () => {
     setIsAddingMember(true);
-    console.log('Opening add member form...');
     setTimeout(() => {
       setIsAddingMember(false);
     }, 1000);
@@ -667,7 +725,7 @@ function DashboardContent() {
                           <FiClipboard className="w-12 h-12 text-gray-300 mb-4" />
                           <p className="text-gray-500">Nenhuma tarefa atribuída no momento.</p>
                           <button 
-                            onClick={handleAddTask}
+                            onClick={handleOpenTaskModal}
                             disabled={isAddingTask}
                             className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center disabled:opacity-50"
                           >
@@ -945,7 +1003,7 @@ function DashboardContent() {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => {
-                handleAddTask();
+                handleOpenTaskModal();
               }}
               className="w-14 h-14 rounded-full bg-blue-600 text-white flex items-center justify-center shadow-lg hover:bg-blue-700 transition-colors"
               aria-label="Adicionar novo item"
@@ -962,6 +1020,12 @@ function DashboardContent() {
           </motion.div>
         </div>
       )}
+      <CreateTaskModal
+        isOpen={isCreateTaskModalOpen}
+        onClose={handleCloseTaskModal}
+        onSubmit={handleCreateTask}
+        workspaceSlug={params.workspaceSlug as string}
+      />
     </div>
   );
 }
