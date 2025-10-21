@@ -197,16 +197,8 @@ export default function MembersPage() {
     { href: "/dashboard/settings/general", label: "Geral" },
     { href: "/dashboard/settings/members", label: "Membros" },
     { href: "/dashboard/settings/project-states", label: "Estados do Projeto" },
-    { href: "/dashboard/settings/integrations", label: "Integrações" },
     { href: "/dashboard/settings/imports", label: "Importações" },
-    { href: "/dashboard/settings/exports", label: "Exportações" },
-    { href: "/dashboard/settings/webhooks", label: "Webhooks" },
-    { href: "/dashboard/settings/api-tokens", label: "Tokens de API" },
-    { href: "/dashboard/settings/worklogs", label: "Registros de Trabalho" },
-    { href: "/dashboard/settings/teamspaces", label: "Espaços de Equipe" },
-    { href: "/dashboard/settings/initiatives", label: "Iniciativas" },
-    { href: "/dashboard/settings/customers", label: "Clientes" },
-    { href: "/dashboard/settings/templates", label: "Modelos" },
+    { href: "/dashboard/settings/exports", label: "Exportações" }
   ];
 
   useEffect(() => {

@@ -428,8 +428,6 @@ export default function WorkItemSidebar({ item, onClose, onUpdate, workspaceSlug
             </select>
           </div>
         </div>
-
-        {/* Date Section */}
         <div className="grid grid-cols-2 gap-4">
           <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
             <div className="flex items-center gap-3">

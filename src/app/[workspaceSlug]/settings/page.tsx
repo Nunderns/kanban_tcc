@@ -279,13 +279,13 @@ export default function SettingsPage() {
               </CardHeader>
               <CardContent>
                 <div className="flex items-center gap-4 mb-6">
-                  <Avatar className="h-16 w-16 border border-gray-200 dark:border-gray-700">
+                  <Avatar className="h-9 w-9 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-100">
                     <AvatarImage src={session?.user?.image ?? undefined} alt={name} />
                     <AvatarFallback>{getInitials(name || email)}</AvatarFallback>
                   </Avatar>
                   <div>
-                    <p className="text-lg font-medium">{name}</p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">{email}</p>
+                    <p className="text-lg font-medium text-gray-900 dark:text-gray-100">{name}</p>
+                    <p className="text-sm text-gray-900 dark:text-gray-400">{email}</p>
                   </div>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -344,8 +344,8 @@ export default function SettingsPage() {
               <CardContent className="space-y-6">
                 <div className="space-y-4">
                   <div>
-                    <h3 className="font-medium">Tema</h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                    <h3 className="font-medium text-gray-900 dark:text-white">Tema</h3>
+                    <p className="text-sm text-gray-700 dark:text-gray-400 mb-4">
                       Escolha como o Kanban TCC é exibido para você
                     </p>
                   </div>
@@ -426,14 +426,14 @@ export default function SettingsPage() {
                     ))}
                   </div>
                   
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                  <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">
                     A configuração do tema será aplicada a todo o site.
                   </p>
                 </div>
 
                 <div>
                   <h3 className="font-medium mb-2">Primeiro dia da semana</h3>
-                  <p className="text-sm text-gray-600 mb-3">Isso alterará como todos os calendários no aplicativo são exibidos.</p>
+                  <p className="text-sm text-gray-700 mb-3">Isso alterará como todos os calendários no aplicativo são exibidos.</p>
                   <select className="w-full rounded-md border border-gray-200 dark:border-gray-700 px-3 py-2 dark:bg-gray-800 dark:text-white">
                     <option value="sunday">Domingo</option>
                     <option value="monday">Segunda-feira</option>
@@ -442,8 +442,8 @@ export default function SettingsPage() {
 
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="font-medium">Cursor Suave</h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Ativar animação suave do cursor</p>
+                    <h3 className="font-medium text-gray-900 dark:text-white">Cursor Suave</h3>
+                    <p className="text-sm text-gray-700 dark:text-gray-400">Ativar animação suave do cursor</p>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input type="checkbox" className="sr-only peer" defaultChecked />
@@ -466,8 +466,8 @@ export default function SettingsPage() {
               <CardContent className="space-y-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="font-medium">Notificações por e-mail</h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Mantenha-se atualizado sobre os itens de trabalho que você acompanha. Ative para receber notificações.</p>
+                    <h3 className="font-medium text-gray-900 dark:text-white">Notificações por e-mail</h3>
+                    <p className="text-sm text-gray-700 dark:text-gray-400">Mantenha-se atualizado sobre os itens de trabalho que você acompanha. Ative para receber notificações.</p>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input
@@ -482,8 +482,8 @@ export default function SettingsPage() {
 
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="font-medium">Mudanças nas propriedades</h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Me notifique quando as propriedades dos itens de trabalho, como responsáveis, prioridade, estimativas ou qualquer outra coisa, forem alteradas.</p>
+                    <h3 className="font-medium text-gray-900 dark:text-white">Mudanças nas propriedades</h3>
+                    <p className="text-sm text-gray-700 dark:text-gray-400">Me notifique quando as propriedades dos itens de trabalho, como responsáveis, prioridade, estimativas ou qualquer outra coisa, forem alteradas.</p>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input
@@ -499,8 +499,8 @@ export default function SettingsPage() {
 
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="font-medium">Mudança de estado</h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Me notifique quando o item de trabalho mudar para um estado diferente.</p>
+                    <h3 className="font-medium text-gray-900 dark:text-white">Mudança de estado</h3>
+                    <p className="text-sm text-gray-700 dark:text-gray-400">Me notifique quando o item de trabalho mudar para um estado diferente.</p>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input
@@ -516,8 +516,8 @@ export default function SettingsPage() {
 
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="font-medium">Item concluído</h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Me notifique apenas quando um item de trabalho for concluído.</p>
+                    <h3 className="font-medium text-gray-900 dark:text-white">Item concluído</h3>
+                    <p className="text-sm text-gray-700 dark:text-gray-400">Me notifique apenas quando um item de trabalho for concluído.</p>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input
@@ -533,8 +533,8 @@ export default function SettingsPage() {
 
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="font-medium">Comentários</h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Me notifique quando alguém deixar um comentário no item de trabalho.</p>
+                    <h3 className="font-medium text-gray-900 dark:text-white">Comentários</h3>
+                    <p className="text-sm text-gray-700 dark:text-gray-400">Me notifique quando alguém deixar um comentário no item de trabalho.</p>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input
@@ -550,8 +550,8 @@ export default function SettingsPage() {
 
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="font-medium">Menções</h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Me notifique apenas quando alguém me mencionar nos comentários ou descrição.</p>
+                    <h3 className="font-medium text-gray-900 dark:text-white">Menções</h3>
+                    <p className="text-sm text-gray-700 dark:text-gray-400">Me notifique apenas quando alguém me mencionar nos comentários ou descrição.</p>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input
@@ -623,7 +623,7 @@ export default function SettingsPage() {
                         minLength={8}
                         required
                       />
-                      <p className="mt-1 text-xs text-gray-500">
+                      <p className="mt-1 text-xs text-gray-600">
                         A senha deve ter pelo menos 8 caracteres
                       </p>
                     </div>
@@ -684,7 +684,7 @@ export default function SettingsPage() {
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
                   </div>
                 ) : activities.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
+                  <div className="text-center py-8 text-gray-900 dark:text-gray-500">
                     Nenhuma atividade recente encontrada.
                   </div>
                 ) : (
@@ -737,20 +737,20 @@ export default function SettingsPage() {
   ];
 
   return (
-    <div className="flex min-h-screen bg-white dark:bg-gray-900">
-      <div className="w-64 border-r border-gray-200 dark:border-gray-700 p-6">
-        <div className="mb-8">
-          <div className="flex items-center gap-3 mb-1">
-            <Avatar className="h-9 w-9">
-              <AvatarImage src={session?.user?.image} />
-              <AvatarFallback>{getInitials(name)}</AvatarFallback>
-            </Avatar>
-            <div>
-              <p className="font-medium">{name}</p>
-              <p className="text-sm text-gray-500 dark:text-gray-400">{email}</p>
-            </div>
+  <div className="flex min-h-screen bg-white dark:bg-gray-900">
+    <div className="w-64 border-r border-gray-200 dark:border-gray-700 p-6 pr-4">
+      <div className="mb-8">
+        <div className="flex items-center gap-3 mb-1 pr-2">
+          <Avatar className="h-9 w-9 flex-shrink-0 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-100">
+            <AvatarImage src={session?.user?.image} />
+            <AvatarFallback>{getInitials(name)}</AvatarFallback>
+          </Avatar>
+          <div className="min-w-0">
+            <p className="font-medium text-gray-900 dark:text-gray-100 truncate">{name}</p>
+            <p className="text-sm text-gray-700 dark:text-gray-400 truncate">{email}</p>
           </div>
         </div>
+      </div>
 
         <nav className="space-y-1">
           {sections.map((section) => (

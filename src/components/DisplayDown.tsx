@@ -23,7 +23,6 @@ function DisplayDropdown({
 }: DisplayDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
-  // Display options from the image
   const displayOptions = [
     "ID",
     "Estado",
