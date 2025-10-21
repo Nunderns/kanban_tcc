@@ -54,8 +54,6 @@ export default function WorkspaceSettings() {
   const links = [
     { href: `/${slug}/settings/general`, label: "Geral" },
     { href: `/${slug}/settings/members`, label: "Membros" },
-    { href: `/${slug}/settings/project-states`, label: "Estados do Projeto" },
-    { href: `/${slug}/settings/integrations`, label: "Integrações" },
     { href: `/${slug}/settings/imports`, label: "Importações" },
     { href: `/${slug}/settings/exports`, label: "Exportações" }
   ];
@@ -133,7 +131,7 @@ export default function WorkspaceSettings() {
               onChange={(e) => setCompanySize(e.target.value)}
             >
               <option value="">Selecione</option>
-              <option value="1">Just myself</option>
+              <option value="1">Apenas Eu</option>
               <option value="5">1-5 pessoas</option>
               <option value="20">6-20 pessoas</option>
               <option value="50">21-50 pessoas</option>

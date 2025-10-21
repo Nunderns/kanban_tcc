@@ -69,7 +69,6 @@ export default function ExportSettings() {
   const links = [
     { href: `/${workspaceSlug}/settings/general`, label: "Geral" },
     { href: `/${workspaceSlug}/settings/members`, label: "Membros" },
-    { href: `/${workspaceSlug}/settings/project-states`, label: "Estados do Projeto" },
     { href: `/${workspaceSlug}/settings/imports`, label: "Importações" },
     { href: `/${workspaceSlug}/settings/exports`, label: "Exportações" }
   ];

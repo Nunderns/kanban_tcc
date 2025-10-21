@@ -31,9 +31,11 @@ export async function POST(req: Request) {
     });
 
     try {
+      const workspaceSlug = `${name.toLowerCase().replace(/\s+/g, "-")}`;
       await sendWelcomeEmail({
         to: email,
-        name: name
+        name: name,
+        workspaceSlug: workspaceSlug
       });
     } catch (error) {
       console.error('Failed to send welcome email:', error);

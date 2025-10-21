@@ -29,13 +29,11 @@ export default function ImportSettings() {
   const [availableFields, setAvailableFields] = useState<string[]>([]);
   const [filePreview, setFilePreview] = useState<Record<string, string>[]>([]);
 
-  // Extrai o workspaceSlug da URL atual
   const workspaceSlug = pathname?.split('/')[1];
   
   const links = [
     { href: `/${workspaceSlug}/settings`, label: "Geral" },
     { href: `/${workspaceSlug}/settings/members`, label: "Membros" },
-    { href: `/${workspaceSlug}/settings/project-states`, label: "Estados do Projeto" },
     { href: `/${workspaceSlug}/settings/imports`, label: "Importações" },
     { href: `/${workspaceSlug}/settings/exports`, label: "Exportações" }
   ];
