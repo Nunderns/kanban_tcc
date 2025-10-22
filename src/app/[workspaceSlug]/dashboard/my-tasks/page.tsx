@@ -66,7 +66,7 @@ function KanbanPage() {
   const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
   const workspaceSlug = pathname.split('/')[1];
 
-  const [workspaceName] = useState("Primeiro Projeto");
+  const [workspaceName] = useState(workspaceSlug);
   const [collapsedColumns, setCollapsedColumns] = useState<Record<Status, boolean>>({
     BACKLOG: false,
     TODO: false,
