@@ -645,14 +645,14 @@ function KanbanPage() {
         </div>
 
       {/* Main content area with view switching */}
-      <div className="flex-1 overflow-x-auto p-3 sm:p-4">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden p-3 sm:p-4 sm:overflow-x-auto">
         {viewType === "kanban" ? (
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={onDragStart} onDragCancel={onDragCancel} onDragEnd={onDragEnd}>
-            <div className="flex gap-4 min-w-full sm:min-w-max">
+            <div className="flex flex-col gap-4 sm:flex-row sm:min-w-max">
               {Object.entries(collapsedColumns).map(([statusKey, isCollapsed]) => {
               const typedStatus = statusKey as Status;
               return (
-                <div key={typedStatus} className="w-[min(18rem,85vw)] sm:w-72 flex-shrink-0">
+                <div key={typedStatus} className="w-full sm:w-72 sm:flex-shrink-0">
                   <div
                     className="flex justify-between items-center bg-gray-100 dark:bg-gray-800 p-2 rounded-t cursor-pointer"
                     onClick={() => toggleColumnCollapse(typedStatus)}
@@ -681,10 +681,10 @@ function KanbanPage() {
                 <ColumnDroppable status={typedStatus}>
                   <div
                     className={`bg-white dark:bg-gray-800 rounded-b overflow-hidden transition-all duration-300 ease-in-out ${
-                      isCollapsed ? 'max-h-0 opacity-0' : 'max-h-[65vh] sm:max-h-[calc(100vh-220px)] opacity-100'
+                      isCollapsed ? 'max-h-0 opacity-0' : 'max-h-[999px] sm:max-h-[calc(100vh-220px)] opacity-100'
                     }`}
                   >
-                    <div className="p-2 space-y-2 max-h-[60vh] overflow-y-auto sm:max-h-none sm:h-[calc(100vh-280px)]">
+                    <div className="p-2 space-y-2 sm:h-[calc(100vh-280px)] sm:overflow-y-auto">
                       {(() => {
                         const columnItems = filteredTasks.filter(item => item.status === typedStatus);
                         return (
