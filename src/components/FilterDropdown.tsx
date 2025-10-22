@@ -35,7 +35,7 @@ interface FilterDropdownProps {
 
 export default function FilterDropdown({ filters, onFilterChange }: FilterDropdownProps) {
   const hasActiveFilters = Object.values(filters).some(filter => filter.length > 0);
-  
+
   const clearAllFilters = () => {
     Object.keys(filters).forEach(filterType => {
       filters[filterType as keyof typeof filters].forEach(value => {
@@ -44,7 +44,7 @@ export default function FilterDropdown({ filters, onFilterChange }: FilterDropdo
     });
   };
   return (
-    <div className="w-72 max-h-[400px] overflow-y-auto bg-[#1f1f1f] text-white border border-gray-700 rounded-md shadow-lg p-4 text-sm z-50">
+    <div className="w-full max-w-[90vw] max-h-[400px] overflow-y-auto bg-[#1f1f1f] text-white border border-gray-700 rounded-md shadow-lg p-4 text-sm z-50 sm:w-72">
       <input
         type="text"
         placeholder="Procurar"

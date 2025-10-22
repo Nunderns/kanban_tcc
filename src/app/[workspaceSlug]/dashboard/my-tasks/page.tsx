@@ -606,28 +606,28 @@ function KanbanPage() {
   return (
     <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white">
       <div className="flex-1 flex flex-col">
-        <div className="flex justify-between items-center p-4 border-b border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800">
-          <h1 className="text-xl font-bold">{workspaceName} &gt; Item de Trabalho</h1>
-          <div className="flex gap-2">
-            <div className="relative">
+        <div className="flex flex-col gap-3 p-4 border-b border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 sm:flex-row sm:items-center sm:justify-between">
+          <h1 className="text-lg font-bold text-center sm:text-left sm:text-xl">{workspaceName} &gt; Item de Trabalho</h1>
+          <div className="flex flex-wrap gap-2 justify-end w-full sm:w-auto">
+            <div className="relative w-full sm:w-auto">
               <button
-                className="flex items-center gap-1 bg-[#2c2c2c] text-white px-3 py-2 rounded-md text-sm border border-gray-700 hover:bg-[#3a3a3a] transition"
+                className="flex w-full items-center justify-center gap-1 bg-[#2c2c2c] text-white px-3 py-2 rounded-md text-sm border border-gray-700 hover:bg-[#3a3a3a] transition"
                 onClick={() => setShowFilter(prev => !prev)}
               >
                 <IoFunnelOutline />
                 Filtros
               </button>
               {showFilter && (
-                <div ref={dropdownRef} className="absolute right-0 mt-2 z-50">
-                  <FilterDropdown 
-                  filters={filters}
-                  onFilterChange={handleFilterChange}
-                />
+                <div ref={dropdownRef} className="absolute left-0 sm:left-auto sm:right-0 mt-2 z-50 w-full sm:w-auto">
+                  <FilterDropdown
+                    filters={filters}
+                    onFilterChange={handleFilterChange}
+                  />
                 </div>
               )}
             </div>
 
-            <DisplayDropdown 
+            <DisplayDropdown
               visibleProperties={displayOptions.visibleProperties}
               showSubtasks={displayOptions.showSubtasks}
               onDisplayOptionChange={handleDisplayOptionChange}
@@ -636,23 +636,23 @@ function KanbanPage() {
               onViewTypeChange={setViewType}
             />
             <button
-              className="flex items-center gap-1 bg-blue-600 px-3 py-2 rounded hover:bg-blue-500 text-sm text-white"
+              className="flex w-full items-center justify-center gap-1 bg-blue-600 px-3 py-2 rounded hover:bg-blue-500 text-sm text-white sm:w-auto"
               onClick={() => setIsCreateModalOpen(true)}
             >
               <FaPlus /> Adicionar novo item
             </button>
-            </div>
+          </div>
         </div>
-        
+
       {/* Main content area with view switching */}
-      <div className="flex-1 overflow-x-auto p-4">
+      <div className="flex-1 overflow-x-auto p-3 sm:p-4">
         {viewType === "kanban" ? (
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={onDragStart} onDragCancel={onDragCancel} onDragEnd={onDragEnd}>
-            <div className="flex gap-4 min-w-max">
+            <div className="flex gap-4 min-w-full sm:min-w-max">
               {Object.entries(collapsedColumns).map(([statusKey, isCollapsed]) => {
               const typedStatus = statusKey as Status;
               return (
-                <div key={typedStatus} className="w-72 flex-shrink-0">
+                <div key={typedStatus} className="w-[min(18rem,85vw)] sm:w-72 flex-shrink-0">
                   <div
                     className="flex justify-between items-center bg-gray-100 dark:bg-gray-800 p-2 rounded-t cursor-pointer"
                     onClick={() => toggleColumnCollapse(typedStatus)}
@@ -679,12 +679,12 @@ function KanbanPage() {
                   </div>
                 {/* Conteúdo da coluna com animação */}
                 <ColumnDroppable status={typedStatus}>
-                  <div 
+                  <div
                     className={`bg-white dark:bg-gray-800 rounded-b overflow-hidden transition-all duration-300 ease-in-out ${
-                      isCollapsed ? 'max-h-0 opacity-0' : 'max-h-[calc(100vh-220px)] opacity-100'
+                      isCollapsed ? 'max-h-0 opacity-0' : 'max-h-[65vh] sm:max-h-[calc(100vh-220px)] opacity-100'
                     }`}
                   >
-                    <div className="p-2 space-y-2 h-[calc(100vh-280px)] overflow-y-auto">
+                    <div className="p-2 space-y-2 max-h-[60vh] overflow-y-auto sm:max-h-none sm:h-[calc(100vh-280px)]">
                       {(() => {
                         const columnItems = filteredTasks.filter(item => item.status === typedStatus);
                         return (

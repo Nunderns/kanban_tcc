@@ -65,17 +65,17 @@ function DisplayDropdown({
   }, [isOpen]);
 
   return (
-    <div className="relative" ref={dropdownRef}>
+    <div className="relative w-full sm:w-auto" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-1 bg-[#2c2c2c] text-white px-3 py-2 rounded-md text-sm border border-gray-700 hover:bg-[#3a3a3a] transition"
+        className="flex w-full items-center justify-center gap-1 bg-[#2c2c2c] text-white px-3 py-2 rounded-md text-sm border border-gray-700 hover:bg-[#3a3a3a] transition sm:w-auto sm:justify-start"
       >
         <IoMdOptions />
         Exibição
       </button>
 
       {isOpen && (
-        <div className="absolute mt-2 w-72 bg-[#1f1f1f] text-white border border-gray-700 rounded-md shadow-lg p-4 z-50">
+        <div className="absolute left-0 mt-2 w-full max-w-[90vw] bg-[#1f1f1f] text-white border border-gray-700 rounded-md shadow-lg p-4 z-50 sm:left-auto sm:right-0 sm:w-72">
           <div className="text-sm font-semibold text-gray-400 mb-2">Tipo de exibição</div>
           
           <div className="flex flex-wrap gap-2 mb-4">
