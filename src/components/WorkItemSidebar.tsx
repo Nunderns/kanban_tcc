@@ -297,7 +297,7 @@ export default function WorkItemSidebar({ item, onClose, onUpdate, workspaceSlug
   };
 
   return (
-    <aside className="w-[450px] bg-white dark:bg-gray-800 text-gray-900 dark:text-white border-l border-gray-200 dark:border-gray-700 p-6 overflow-y-auto h-screen fixed right-0 top-0 z-50 shadow-xl">
+    <aside className="w-full max-w-full bg-white dark:bg-gray-800 text-gray-900 dark:text-white border-l border-gray-200 dark:border-gray-700 p-4 overflow-y-auto h-full fixed right-0 top-0 z-50 shadow-xl sm:w-[450px] sm:p-6 sm:h-screen">
       <div className="flex justify-between items-center mb-6 pb-4 border-b border-gray-100 dark:border-gray-700">
         <h2 className="text-2xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
           <span className="text-blue-600 dark:text-blue-400">#{item.id.startsWith('PRIME-') ? item.id : `PRIME-${item.id}`}</span>

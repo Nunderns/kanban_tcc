@@ -119,7 +119,16 @@ export default function WorkspaceSettings() {
               type="text"
               className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400 transition-colors"
               value={workspaceName}
-              onChange={(e) => setWorkspaceName(e.target.value)}
+              onChange={(e) => {
+                setWorkspaceName(e.target.value);
+                const newSlug = e.target.value
+                  .toLowerCase()
+                  .normalize('NFD')
+                  .replace(/[\u0300-\u036f]/g, '')
+                  .replace(/[^a-z0-9]+/g, '-')
+                  .replace(/^-+|-+$/g, '');
+                setSlug(newSlug);
+              }}
             />
           </div>
 
@@ -168,7 +177,20 @@ export default function WorkspaceSettings() {
 
                 const data = await res.json();
                 if (res.ok) {
-                  alert("Workspace atualizado com sucesso!");
+                  localStorage.setItem(
+                    "workspaceSelecionado",
+                    JSON.stringify({
+                      nome: workspaceName,
+                      slug: data.slug,
+                      companySize: companySize,
+                    })
+                  );
+                  
+                  if (data.slug !== slug) {
+                    window.location.href = `/${data.slug}/settings/general`;
+                  } else {
+                    window.location.reload();
+                  }
                 } else {
                   alert("Erro ao atualizar: " + data.error);
                 }
