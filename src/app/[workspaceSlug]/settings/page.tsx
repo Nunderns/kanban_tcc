@@ -7,6 +7,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useSession } from "next-auth/react";
 import { useParams } from "next/navigation";
 import { useTheme } from "next-themes";
+import { Menu, X } from "lucide-react";
 
 interface Activity {
   id: number;
@@ -24,11 +25,32 @@ type Section = 'profile' | 'preferences' | 'notifications' | 'security' | 'activ
 export default function SettingsPage() {
   const [activeSection, setActiveSection] = useState<Section>('profile');
   const [mounted, setMounted] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const { theme, setTheme } = useTheme();
   const { data: session } = useSession();
   const params = useParams();
   const name = session?.user?.name || "Usuário";
   const email = session?.user?.email || "";
+
+  const handleSectionChange = (section: Section) => {
+    setActiveSection(section);
+    if (window.innerWidth < 768) {
+      setIsSidebarOpen(false);
+    }
+  };
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (isSidebarOpen && !target.closest('.sidebar') && !target.closest('.menu-button')) {
+        setIsSidebarOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isSidebarOpen]);
 
   const [activities, setActivities] = useState<Activity[]>([]);
   const [isLoadingActivities, setIsLoadingActivities] = useState(false);
@@ -1016,47 +1038,73 @@ export default function SettingsPage() {
   ];
 
   return (
-  <div className="flex min-h-screen bg-white dark:bg-gray-900">
-    <div className="w-64 border-r border-gray-200 dark:border-gray-700 p-6 pr-4">
-      <div className="mb-8">
-        <div className="flex items-center gap-3 mb-1 pr-2">
-          <Avatar className="h-9 w-9 flex-shrink-0 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-100">
-            <AvatarImage src={session?.user?.image} />
-            <AvatarFallback>{getInitials(name)}</AvatarFallback>
-          </Avatar>
-          <div className="min-w-0">
-            <p className="font-medium text-gray-900 dark:text-gray-100 truncate">{name}</p>
-            <p className="text-sm text-gray-700 dark:text-gray-400 truncate">{email}</p>
+    <div className="flex flex-col md:flex-row min-h-screen bg-white dark:bg-gray-900">
+      {/* Mobile menu button */}
+      <div className="md:hidden flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+        <button
+          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+          className="inline-flex items-center justify-center p-2 rounded-md text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white focus:outline-none menu-button"
+        >
+          <span className="sr-only">Abrir menu</span>
+          {isSidebarOpen ? (
+            <X className="h-6 w-6" />
+          ) : (
+            <Menu className="h-6 w-6" />
+          )}
+        </button>
+        <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
+          {sections.find(s => s.id === activeSection)?.ptName}
+        </h1>
+        <div className="w-6"></div> {/* Spacer for flex alignment */}
+      </div>
+
+      {/* Sidebar */}
+      <div 
+        className={`fixed inset-y-0 left-0 z-40 w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 transform ${
+          isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        } transition-transform duration-200 ease-in-out md:translate-x-0 md:static md:inset-auto sidebar`}
+      >
+        <div className="p-6 pr-4 h-full flex flex-col">
+          <div className="mb-8">
+            <div className="flex items-center gap-3 mb-1 pr-2">
+              <Avatar className="h-9 w-9 flex-shrink-0 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-100">
+                <AvatarImage src={session?.user?.image} />
+                <AvatarFallback>{getInitials(name)}</AvatarFallback>
+              </Avatar>
+              <div className="min-w-0">
+                <p className="font-medium text-gray-900 dark:text-gray-100 truncate">{name}</p>
+                <p className="text-sm text-gray-700 dark:text-gray-400 truncate">{email}</p>
+              </div>
+            </div>
           </div>
+
+          <nav className="space-y-1 flex-1 overflow-y-auto">
+            {sections.map((section) => (
+              <button
+                key={section.id}
+                onClick={() => handleSectionChange(section.id)}
+                className={`w-full text-left px-3 py-2 rounded-md text-sm font-medium ${
+                  activeSection === section.id
+                    ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white'
+                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white'
+                }`}
+              >
+                {section.ptName}
+              </button>
+            ))}
+          </nav>
         </div>
       </div>
 
-        <nav className="space-y-1">
-          {sections.map((section) => (
-            <button
-              key={section.id}
-              onClick={() => setActiveSection(section.id)}
-              className={`w-full text-left px-3 py-2 rounded-md text-sm font-medium ${
-                activeSection === section.id
-                  ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white'
-                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white'
-              }`}
-            >
-              {section.ptName}
-            </button>
-          ))}
-        </nav>
-      </div>
-
-      <div className="flex-1 p-8 overflow-auto">
+      <div className="flex-1 p-4 md:p-8 overflow-auto mt-16 md:mt-0">
         <div className="max-w-3xl mx-auto">
-          <div className="flex justify-between items-center mb-8">
-            <h1 className="text-2xl font-bold text-gray-900">
+          <div className="hidden md:flex justify-between items-center mb-6 md:mb-8">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
               {sections.find(s => s.id === activeSection)?.ptName}
             </h1>
             <a 
               href={`/${params.workspaceSlug}/dashboard`} 
-              className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
             >
               <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
