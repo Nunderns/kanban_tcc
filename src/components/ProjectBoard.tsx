@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { motion } from "framer-motion";
 import TaskDetailsModal from "./TaskDetailsModal";
 
 export type Status = "BACKLOG" | "TODO" | "IN_PROGRESS" | "DONE";
