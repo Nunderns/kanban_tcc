@@ -65,6 +65,16 @@ export default function ProjectViewClient({ projectId, projectName, workspaceSlu
     fetchTasks();
   }, [projectId, statusFilter, fetchTasks]);
 
+  const { completedCount, totalTasks, completionPercentage } = useMemo(() => {
+    const total = tasks.length;
+    const completed = tasks.filter(task => task.status === 'DONE').length;
+    return {
+      completedCount: completed,
+      totalTasks: total,
+      completionPercentage: total > 0 ? Math.round((completed / total) * 100) : 0
+    };
+  }, [tasks]);
+
   const filtered = useMemo(() => tasks, [tasks]);
 
   const onCreate = async ({ title, description, assignedUserId, projectId: taskProjectId }: { title: string; description: string; assignedUserId?: string; projectId?: string }) => {
@@ -89,6 +99,7 @@ export default function ProjectViewClient({ projectId, projectName, workspaceSlu
 
   const handleTaskUpdate = async (taskId: number, updates: Partial<Task>) => {
     try {
+      console.log('Updating task with data:', { taskId, updates });
       const response = await fetch(`/api/tasks/${taskId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -96,11 +107,14 @@ export default function ProjectViewClient({ projectId, projectName, workspaceSlu
       });
 
       if (!response.ok) {
-        throw new Error('Falha ao atualizar a tarefa');
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Error response:', { status: response.status, errorData });
+        throw new Error(errorData.error || `Falha ao atualizar a tarefa (${response.status})`);
       }
 
       // Atualiza a lista de tarefas após a edição
       await fetchTasks();
+      console.log('Task updated successfully');
     } catch (error) {
       console.error('Erro ao atualizar tarefa:', error);
       throw error;
@@ -115,6 +129,19 @@ export default function ProjectViewClient({ projectId, projectName, workspaceSlu
           <div className="h-2 w-2 rounded-full bg-blue-500" />
           <div className="text-sm text-gray-600 dark:text-gray-300">Projeto</div>
           <div className="text-sm font-medium text-gray-900 dark:text-white">{projectName}</div>
+          <div className="h-4 w-px bg-gray-300 dark:bg-gray-600 mx-2" />
+          <div className="flex items-center gap-2">
+            <div className="text-sm text-gray-600 dark:text-gray-300">Progresso:</div>
+            <div className="w-24 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+              <div 
+                className="bg-green-500 h-2 rounded-full transition-all duration-300 ease-in-out"
+                style={{ width: `${completionPercentage}%` }}
+              />
+            </div>
+            <span className="text-sm font-medium text-gray-900 dark:text-white">
+              {completionPercentage}% ({completedCount}/{totalTasks})
+            </span>
+          </div>
         </div>
 
         <div className="flex flex-wrap gap-2 items-center">

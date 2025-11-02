@@ -57,11 +57,9 @@ export default function ProjectBoard({ tasks, onTaskUpdate, onTaskClick }: Proje
 
   const handleDragStart = (e: React.DragEvent<HTMLDivElement>, task: Task) => {
     e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', task.id.toString());
+    e.dataTransfer.setData('application/json', JSON.stringify(task));
     setDraggedTask(task);
     setIsDragging(true);
-    
-    // Add a class to the body to change the cursor while dragging
     document.body.classList.add('cursor-grabbing');
   };
 
@@ -84,12 +82,10 @@ export default function ProjectBoard({ tasks, onTaskUpdate, onTaskClick }: Proje
     }
 
     try {
-      // Update the task status
       await onTaskUpdate(draggedTask.id, { status: targetStatus });
     } catch (error) {
-      console.error('Failed to update task status:', error);
+      console.error('Falha ao atualizar status da tarefa:', error);
     } finally {
-      // Reset dragging state
       setDraggedTask(null);
       setIsDragging(false);
       document.body.classList.remove('cursor-grabbing');
@@ -111,8 +107,8 @@ export default function ProjectBoard({ tasks, onTaskUpdate, onTaskClick }: Proje
           <div 
             key={col.key} 
             className={`flex flex-col h-full rounded-lg border-2 ${isDragging && draggedTask?.status === col.key ? 'border-dashed border-blue-500' : 'border-gray-200 dark:border-gray-700'} bg-gray-50/50 dark:bg-gray-800/50 transition-colors`}
-            onDragOver={(e) => handleDragOver(e as React.DragEvent<HTMLDivElement>)}
-            onDrop={(e) => handleDrop(e as React.DragEvent<HTMLDivElement>, col.key)}
+            onDragOver={handleDragOver}
+            onDrop={(e) => handleDrop(e, col.key)}
           >
             <div className={`px-4 py-3 border-b border-gray-200 dark:border-gray-700 ${col.color} text-sm font-medium flex items-center justify-between`}>
               <span>{col.label}</span>
@@ -124,22 +120,21 @@ export default function ProjectBoard({ tasks, onTaskUpdate, onTaskClick }: Proje
               {columns[col.key].length === 0 ? (
                 <div 
                   className="h-full flex items-center justify-center text-sm text-gray-500 dark:text-gray-400 p-4 text-center border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg"
-                  onDragOver={(e) => handleDragOver(e as React.DragEvent<HTMLDivElement>)}
-                  onDrop={(e) => handleDrop(e as React.DragEvent<HTMLDivElement>, col.key)}
+                  onDragOver={handleDragOver}
+                  onDrop={(e) => handleDrop(e, col.key)}
                 >
                   {isDragging ? 'Solte aqui' : 'Arraste tarefas para cá'}
                 </div>
               ) : (
                 columns[col.key].map((task) => (
-                  <motion.div 
-                    key={task.id} 
-                    drag
-                    dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
-                    className={`rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-sm hover:shadow-md transition-shadow cursor-grab active:cursor-grabbing ${draggedTask?.id === task.id ? 'opacity-50' : ''}`}
-                    onDragStart={(e) => handleDragStart(e as unknown as React.DragEvent<HTMLDivElement>, task)}
+                  <div 
+                    key={task.id}
+                    draggable
+                    className={`rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-sm hover:shadow-md transition-transform cursor-grab active:cursor-grabbing ${
+                      draggedTask?.id === task.id ? 'opacity-50' : ''
+                    } hover:scale-[1.01] active:scale-[0.99]`}
+                    onDragStart={(e) => handleDragStart(e, task)}
                     onDragEnd={handleDragEnd}
-                    whileHover={{ scale: 1.01 }}
-                    whileTap={{ scale: 0.99 }}
                     onClick={() => {
                       setSelectedTask(task);
                       onTaskClick?.(task);
@@ -176,7 +171,7 @@ export default function ProjectBoard({ tasks, onTaskUpdate, onTaskClick }: Proje
                         </button>
                       </div>
                     </div>
-                  </motion.div>
+                  </div>
                 ))
               )}
             </div>
