@@ -83,21 +83,28 @@ export function CreateProjectForm({ workspaceSlug }: CreateProjectFormProps) {
         });
 
         const responseData = await response.json().catch(() => null);
+      
+      if (!response.ok) {
+        console.error('Project creation failed:', {
+          status: response.status,
+          statusText: response.statusText,
+          responseData
+        });
         
-        if (!response.ok) {
-          console.error('Project creation failed:', {
-            status: response.status,
-            statusText: response.statusText,
-            responseData
-          });
-          
-          throw new Error(
-            responseData?.message || 
-            `Failed to create project: ${response.status} ${response.statusText}`
-          );
-        }
-        
-        return responseData; // Return the parsed response data
+        throw new Error(
+          responseData?.message || 
+          `Failed to create project: ${response.status} ${response.statusText}`
+        );
+      }
+      
+      // If we get here, the project was created successfully
+      toast.success('Project created successfully!');
+      
+      // Redirect to the workspace dashboard
+      router.push(`/${workspaceSlug}`);
+      router.refresh();
+      
+      return responseData; // Return the parsed response data
       } catch (error) {
         console.error('Error during project creation:', {
           error,
@@ -111,17 +118,8 @@ export function CreateProjectForm({ workspaceSlug }: CreateProjectFormProps) {
         throw error; // Re-throw to be caught by the outer try-catch
       }
 
-      const project = await response.json();
-      
-      if (!project) {
-        throw new Error('No project data received');
-      }
-      
-      toast.success('Project created successfully!');
-
-      // Redirect to the workspace dashboard
-      router.push(`/${workspaceSlug}`);
-      router.refresh();
+      // This code is unreachable because we return earlier
+      // It's kept for reference but won't be executed
     } catch (error) {
       console.error('Error creating project:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to create project. Please try again.';

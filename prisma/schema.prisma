@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -14,84 +8,138 @@ datasource db {
 }
 
 model User {
-  id                  Int               @id @default(autoincrement())
-  name                String
-  email               String            @unique
-  password            String
-  resetToken          String?           @unique
-  resetTokenExpiry    DateTime?
-  googleId            String?           @unique
-  createdAt           DateTime          @default(now())
-  updatedAt           DateTime          @updatedAt
-  tasks               Task[]
-  projects            Project[]
-  notifications       Notification[]
-  sessions            Session[]
-  workspaces          Workspace[]
-  workspaceMembers    WorkspaceMember[]
-  invitations         Invitation[]
-  assignedTasks       Task[]            @relation("TaskAssignedUser")
+  id                   Int               @id @default(autoincrement())
+  name                 String
+  email                String            @unique
+  password             String
+  resetToken           String?           @unique
+  resetTokenExpiry     DateTime?
+  googleId             String?           @unique
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
   notificationSettings Json?
+  invitations          Invitation[]
+  notifications        Notification[]
+  projects             Project[]
+  sessions             Session[]
+  assignedTasks        Task[]            @relation("TaskAssignedUser")
+  tasks                Task[]
+  workspaces           Workspace[]
+  workspaceMembers     WorkspaceMember[]
 }
 
 model Project {
   id          Int       @id @default(autoincrement())
   name        String
   description String?
+  color       String?   @default("#3b82f6")
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   ownerId     Int
-  owner       User      @relation(fields: [ownerId], references: [id])
   workspaceId Int
+  owner       User      @relation(fields: [ownerId], references: [id])
   workspace   Workspace @relation(fields: [workspaceId], references: [id])
   tasks       Task[]
-
-  @@index([workspaceId])
 }
 
 model Invitation {
-  id         Int      @id @default(autoincrement())
-  email      String
-  role       String   @default("Membro")
-  token      String   @unique
+  id          Int       @id @default(autoincrement())
+  email       String
+  role        String    @default("Membro")
+  token       String    @unique
   workspaceId Int
-  workspace  Workspace @relation(fields: [workspaceId], references: [id])
-  inviterId  Int
-  inviter    User     @relation(fields: [inviterId], references: [id])
-  expiresAt  DateTime
-  status     String   @default("pending") // pending, accepted, expired
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  inviterId   Int
+  expiresAt   DateTime
+  status      String    @default("pending")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  inviter     User      @relation(fields: [inviterId], references: [id])
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
 }
 
 model Task {
-  id          Int            @id @default(autoincrement())
-  title       String
-  description String?
-  status      Status         @default(BACKLOG)
-  priority    Priority       @default(NONE)
-  startDate   DateTime?
-  dueDate     DateTime?
-  module      String?
-  cycle       String?
-  assignees String[] @default([])
-  labels    String[] @default([])
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
-  userId      Int
-  user        User           @relation(fields: [userId], references: [id])
-  projectId   Int?
-  project     Project?       @relation(fields: [projectId], references: [id])
-  workspaceId Int?
-  workspace   Workspace?     @relation(fields: [workspaceId], references: [id])
+  id             Int            @id @default(autoincrement())
+  title          String
+  description    String?
+  status         Status         @default(BACKLOG)
+  priority       Priority       @default(NONE)
+  startDate      DateTime?
+  dueDate        DateTime?
+  module         String?
+  cycle          String?
+  assignees      String[]       @default([])
+  labels         String[]       @default([])
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  userId         Int
+  projectId      Int?
+  workspaceId    Int?
   assignedUserId Int?
-  assignedUser User?         @relation("TaskAssignedUser", fields: [assignedUserId], references: [id])
-  activities  TaskActivity[]
-  
+  assignedUser   User?          @relation("TaskAssignedUser", fields: [assignedUserId], references: [id])
+  project        Project?       @relation(fields: [projectId], references: [id])
+  user           User           @relation(fields: [userId], references: [id])
+  workspace      Workspace?     @relation(fields: [workspaceId], references: [id])
+  activities     TaskActivity[]
+
   @@index([userId])
   @@index([projectId])
   @@index([workspaceId])
   @@index([assignedUserId])
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  message   String
+  userId    Int
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model Session {
+  id        Int      @id @default(autoincrement())
+  token     String   @unique
+  userId    Int
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Workspace {
+  id          Int               @id @default(autoincrement())
+  name        String
+  companySize Int
+  slug        String            @unique
+  userId      Int
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  invitations Invitation[]
+  tasks       Task[]
+  projects    Project[]
+  user        User              @relation(fields: [userId], references: [id])
+  members     WorkspaceMember[]
+}
+
+model WorkspaceMember {
+  id          Int       @id @default(autoincrement())
+  userId      Int
+  workspaceId Int
+  role        String    @default("Membro")
+  joinedAt    DateTime  @default(now())
+  user        User      @relation(fields: [userId], references: [id])
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+
+  @@unique([userId, workspaceId])
+}
+
+model TaskActivity {
+  id        Int      @id @default(autoincrement())
+  taskId    Int
+  user      String
+  action    String
+  field     String?
+  oldValue  String?
+  newValue  String?
+  createdAt DateTime @default(now())
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
 }
 
 enum Status {
@@ -106,59 +154,4 @@ enum Priority {
   LOW
   MEDIUM
   HIGH
-}
-
-model Notification {
-  id        Int      @id @default(autoincrement())
-  message   String
-  userId    Int
-  user      User     @relation(fields: [userId], references: [id])
-  createdAt DateTime @default(now())
-}
-
-model Session {
-  id        Int      @id @default(autoincrement())
-  token     String   @unique
-  userId    Int
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
-}
-
-model Workspace {
-  id          Int               @id @default(autoincrement())
-  name        String
-  companySize Int
-  slug        String            @unique
-  userId      Int
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
-  user        User              @relation(fields: [userId], references: [id])
-  tasks       Task[]
-  projects    Project[]
-  members     WorkspaceMember[]
-  invitations Invitation[]
-}
-
-model WorkspaceMember {
-  id          Int       @id @default(autoincrement())
-  userId      Int
-  workspaceId Int
-  user        User      @relation(fields: [userId], references: [id])
-  workspace   Workspace @relation(fields: [workspaceId], references: [id])
-  role        String    @default("Membro")
-  joinedAt    DateTime  @default(now())
-
-  @@unique([userId, workspaceId])
-}
-
-model TaskActivity {
-  id        Int      @id @default(autoincrement())
-  taskId    Int
-  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  user      String
-  action    String
-  field     String?
-  oldValue  String?
-  newValue  String?
-  createdAt DateTime @default(now())
 }
