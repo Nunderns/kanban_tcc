@@ -6,6 +6,7 @@ interface ProjectCreateData {
   name: string;
   description: string | null;
   color: string;
+  workspaceId: number;
 }
 
 export async function GET() {
@@ -58,40 +59,78 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
+    console.log('Received request to create project');
     const session = await auth();
     
     if (!session?.user?.email) {
+      console.log('Unauthorized: No session or email');
       return new NextResponse('Unauthorized', { status: 401 });
     }
 
-    const { name, description, color }: ProjectCreateData = await request.json();
+    const requestData = await request.json();
+    console.log('Request data:', requestData);
+    
+    const { name, description, color, workspaceId } = requestData as ProjectCreateData;
 
     if (!name) {
+      console.log('Validation error: Project name is required');
       return new NextResponse('Project name is required', { status: 400 });
     }
 
+    if (!workspaceId) {
+      console.log('Validation error: Workspace ID is required');
+      return new NextResponse('Workspace ID is required', { status: 400 });
+    }
+
+    console.log('Looking up user:', session.user.email);
     const user = await prisma.user.findUnique({
       where: { email: session.user.email },
     });
 
     if (!user) {
+      console.log('User not found:', session.user.email);
       return new NextResponse('User not found', { status: 404 });
     }
 
+    console.log('Verifying workspace access for user:', user.id, 'workspace:', workspaceId);
+    // Verify user has access to the workspace
+    const workspaceMember = await prisma.workspaceMember.findFirst({
+      where: {
+        userId: user.id,
+        workspaceId: workspaceId,
+      },
+    });
+
+    if (!workspaceMember) {
+      console.log('Access denied: User does not have access to workspace', { userId: user.id, workspaceId });
+      return new NextResponse('You do not have access to this workspace', { status: 403 });
+    }
+
+    console.log('Creating project with data:', {
+      name,
+      description,
+      ownerId: user.id,
+      workspaceId,
+    });
+
+    // First, create the project with the required fields
     const created = await prisma.project.create({
       data: {
         name,
         description,
         ownerId: user.id,
+        workspaceId: workspaceId,
       },
-      select: {
-        id: true,
-        name: true,
-        description: true,
-        createdAt: true,
-        updatedAt: true,
+      include: {
+        workspace: {
+          select: {
+            slug: true,
+          },
+        },
       },
     });
+
+    console.log('Project created successfully:', created);
 
     const responseBody = {
       id: String(created.id),
@@ -102,11 +141,20 @@ export async function POST(request: Request) {
       color: color || '#3b82f6',
       isFavorite: false,
       status: 'ACTIVE',
+      workspaceSlug: created.workspace.slug,
     };
 
+    console.log('Sending response:', responseBody);
     return NextResponse.json(responseBody, { status: 201 });
   } catch (error) {
     console.error('Error creating project:', error);
-    return new NextResponse('Internal Error', { status: 500 });
+    if (error instanceof Error) {
+      console.error('Error details:', {
+        name: error.name,
+        message: error.message,
+        stack: error.stack,
+      });
+    }
+    return new NextResponse('Internal Server Error', { status: 500 });
   }
 }

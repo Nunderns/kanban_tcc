@@ -2,8 +2,9 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { PrismaClient } from "@prisma/client";
-import type { Adapter } from "next-auth/adapters";
-import type { DefaultSession, NextAuthConfig } from "next-auth";
+import type { Adapter } from "@auth/core/adapters";
+import type { DefaultSession } from "next-auth";
+import type { NextAuthConfig } from "next-auth";
 import bcrypt from "bcryptjs";
 
 declare module "next-auth" {
@@ -17,11 +18,8 @@ declare module "next-auth" {
   }
 }
 
-declare module "@auth/core/jwt" {
-  interface JWT {
-    id: string;
-  }
-}
+// JWT type is now available from next-auth/jwt/types
+// No need to declare module for JWT in v5
 
 const prisma = new PrismaClient();
 
@@ -105,7 +103,11 @@ export const authOptions: NextAuthConfig = {
     },
     async jwt({ token, user }) {
       if (user) {
-        token.id = String(user.id);
+        // Ensure we're not mutating the token directly
+        return {
+          ...token,
+          id: String(user.id),
+        };
       }
       return token;
     },
