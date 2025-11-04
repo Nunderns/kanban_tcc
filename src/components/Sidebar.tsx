@@ -557,11 +557,11 @@ const Sidebar = ({ workspaceSlug = '' }: SidebarProps) => {
               ) : (
                 <>
                   {userProjects.map((project) => {
-                    const isActive = pathname === `/projects/${project.id}`;
+                    const isActive = pathname === `/${workspaceSlug}/projects/${project.id}`;
                     return (
                       <Link
                         key={project.id}
-                        href={`/projects/${project.id}`}
+                        href={`/${workspaceSlug}/projects/${project.id}`}
                         onClick={closeMobileMenu}
                         className={`group flex w-full items-center rounded-lg border px-2 py-1.5 text-left transition-colors ${
                           isActive

@@ -40,7 +40,6 @@ export function CreateProjectForm({ workspaceSlug }: CreateProjectFormProps) {
 
     try {
       console.log('Fetching workspace with slug:', workspaceSlug);
-      // First, get the workspace ID using the slug
       const workspaceResponse = await fetch(`/api/workspaces/slug/${workspaceSlug}`);
       
       if (!workspaceResponse.ok) {
@@ -65,7 +64,7 @@ export function CreateProjectForm({ workspaceSlug }: CreateProjectFormProps) {
         name: formData.name,
         description: formData.description || null,
         workspaceId: Number(workspace.id),
-        color: '#3b82f6' // Default color
+        color: '#3b82f6'
       };
 
       console.log('Sending project creation request:', projectData);
@@ -97,14 +96,12 @@ export function CreateProjectForm({ workspaceSlug }: CreateProjectFormProps) {
         );
       }
       
-      // If we get here, the project was created successfully
       toast.success('Project created successfully!');
       
-      // Redirect to the workspace dashboard
       router.push(`/${workspaceSlug}`);
       router.refresh();
       
-      return responseData; // Return the parsed response data
+      return responseData;
       } catch (error) {
         console.error('Error during project creation:', {
           error,
@@ -115,11 +112,8 @@ export function CreateProjectForm({ workspaceSlug }: CreateProjectFormProps) {
             headers: Object.fromEntries(response.headers.entries())
           } : 'No response received'
         });
-        throw error; // Re-throw to be caught by the outer try-catch
+        throw error;
       }
-
-      // This code is unreachable because we return earlier
-      // It's kept for reference but won't be executed
     } catch (error) {
       console.error('Error creating project:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to create project. Please try again.';
@@ -133,7 +127,7 @@ export function CreateProjectForm({ workspaceSlug }: CreateProjectFormProps) {
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
         <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-          Project Name <span className="text-red-500">*</span>
+          Nome do Projeto  <span className="text-red-500">*</span>
         </label>
         <Input
           id="name"
@@ -141,7 +135,7 @@ export function CreateProjectForm({ workspaceSlug }: CreateProjectFormProps) {
           type="text"
           value={formData.name}
           onChange={handleChange}
-          placeholder="My Awesome Project"
+          placeholder="Meu projeto incrível"
           className="w-full"
           disabled={isLoading}
           required
@@ -150,14 +144,14 @@ export function CreateProjectForm({ workspaceSlug }: CreateProjectFormProps) {
       
       <div>
         <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
-          Description
+          Descrição
         </label>
         <Textarea
           id="description"
           name="description"
           value={formData.description}
           onChange={handleChange}
-          placeholder="Project description (optional)"
+          placeholder="Descrição (opcional)"
           className="w-full min-h-[100px]"
           disabled={isLoading}
         />
@@ -170,11 +164,11 @@ export function CreateProjectForm({ workspaceSlug }: CreateProjectFormProps) {
           onClick={() => router.back()}
           disabled={isLoading}
         >
-          Cancel
+          Cancelar
         </Button>
         <Button type="submit" disabled={isLoading}>
           {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          {isLoading ? 'Creating...' : 'Create Project'}
+          {isLoading ? 'Criando...' : 'Criar Projeto'}
         </Button>
       </div>
     </form>
