@@ -63,7 +63,10 @@ export function AddProjectModal({ isOpen, onClose, onProjectAdded }: AddProjectM
       setDescription("");
       setColor("#3b82f6");
       
-      router.push(`/projects/${newProject.id}`);
+      // Get the current workspace slug from the URL
+      const pathParts = window.location.pathname.split('/');
+      const workspaceSlug = pathParts[1];
+      router.push(`/${workspaceSlug}/projects/${newProject.id}`);
     } catch (err) {
       setError("Ocorreu um erro ao criar o projeto. Tente novamente.");
       console.error("Error creating project:", err);

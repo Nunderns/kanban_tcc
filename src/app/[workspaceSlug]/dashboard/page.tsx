@@ -842,7 +842,7 @@ function DashboardContent() {
                       return (
                         <Link 
                           key={project.id}
-                          href={`/projects/${project.id}`}
+                          href={`/${params.workspaceSlug}/projects/${project.id}`}
                           className="block p-4 rounded-xl border border-gray-100 dark:border-gray-700 hover:shadow-md transition-all duration-300 group"
                         >
                           <div className="space-y-3">

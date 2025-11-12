@@ -7,6 +7,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useSession } from "next-auth/react";
 import { useParams } from "next/navigation";
 import { useTheme } from "next-themes";
+import { Menu, X } from "lucide-react";
 
 interface Activity {
   id: number;
@@ -24,11 +25,32 @@ type Section = 'profile' | 'preferences' | 'notifications' | 'security' | 'activ
 export default function SettingsPage() {
   const [activeSection, setActiveSection] = useState<Section>('profile');
   const [mounted, setMounted] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const { theme, setTheme } = useTheme();
   const { data: session } = useSession();
   const params = useParams();
   const name = session?.user?.name || "Usuário";
   const email = session?.user?.email || "";
+
+  const handleSectionChange = (section: Section) => {
+    setActiveSection(section);
+    if (window.innerWidth < 768) {
+      setIsSidebarOpen(false);
+    }
+  };
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (isSidebarOpen && !target.closest('.sidebar') && !target.closest('.menu-button')) {
+        setIsSidebarOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isSidebarOpen]);
 
   const [activities, setActivities] = useState<Activity[]>([]);
   const [isLoadingActivities, setIsLoadingActivities] = useState(false);
@@ -904,6 +926,95 @@ export default function SettingsPage() {
           </div>
         );
 
+      case 'connections':
+        return (
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Conexões de Conta</CardTitle>
+                <CardDescription>Gerencie suas conexões com serviços de terceiros</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+                  <div className="p-4 flex items-center justify-between bg-gray-50 dark:bg-gray-800">
+                    <div className="flex items-center space-x-4">
+                      <div className="p-2 bg-white dark:bg-gray-700 rounded-lg">
+                        <svg className="w-6 h-6 text-red-500" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M12.545 10.239v3.821h5.445c-0.712 2.315-2.647 3.972-5.445 3.972-3.332 0-6.033-2.701-6.033-6.032s2.701-6.032 6.033-6.032c1.498 0 2.866 0.549 3.921 1.453l2.814-2.814c-1.88-1.757-4.382-2.832-6.735-2.832-5.522 0-10 4.479-10 10s4.478 10 10 10c8.396 0 10-7.496 10-9.634 0-0.996-0.102-1.277-0.201-1.491h-9.8z" />
+                        </svg>
+                      </div>
+                      <div>
+                        <h3 className="font-medium text-gray-900 dark:text-white">Google</h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Conecte sua conta do Google</p>
+                      </div>
+                    </div>
+                    {session?.user?.provider === 'google' ? (
+                      <div className="flex items-center space-x-3">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100">
+                          Conectado
+                        </span>
+                        <button
+                          onClick={() => {
+                            alert('Funcionalidade de desconexão do Google será implementada em breve');
+                          }}
+                          className="text-sm text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
+                        >
+                          Desconectar
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => {
+                          window.location.href = '/api/auth/signin/google';
+                        }}
+                        className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:hover:bg-gray-600"
+                      >
+                        <svg className="w-5 h-5 mr-2 -ml-1 text-red-500" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M12.545 10.239v3.821h5.445c-0.712 2.315-2.647 3.972-5.445 3.972-3.332 0-6.033-2.701-6.033-6.032s2.701-6.032 6.033-6.032c1.498 0 2.866 0.549 3.921 1.453l2.814-2.814c-1.88-1.757-4.382-2.832-6.735-2.832-5.522 0-10 4.479-10 10s4.478 10 10 10c8.396 0 10-7.496 10-9.634 0-0.996-0.102-1.277-0.201-1.491h-9.8z" />
+                        </svg>
+                        Conectar com Google
+                      </button>
+                    )}
+                  </div>
+                  <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+                    <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2">Permissões</h4>
+                    <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-300">
+                      <li className="flex items-start">
+                        <svg className="h-5 w-5 text-green-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                        Acesso ao seu endereço de e-mail
+                      </li>
+                      <li className="flex items-start">
+                        <svg className="h-5 w-5 text-green-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                        Acesso ao seu nome e foto de perfil
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+
+                <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <div className="flex">
+                    <div className="flex-shrink-0">
+                      <svg className="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h2a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <div className="ml-3">
+                      <h3 className="text-sm font-medium text-blue-800 dark:text-blue-200">Por que conectar com o Google?</h3>
+                      <div className="mt-2 text-sm text-blue-700 dark:text-blue-300">
+                        <p>Conecte sua conta do Google para fazer login mais rapidamente e sincronizar suas preferências entre dispositivos.</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        );
+
       default:
         return (
           <Card>
@@ -927,47 +1038,73 @@ export default function SettingsPage() {
   ];
 
   return (
-  <div className="flex min-h-screen bg-white dark:bg-gray-900">
-    <div className="w-64 border-r border-gray-200 dark:border-gray-700 p-6 pr-4">
-      <div className="mb-8">
-        <div className="flex items-center gap-3 mb-1 pr-2">
-          <Avatar className="h-9 w-9 flex-shrink-0 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-100">
-            <AvatarImage src={session?.user?.image} />
-            <AvatarFallback>{getInitials(name)}</AvatarFallback>
-          </Avatar>
-          <div className="min-w-0">
-            <p className="font-medium text-gray-900 dark:text-gray-100 truncate">{name}</p>
-            <p className="text-sm text-gray-700 dark:text-gray-400 truncate">{email}</p>
+    <div className="flex flex-col md:flex-row min-h-screen bg-white dark:bg-gray-900">
+      {/* Mobile menu button */}
+      <div className="md:hidden flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+        <button
+          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+          className="inline-flex items-center justify-center p-2 rounded-md text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white focus:outline-none menu-button"
+        >
+          <span className="sr-only">Abrir menu</span>
+          {isSidebarOpen ? (
+            <X className="h-6 w-6" />
+          ) : (
+            <Menu className="h-6 w-6" />
+          )}
+        </button>
+        <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
+          {sections.find(s => s.id === activeSection)?.ptName}
+        </h1>
+        <div className="w-6"></div> {/* Spacer for flex alignment */}
+      </div>
+
+      {/* Sidebar */}
+      <div 
+        className={`fixed inset-y-0 left-0 z-40 w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 transform ${
+          isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        } transition-transform duration-200 ease-in-out md:translate-x-0 md:static md:inset-auto sidebar`}
+      >
+        <div className="p-6 pr-4 h-full flex flex-col">
+          <div className="mb-8">
+            <div className="flex items-center gap-3 mb-1 pr-2">
+              <Avatar className="h-9 w-9 flex-shrink-0 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-100">
+                <AvatarImage src={session?.user?.image} />
+                <AvatarFallback>{getInitials(name)}</AvatarFallback>
+              </Avatar>
+              <div className="min-w-0">
+                <p className="font-medium text-gray-900 dark:text-gray-100 truncate">{name}</p>
+                <p className="text-sm text-gray-700 dark:text-gray-400 truncate">{email}</p>
+              </div>
+            </div>
           </div>
+
+          <nav className="space-y-1 flex-1 overflow-y-auto">
+            {sections.map((section) => (
+              <button
+                key={section.id}
+                onClick={() => handleSectionChange(section.id)}
+                className={`w-full text-left px-3 py-2 rounded-md text-sm font-medium ${
+                  activeSection === section.id
+                    ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white'
+                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white'
+                }`}
+              >
+                {section.ptName}
+              </button>
+            ))}
+          </nav>
         </div>
       </div>
 
-        <nav className="space-y-1">
-          {sections.map((section) => (
-            <button
-              key={section.id}
-              onClick={() => setActiveSection(section.id)}
-              className={`w-full text-left px-3 py-2 rounded-md text-sm font-medium ${
-                activeSection === section.id
-                  ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white'
-                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white'
-              }`}
-            >
-              {section.ptName}
-            </button>
-          ))}
-        </nav>
-      </div>
-
-      <div className="flex-1 p-8 overflow-auto">
+      <div className="flex-1 p-4 md:p-8 overflow-auto mt-16 md:mt-0">
         <div className="max-w-3xl mx-auto">
-          <div className="flex justify-between items-center mb-8">
-            <h1 className="text-2xl font-bold text-gray-900">
+          <div className="hidden md:flex justify-between items-center mb-6 md:mb-8">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
               {sections.find(s => s.id === activeSection)?.ptName}
             </h1>
             <a 
               href={`/${params.workspaceSlug}/dashboard`} 
-              className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
             >
               <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />

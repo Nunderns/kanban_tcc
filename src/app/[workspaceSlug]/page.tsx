@@ -4,6 +4,7 @@ import { format, formatDistanceToNow } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
 import { ptBR } from 'date-fns/locale';
 import { redirect } from 'next/navigation';
+import { ActionCard } from '@/components/workspace/ActionCard';
 
 const BRAZIL_TIMEZONE = 'America/Sao_Paulo';
 export const dynamic = 'force-dynamic';
@@ -102,28 +103,26 @@ export default async function WorkspacePage({ params }: WorkspacePageProps) {
       </p>
     </header>
 
-    {/* Cards iniciais */}
+    {/* Action Cards */}
     <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-      {['Criar um projeto', 'Convide sua equipe', 'Personalize o espaço'].map((title, i) => (
-        <div
-          key={i}
-          className="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all shadow-sm flex flex-col justify-between"
-        >
-          <div>
-            <h2 className="text-gray-800 dark:text-gray-200 font-medium mb-1">{title}</h2>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-              {i === 0
-                ? 'A maioria das coisas começa com um projeto no Plane.'
-                : i === 1
-                ? 'Construa e gerencie com colegas de trabalho.'
-                : 'Escolha foto, cores e muito mais.'}
-            </p>
-          </div>
-          <button className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-md text-sm font-medium transition-colors dark:bg-indigo-700 dark:hover:bg-indigo-600 w-full sm:w-auto">
-            {i === 0 ? 'Criar' : i === 1 ? 'Convidar' : 'Personalizar'}
-          </button>
-        </div>
-      ))}
+      <ActionCard
+        title="Criar um projeto"
+        description="A maioria das coisas começa com um projeto no Plane."
+        buttonText="Criar"
+        href={`/${workspaceSlug}/new`}
+      />
+      <ActionCard
+        title="Convide sua equipe"
+        description="Construa e gerencie com colegas de trabalho."
+        buttonText="Convidar"
+        href={`/${workspaceSlug}/settings/members`}
+      />
+      <ActionCard
+        title="Personalize o espaço"
+        description="Escolha foto, cores e muito mais."
+        buttonText="Personalizar"
+        href={`/${workspaceSlug}/settings`}
+      />
     </section>
 
     {/* Tarefas Recentes */}

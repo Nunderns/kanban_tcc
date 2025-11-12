@@ -22,6 +22,8 @@ export type WorkItem = {
   cycle?: string;
   labels?: string[];
   creator?: string;
+  projectId?: string;
+  projectName?: string;
 };
 
 export type WorkspaceMember = {
@@ -40,7 +42,7 @@ function CreateTaskModal({
 }: {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (task: { title: string; description: string; assignedUserId?: string }) => Promise<void>;
+  onSubmit: (task: { title: string; description: string; assignedUserId?: string; projectId?: string }) => Promise<void>;
   workspaceSlug: string
 }) {
   const [title, setTitle] = useState("");
@@ -49,8 +51,12 @@ function CreateTaskModal({
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [workspaceMembers, setWorkspaceMembers] = useState<WorkspaceMember[]>([]);
   const [selectedUser, setSelectedUser] = useState<string>("");
+  const [selectedProject, setSelectedProject] = useState<string>("");
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
+  const [isProjectDropdownOpen, setIsProjectDropdownOpen] = useState(false);
   const [loadingMembers, setLoadingMembers] = useState(false);
+  const [projects, setProjects] = useState<Array<{id: string, name: string}>>([]);
+  const [loadingProjects, setLoadingProjects] = useState(false);
   const [filters, setFilters] = useState({
     priority: [],
     status: [],
@@ -109,26 +115,37 @@ function CreateTaskModal({
     setViewType(newViewType);
   };
 
-  const fetchWorkspaceMembers = useCallback(async () => {
+  const fetchWorkspaceData = useCallback(async () => {
     try {
       setLoadingMembers(true);
-      const response = await fetch(`/api/workspaces/${workspaceSlug}/members`);
-      if (response.ok) {
-        const data = await response.json();
-        setWorkspaceMembers(data.members || []);
+      setLoadingProjects(true);
+      
+      // Buscar membros
+      const membersResponse = await fetch(`/api/workspaces/slug/${workspaceSlug}`);
+      if (membersResponse.ok) {
+        const workspaceData = await membersResponse.json();
+        setWorkspaceMembers(workspaceData.members || []);
+      }
+      
+      // Buscar projetos
+      const projectsResponse = await fetch(`/api/workspaces/slug/${workspaceSlug}/projects`);
+      if (projectsResponse.ok) {
+        const projectsData = await projectsResponse.json();
+        setProjects(projectsData.projects || []);
       }
     } catch (error) {
-      console.error('Error fetching workspace members:', error);
+      console.error('Error fetching workspace data:', error);
     } finally {
       setLoadingMembers(false);
+      setLoadingProjects(false);
     }
   }, [workspaceSlug]);
 
   useEffect(() => {
     if (isOpen) {
-      fetchWorkspaceMembers();
+      fetchWorkspaceData();
     }
-  }, [isOpen, fetchWorkspaceMembers]);
+  }, [isOpen, fetchWorkspaceData]);
 
   const modalRef = useRef<HTMLDivElement>(null);
 
@@ -155,7 +172,8 @@ function CreateTaskModal({
       await onSubmit({ 
         title, 
         description,
-        assignedUserId: selectedUser || undefined
+        assignedUserId: selectedUser || undefined,
+        projectId: selectedProject || undefined
       });
       setTitle("");
       setDescription("");
@@ -204,59 +222,89 @@ function CreateTaskModal({
               Atribuir a usuário
             </label>
             <div className="relative">
-              <button
-                type="button"
-                onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
-                className="w-full bg-white border border-gray-300 rounded p-2 text-sm flex items-center justify-between hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <div className="flex items-center gap-2">
-                  <FaUser className="text-gray-500" />
-                  {selectedUser 
-                    ? workspaceMembers.find(m => m.id === selectedUser)?.fullName || 'Usuário selecionado'
-                    : 'Selecione um usuário (opcional)'
-                  }
-                </div>
-                <FaChevronDown className="text-gray-500" />
-              </button>
-              
-              {isUserDropdownOpen && (
-                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
-                  <div className="p-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSelectedUser("");
-                        setIsUserDropdownOpen(false);
-                      }}
-                      className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2"
-                    >
-                      <FaUser className="text-gray-400" />
-                      Nenhum usuário
-                    </button>
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
+                  className="w-full bg-white border border-gray-300 rounded p-2 text-sm flex items-center justify-between hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <div className="flex items-center gap-2">
+                    <FaUser className="text-gray-500" />
+                    {selectedUser 
+                      ? workspaceMembers.find(m => m.id === selectedUser)?.fullName || 'Usuário selecionado'
+                      : 'Selecione um usuário (opcional)'
+                    }
+                  </div>
+                  <FaChevronDown className="text-xs text-gray-500" />
+                </button>
+                {isUserDropdownOpen && (
+                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded shadow-lg">
                     {loadingMembers ? (
-                      <div className="px-3 py-2 text-sm text-gray-500">Carregando...</div>
+                      <div className="p-2 text-sm text-gray-500">Carregando...</div>
                     ) : (
-                      workspaceMembers.map((member) => (
-                        <button
+                      workspaceMembers.map(member => (
+                        <div 
                           key={member.id}
-                          type="button"
+                          className="p-2 hover:bg-gray-100 cursor-pointer flex items-center"
                           onClick={() => {
                             setSelectedUser(member.id);
                             setIsUserDropdownOpen(false);
                           }}
-                          className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2"
                         >
-                          <FaUser className="text-gray-500" />
-                          <div>
-                            <div className="font-medium">{member.fullName}</div>
-                            <div className="text-xs text-gray-500">{member.email}</div>
-                          </div>
-                        </button>
+                          <FaUser className="mr-2 text-gray-500" />
+                          {member.displayName}
+                        </div>
                       ))
                     )}
                   </div>
+                )}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Projeto
+              </label>
+              <div className="relative">
+                <div 
+                  className="w-full bg-white border border-gray-300 rounded p-2 text-sm flex justify-between items-center cursor-pointer"
+                  onClick={() => setIsProjectDropdownOpen(!isProjectDropdownOpen)}
+                >
+                  {selectedProject ? 
+                    projects.find(p => p.id === selectedProject)?.name : 
+                    'Selecione um projeto (opcional)'}
+                  <FaChevronDown className="text-xs text-gray-500" />
                 </div>
-              )}
+                {isProjectDropdownOpen && (
+                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded shadow-lg">
+                    <div 
+                      className="p-2 hover:bg-gray-100 cursor-pointer"
+                      onClick={() => {
+                        setSelectedProject('');
+                        setIsProjectDropdownOpen(false);
+                      }}
+                    >
+                      Nenhum projeto
+                    </div>
+                    {loadingProjects ? (
+                      <div className="p-2 text-sm text-gray-500">Carregando projetos...</div>
+                    ) : (
+                      projects.map(project => (
+                        <div 
+                          key={project.id}
+                          className="p-2 hover:bg-gray-100 cursor-pointer"
+                          onClick={() => {
+                            setSelectedProject(project.id);
+                            setIsProjectDropdownOpen(false);
+                          }}
+                        >
+                          {project.name}
+                        </div>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
