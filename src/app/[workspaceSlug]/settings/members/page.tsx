@@ -354,8 +354,12 @@ export default function MembersPage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">Ativo</td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <button className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 mr-4">Editar</button>
-                        <button className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300">Remover</button>
+                        {member.email !== session?.user?.email && (
+                          <>
+                            <button className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 mr-4">Editar</button>
+                            <button className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300">Remover</button>
+                          </>
+                        )}
                       </td>
                     </tr>
                   ))
