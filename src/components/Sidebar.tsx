@@ -220,7 +220,12 @@ const Sidebar = ({ workspaceSlug = '' }: SidebarProps) => {
     fetchWorkspaces();
   }, [workspaceSlug]);
 
-  useSession();
+
+  useEffect(() => {
+    if (workspaceSlug) {
+      fetchProjects();
+    }
+  }, [workspaceSlug]);
 
   const fetchProjects = async () => {
     try {
@@ -418,7 +423,7 @@ const Sidebar = ({ workspaceSlug = '' }: SidebarProps) => {
 
                   <div className="my-2 border-t border-gray-100 dark:border-gray-700"></div>
 
-                  {/* Workspaces List */}
+                  {/* Lista de workspaces */}
                   <div className="mb-2 px-2 py-1">
                     <h3 className="mb-2 px-2 text-xs font-medium text-gray-500 dark:text-gray-400">
                       Seus workspaces
@@ -524,7 +529,7 @@ const Sidebar = ({ workspaceSlug = '' }: SidebarProps) => {
             </div>
           </div>
 
-          {/* Projects Section */}
+          {/* Projetos */}
           <div className="px-4 py-2">
             <h3 className="mb-2 px-2 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
               Projetos
@@ -605,7 +610,7 @@ const Sidebar = ({ workspaceSlug = '' }: SidebarProps) => {
             </nav>
           </div>
 
-          {/* Settings Section */}
+          {/* Configurações */}
           <div className="mt-auto">
             <div className="border-t border-gray-200 px-4 py-4 dark:border-gray-700">
               <Link
