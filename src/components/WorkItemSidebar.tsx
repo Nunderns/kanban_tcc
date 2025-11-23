@@ -322,21 +322,21 @@ export default function WorkItemSidebar({ item, onClose, onUpdate, workspaceSlug
   const resolvedSidebarHref = sidebarHref ?? (workspaceSlug ? `/${workspaceSlug}/dashboard/my-tasks?task=${numericTaskId}` : undefined);
 
   const containerClasses = isFullScreen
-    ? "min-h-screen w-full bg-gray-50 dark:bg-[#05060a] flex justify-center px-0 sm:px-6 py-6"
-    : "fixed inset-0 z-50 flex justify-end bg-black/40 dark:bg-black/70 p-4";
-  const panelClasses = `${isFullScreen ? "w-full max-w-5xl" : "h-full w-full md:w-1/2"} bg-white dark:bg-[#0d0f14] text-gray-900 dark:text-gray-100 rounded-2xl shadow-2xl flex flex-col overflow-hidden`;
+    ? "min-h-screen w-full bg-gray-50 dark:bg-[#05060a] flex justify-center px-4 sm:px-6 py-6"
+    : "fixed inset-0 z-50 flex justify-center sm:justify-end bg-black/40 dark:bg-black/70 px-4 py-6";
+  const panelClasses = `${isFullScreen ? "w-full max-w-5xl" : "h-full w-full max-w-full sm:w-[90%] md:w-2/3 lg:w-1/2"} bg-white dark:bg-[#0d0f14] text-gray-900 dark:text-gray-100 rounded-2xl shadow-2xl flex flex-col overflow-hidden max-h-screen`;
 
   return (
     <div className={containerClasses}>
       <aside className={panelClasses}>
-        <div className="flex flex-col gap-4 border-b border-gray-200 dark:border-white/5 p-6 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex flex-col gap-4 border-b border-gray-200 dark:border-white/5 p-4 sm:p-6 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex-1 space-y-4">
             <div>
               <p className="text-[11px] uppercase tracking-[0.35em] text-gray-500 dark:text-white/60">{localItem.id.startsWith('PRIME-') ? localItem.id : `PRIME-${localItem.id}`}</p>
               <input
                 value={localItem.title}
                 onChange={(e) => handleChange("title", e.target.value)}
-                className="mt-3 w-full bg-transparent text-3xl font-semibold leading-tight text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-white/30 focus:outline-none"
+                className="mt-3 w-full bg-transparent text-2xl font-semibold leading-tight text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-white/30 focus:outline-none sm:text-3xl"
                 placeholder="Título da tarefa"
               />
             </div>
@@ -398,15 +398,15 @@ export default function WorkItemSidebar({ item, onClose, onUpdate, workspaceSlug
           </div>
         </div>
 
-        <div className="flex flex-col gap-8 overflow-y-auto p-6">
-          <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-col gap-8 overflow-y-auto p-4 sm:p-6">
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
             <button className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 dark:border-white/10 bg-gray-100 dark:bg-white/[0.04] text-gray-600 dark:text-white/70 transition hover:border-gray-300 dark:hover:border-white/40">
               <Cog6ToothIcon className="h-5 w-5" />
             </button>
             {actionButtons.map(({ label, icon: Icon }) => (
               <button
                 key={label}
-                className="inline-flex items-center gap-2 rounded-full border border-gray-200 dark:border-white/10 bg-gray-100 dark:bg-white/[0.02] px-4 py-2 text-sm text-gray-700 dark:text-white/80 transition hover:border-gray-300 dark:hover:border-white/40 hover:text-gray-900 dark:hover:text-white"
+                className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-gray-200 dark:border-white/10 bg-gray-100 dark:bg-white/[0.02] px-4 py-2 text-sm text-gray-700 dark:text-white/80 transition hover:border-gray-300 dark:hover:border-white/40 hover:text-gray-900 dark:hover:text-white sm:w-auto"
               >
                 <Icon className="h-4 w-4" />
                 {label}
@@ -414,14 +414,14 @@ export default function WorkItemSidebar({ item, onClose, onUpdate, workspaceSlug
             ))}
           </div>
 
-          <div className="grid gap-8 lg:grid-cols-[1.2fr_0.8fr]">
-            <section className="rounded-2xl border border-gray-200 dark:border-white/5 bg-white dark:bg-white/[0.02] p-6">
+          <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr] lg:gap-8">
+            <section className="rounded-2xl border border-gray-200 dark:border-white/5 bg-white dark:bg-white/[0.02] p-4 sm:p-6">
               <div className="flex flex-col gap-2 border-b border-gray-200 dark:border-white/5 pb-4 sm:flex-row sm:items-center sm:justify-between">
                 <h3 className="text-sm font-semibold uppercase tracking-widest text-gray-600 dark:text-white/60">Propriedades</h3>
                 <p className="text-xs text-gray-500 dark:text-white/40">Última edição por {formatUserName(item.creator || "henri.okayama")}</p>
               </div>
 
-              <div className="mt-6 grid gap-4 sm:grid-cols-2">
+              <div className="mt-4 grid gap-4 sm:mt-6 sm:grid-cols-2">
                 <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-black/20 p-4">
                   <p className="text-[11px] uppercase tracking-wide text-gray-500 dark:text-white/40">Estado</p>
                   <div className="mt-3 flex items-center gap-3">
@@ -598,7 +598,7 @@ export default function WorkItemSidebar({ item, onClose, onUpdate, workspaceSlug
               </div>
             </section>
 
-            <section className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-white/5 dark:bg-white/[0.02]">
+            <section className="rounded-2xl border border-gray-200 bg-white p-4 dark:border-white/5 dark:bg-white/[0.02] sm:p-6">
               <div className="mb-4 flex items-center justify-between">
                 <h3 className="text-sm font-semibold uppercase tracking-widest text-gray-600 dark:text-white/60">Atividade</h3>
                 <button className="rounded-full border border-gray-200 px-3 py-1 text-xs text-gray-700 hover:border-gray-400 dark:border-white/10 dark:text-white/70 dark:hover:border-white/40">Filtros</button>
@@ -638,7 +638,7 @@ export default function WorkItemSidebar({ item, onClose, onUpdate, workspaceSlug
           </div>
         </div>
 
-        <div className="border-t border-white/5 bg-white dark:bg-black/30 p-6">
+        <div className="border-t border-white/5 bg-white dark:bg-black/30 p-4 sm:p-6">
           <div className="flex justify-end">
             <button
               onClick={handleUpdateClick}
