@@ -15,7 +15,14 @@ const getPriorityColor = (priority: string = 'NONE') => {
 
 type View = "kanban" | "list" | "calendar" | "table" | "timeline";
 
-export default function ProjectViewClient({ projectId, projectName, workspaceSlug }: { projectId: number; projectName: string; workspaceSlug: string }) {
+interface ProjectViewClientProps {
+  projectId: number;
+  projectName: string;
+  workspaceSlug: string;
+  onTaskCreated?: () => Promise<void>;
+}
+
+export default function ProjectViewClient({ projectId, projectName, workspaceSlug, onTaskCreated }: ProjectViewClientProps) {
   const [view, setView] = useState<View>("kanban");
   const [statusFilter, setStatusFilter] = useState<Status | "ALL">("ALL");
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -93,8 +100,11 @@ export default function ProjectViewClient({ projectId, projectName, workspaceSlu
       const text = await res.text();
       throw new Error(`Falha ao criar tarefa: ${text}`);
     }
-    setIsCreateOpen(false);
     await fetchTasks();
+    setIsCreateOpen(false);
+    if (onTaskCreated) {
+      await onTaskCreated();
+    }
   };
 
   const handleTaskUpdate = async (taskId: number, updates: Partial<Task>) => {

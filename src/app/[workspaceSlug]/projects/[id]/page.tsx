@@ -171,15 +171,14 @@ export default async function ProjectPage({
             <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-lg font-medium text-gray-900 dark:text-white">Tarefas do Projeto</h2>
-                <Button>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Nova Tarefa
-                </Button>
               </div>
               <ProjectViewClient 
                 projectId={project.id} 
                 projectName={project.name} 
                 workspaceSlug={workspaceSlug}
+                onTaskCreated={async () => {
+                  'use server';
+                }}
               />
             </div>
           </TabsContent>

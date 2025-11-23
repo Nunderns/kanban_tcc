@@ -17,10 +17,10 @@ export interface Task {
 };
 
 const STATUS_COLUMNS: { key: Status; label: string; color: string }[] = [
-  { key: "BACKLOG", label: "Backlog", color: "bg-gray-200 dark:bg-gray-700" },
-  { key: "TODO", label: "To do", color: "bg-blue-200 dark:bg-blue-900" },
-  { key: "IN_PROGRESS", label: "Em progresso", color: "bg-yellow-200 dark:bg-yellow-900" },
-  { key: "DONE", label: "Concluído", color: "bg-green-200 dark:bg-green-900" },
+  { key: "BACKLOG", label: "Backlog", color: "bg-gray-200 dark:bg-gray-700 text-black dark:text-white" },
+  { key: "TODO", label: "To do", color: "bg-blue-200 dark:bg-blue-900 text-black dark:text-white" },
+  { key: "IN_PROGRESS", label: "Em progresso", color: "bg-yellow-200 dark:bg-yellow-900 text-black dark:text-white" },
+  { key: "DONE", label: "Concluído", color: "bg-green-200 dark:bg-green-900 text-black dark:text-white" },
 ];
 
 const getPriorityColor = (priority: string = 'NONE') => {
