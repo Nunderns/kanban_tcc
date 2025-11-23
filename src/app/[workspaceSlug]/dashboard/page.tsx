@@ -15,7 +15,6 @@ import {
   FiUser, 
   FiPlus, 
   FiSearch, 
-  FiMenu 
 } from "react-icons/fi";
 import { motion } from "framer-motion";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -552,10 +551,6 @@ function DashboardContent() {
                 </PopoverContent>
               </Popover>
             </div>
-            
-            <button className="md:hidden p-2 rounded-full bg-white shadow-sm hover:bg-gray-50 transition-colors">
-              <FiMenu className="w-5 h-5 text-gray-600" />
-            </button>
           </div>
         </header>
         {/* Tabs */}
@@ -786,20 +781,20 @@ function DashboardContent() {
                       </CardDescription>
                     </div>
                     
-                    <div className="flex flex-col sm:flex-row gap-3">
+                    <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3 w-full md:w-auto">
                       <div className="relative">
                         <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                         <input
                           type="text"
                           placeholder="Buscar projetos..."
-                          className="pl-10 pr-4 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-700 dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full sm:w-48"
+                          className="pl-10 pr-4 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-700 dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full sm:min-w-[220px] md:w-52"
                           value={searchProjectQuery}
                           onChange={(e) => setSearchProjectQuery(e.target.value)}
                         />
                       </div>
                       
                       <select
-                        className="px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-700 dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-700 dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full sm:w-auto sm:min-w-[190px]"
                         value={projectFilter}
                         onChange={(e) => setProjectFilter(e.target.value)}
                       >
@@ -872,12 +867,14 @@ function DashboardContent() {
                             <div className="space-y-1.5">
                               <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400">
                                 <span>Progresso</span>
-                                <span>{project.progress}%</span>
+                                <span>{project.totalTasks > 0 ? Math.round((project.completedTasks / project.totalTasks) * 100) : 0}%</span>
                               </div>
                               <div className="w-full bg-gray-200 rounded-full h-2 dark:bg-gray-700">
                                 <div 
                                   className={`h-2 rounded-full ${color.progress}`}
-                                  style={{ width: `${project.progress}%` }}
+                                  style={{ 
+                                    width: `${project.totalTasks > 0 ? (project.completedTasks / project.totalTasks) * 100 : 0}%` 
+                                  }}
                                 ></div>
                               </div>
                             </div>
