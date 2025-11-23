@@ -638,7 +638,7 @@ export default function WorkItemSidebar({ item, onClose, onUpdate, workspaceSlug
           </div>
         </div>
 
-        <div className="border-t border-white/5 bg-black/30 p-6">
+        <div className="border-t border-white/5 bg-white dark:bg-black/30 p-6">
           <div className="flex justify-end">
             <button
               onClick={handleUpdateClick}
