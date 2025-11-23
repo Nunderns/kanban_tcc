@@ -40,7 +40,6 @@ interface Workspace {
   membros: number;
 }
 
-// Add this component at the end of the file
 const AddProjectModal = ({
   isOpen,
   onClose

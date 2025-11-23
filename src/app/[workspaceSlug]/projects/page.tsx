@@ -24,7 +24,6 @@ export default async function ProjectsPage({ params }: ProjectsPageProps) {
     return <div>Unauthorized</div>;
   }
 
-  // Get the workspace to verify access
   const workspace = await prisma.workspace.findUnique({
     where: {
       slug: workspaceSlug,

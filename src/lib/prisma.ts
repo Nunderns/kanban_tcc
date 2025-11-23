@@ -1,7 +1,5 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 let PrismaClient: { new (): any };
 try {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
   PrismaClient = require("@prisma/client").PrismaClient;
 } catch {
   PrismaClient = class {} as unknown as { new (): any };

@@ -8,7 +8,6 @@ interface NewProjectPageProps {
 }
 
 export default async function NewProjectPage({ params }: NewProjectPageProps) {
-  // Extract the workspaceSlug from params
   const { workspaceSlug } = await params;
   const session = await auth();
   
@@ -16,7 +15,6 @@ export default async function NewProjectPage({ params }: NewProjectPageProps) {
     return redirect('/login');
   }
 
-  // Verify the workspace exists and user has access to it
   const workspace = await prisma.workspace.findFirst({
     where: {
       slug: workspaceSlug,

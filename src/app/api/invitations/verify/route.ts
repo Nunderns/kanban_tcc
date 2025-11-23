@@ -10,7 +10,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ message: 'Token is required' }, { status: 400 });
     }
 
-    // Find the invitation
     const invitation = await prisma.invitation.findUnique({
       where: { token },
       include: {

@@ -3,7 +3,6 @@ import { sendWelcomeEmail } from "@/lib/resend";
 import bcrypt from "bcryptjs";
 import { NextResponse } from "next/server";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = prisma as any;
 
 export async function POST(req: Request) {

@@ -93,7 +93,6 @@ export async function POST(request: Request) {
     }
 
     console.log('Verifying workspace access for user:', user.id, 'workspace:', workspaceId);
-    // Verify user has access to the workspace
     const workspaceMember = await prisma.workspaceMember.findFirst({
       where: {
         userId: user.id,
@@ -113,7 +112,6 @@ export async function POST(request: Request) {
       workspaceId,
     });
 
-    // First, create the project with the required fields
     const created = await prisma.project.create({
       data: {
         name,

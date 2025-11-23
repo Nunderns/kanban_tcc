@@ -21,7 +21,7 @@ interface TaskPosition {
 
 export default function TaskWeeklyView({ tasks, onTaskClick }: TaskWeeklyViewProps) {
   const today = new Date();
-  const weekStart = startOfWeek(today, { weekStartsOn: 0 }); // Sunday
+  const weekStart = startOfWeek(today, { weekStartsOn: 0 });
   const weekEnd = endOfWeek(today, { weekStartsOn: 0 });
   const weekDays = eachDayOfInterval({ start: weekStart, end: weekEnd });
 

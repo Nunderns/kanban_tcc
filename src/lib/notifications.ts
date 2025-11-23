@@ -24,12 +24,11 @@ export const checkTasksForNotifications = (tasks: Task[]): Notification[] => {
     
     try {
       const dueDate = new Date(task.dueDate);
-      if (isNaN(dueDate.getTime())) return; // Skip invalid dates
+      if (isNaN(dueDate.getTime())) return;
       
       const timeDiff = dueDate.getTime() - now.getTime();
       const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
-      
-      // Only create notifications for tasks due in the next 3 days
+
       if (daysDiff >= 0 && daysDiff <= 3) {
         let message = '';
         let type: 'warning' | 'error' = 'warning';
