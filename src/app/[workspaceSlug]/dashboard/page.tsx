@@ -29,6 +29,7 @@ import { Sun, Moon, Monitor } from "lucide-react";
 import { useRouter, useSearchParams, useParams } from "next/navigation";
 import WorkItemSidebar from "@/components/WorkItemSidebar";
 import type { WorkItem } from "@/app/[workspaceSlug]/dashboard/my-tasks/page";
+import { AddProjectModal } from "@/components/modals/AddProjectModal";
 
 const Progress = ({ value, className = "" }: { value: number; className?: string }) => (
   <div className={`w-full bg-gray-200 rounded-full h-2.5 ${className}`}>
@@ -62,8 +63,14 @@ interface Member {
   email: string;
 }
 
+interface DashboardParams {
+  workspaceSlug: string;
+  [key: string]: string | string[] | undefined;
+}
+
 function DashboardContent() {
-  const params = useParams();
+  const params = useParams<DashboardParams>();
+  const workspaceSlug = Array.isArray(params.workspaceSlug) ? params.workspaceSlug[0] : params.workspaceSlug || '';
   const { data: session } = useSession();
   const { theme, setTheme } = useTheme();
   const [isLoading, setIsLoading] = useState(true);
@@ -170,8 +177,6 @@ function DashboardContent() {
   const handleCreateTask = async (taskData: { title: string; description: string; assignedUserId?: string }) => {
     try {
       setIsAddingTask(true);
-      
-      const workspaceSlug = params.workspaceSlug;
       
       const workspaceResponse = await fetch(`/api/workspaces/current?workspaceSlug=${workspaceSlug}`);
       
@@ -885,12 +890,14 @@ function DashboardContent() {
                         <div className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-gray-200 rounded-lg">
                           <FiFolder className="w-12 h-12 text-gray-300 mb-4" />
                           <p className="text-gray-500 mb-4">Nenhum projeto encontrado</p>
-                          <button 
-                            onClick={() => console.log('Open project creation modal')}
-                            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center"
-                          >
-                            <FiPlus className="mr-2" /> Criar Projeto
-                          </button>
+                          <AddProjectModal 
+                            workspaceSlug={workspaceSlug} 
+                            onProjectCreated={() => {
+                              if (stats) {
+                                window.location.reload();
+                              }
+                            }} 
+                          />
                         </div>
                       </div>
                     )}
