@@ -10,9 +10,10 @@ import { Loader2 } from 'lucide-react';
 
 interface CreateProjectFormProps {
   workspaceSlug: string;
+  onSuccess?: () => void;
 }
 
-export function CreateProjectForm({ workspaceSlug }: CreateProjectFormProps) {
+export function CreateProjectForm({ workspaceSlug, onSuccess }: CreateProjectFormProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -96,10 +97,14 @@ export function CreateProjectForm({ workspaceSlug }: CreateProjectFormProps) {
         );
       }
       
-      toast.success('Project created successfully!');
+      toast.success('Projeto criado com sucesso!');
       
-      router.push(`/${workspaceSlug}`);
-      router.refresh();
+      if (onSuccess) {
+        onSuccess();
+      } else {
+        router.push(`/${workspaceSlug}`);
+        router.refresh();
+      }
       
       return responseData;
       } catch (error) {
@@ -126,7 +131,7 @@ export function CreateProjectForm({ workspaceSlug }: CreateProjectFormProps) {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+        <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
           Nome do Projeto  <span className="text-red-500">*</span>
         </label>
         <Input
@@ -136,14 +141,14 @@ export function CreateProjectForm({ workspaceSlug }: CreateProjectFormProps) {
           value={formData.name}
           onChange={handleChange}
           placeholder="Meu projeto incrível"
-          className="w-full"
+          className="w-full text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-500 dark:focus:border-blue-500"
           disabled={isLoading}
           required
         />
       </div>
       
       <div>
-        <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
+        <label htmlFor="description" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
           Descrição
         </label>
         <Textarea
@@ -152,7 +157,7 @@ export function CreateProjectForm({ workspaceSlug }: CreateProjectFormProps) {
           value={formData.description}
           onChange={handleChange}
           placeholder="Descrição (opcional)"
-          className="w-full min-h-[100px]"
+          className="w-full min-h-[100px] text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-500 dark:focus:border-blue-500"
           disabled={isLoading}
         />
       </div>
