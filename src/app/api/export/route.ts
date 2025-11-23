@@ -146,7 +146,6 @@ export async function GET() {
       orderBy: { createdAt: "desc" }
     });
 
-    // Formatar os dados para exportação
     const formattedTasks: Task[] = tasks.map((task: PrismaTask) => ({
       id: task.id,
       title: task.title,

@@ -15,7 +15,14 @@ const getPriorityColor = (priority: string = 'NONE') => {
 
 type View = "kanban" | "list" | "calendar" | "table" | "timeline";
 
-export default function ProjectViewClient({ projectId, projectName, workspaceSlug }: { projectId: number; projectName: string; workspaceSlug: string }) {
+interface ProjectViewClientProps {
+  projectId: number;
+  projectName: string;
+  workspaceSlug: string;
+  onTaskCreated?: () => Promise<void>;
+}
+
+export default function ProjectViewClient({ projectId, projectName, workspaceSlug, onTaskCreated }: ProjectViewClientProps) {
   const [view, setView] = useState<View>("kanban");
   const [statusFilter, setStatusFilter] = useState<Status | "ALL">("ALL");
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -93,8 +100,11 @@ export default function ProjectViewClient({ projectId, projectName, workspaceSlu
       const text = await res.text();
       throw new Error(`Falha ao criar tarefa: ${text}`);
     }
-    setIsCreateOpen(false);
     await fetchTasks();
+    setIsCreateOpen(false);
+    if (onTaskCreated) {
+      await onTaskCreated();
+    }
   };
 
   const handleTaskUpdate = async (taskId: number, updates: Partial<Task>) => {
@@ -112,7 +122,6 @@ export default function ProjectViewClient({ projectId, projectName, workspaceSlu
         throw new Error(errorData.error || `Falha ao atualizar a tarefa (${response.status})`);
       }
 
-      // Atualiza a lista de tarefas após a edição
       await fetchTasks();
       console.log('Task updated successfully');
     } catch (error) {
@@ -260,7 +269,6 @@ export default function ProjectViewClient({ projectId, projectName, workspaceSlu
                         <td className="px-4 py-3 text-sm">
                           <button 
                             onClick={() => {
-                              // Implementar abertura do modal de edição
                               console.log('Editar tarefa:', t.id);
                             }}
                             className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 mr-3"
@@ -269,7 +277,6 @@ export default function ProjectViewClient({ projectId, projectName, workspaceSlu
                           </button>
                           <button 
                             onClick={() => {
-                              // Implementar exclusão
                               console.log('Excluir tarefa:', t.id);
                             }}
                             className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"

@@ -1,9 +1,7 @@
 "use client";
 
-import FilterDropdown from "@/components/FilterDropdown";
-import DisplayDropdown, { DisplayOption } from "@/components/DisplayDown";
 import { useState, useRef, useEffect, useCallback } from "react";
-import { FaFilter, FaTimes, FaUser, FaChevronDown } from "react-icons/fa";
+import { FaTimes, FaUser, FaChevronDown } from "react-icons/fa";
 
 export type Priority = "NONE" | "LOW" | "MEDIUM" | "HIGH";
 export type Status = "BACKLOG" | "TODO" | "IN_PROGRESS" | "DONE";
@@ -48,7 +46,6 @@ function CreateTaskModal({
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [workspaceMembers, setWorkspaceMembers] = useState<WorkspaceMember[]>([]);
   const [selectedUser, setSelectedUser] = useState<string>("");
   const [selectedProject, setSelectedProject] = useState<string>("");
@@ -57,77 +54,18 @@ function CreateTaskModal({
   const [loadingMembers, setLoadingMembers] = useState(false);
   const [projects, setProjects] = useState<Array<{id: string, name: string}>>([]);
   const [loadingProjects, setLoadingProjects] = useState(false);
-  const [filters, setFilters] = useState({
-    priority: [],
-    status: [],
-    assignee: [],
-    creator: [],
-    project: [],
-    startDate: [],
-    dueDate: []
-  });
-  const [displayOptions, setDisplayOptions] = useState<{
-    visibleProperties: DisplayOption[];
-    showSubtasks: boolean;
-  }>({
-    visibleProperties: [
-      "ID",
-      "Responsável",
-      "Data de início",
-      "Prazo",
-      "Prioridade",
-      "Estado"
-    ] as DisplayOption[],
-    showSubtasks: true
-  });
-  const [viewType, setViewType] = useState<"kanban" | "list" | "weekly" | "monthly" | "daily">("list");
-
-  const handleFilterChange = (filterType: string, value: string, checked: boolean) => {
-    setFilters(prev => ({
-      ...prev,
-      [filterType]: checked
-        ? [...prev[filterType as keyof typeof prev], value]
-        : prev[filterType as keyof typeof prev].filter((v: string) => v !== value)
-    }));
-  };
-
-  const handleDisplayOptionChange = (option: DisplayOption, checked: boolean) => {
-    setDisplayOptions(prev => {
-      const newProperties = checked
-        ? [...prev.visibleProperties, option]
-        : prev.visibleProperties.filter(prop => prop !== option);
-      
-      return {
-        ...prev,
-        visibleProperties: newProperties
-      };
-    });
-  };
-
-  const handleToggleSubtasks = (checked: boolean) => {
-    setDisplayOptions(prev => ({
-      ...prev,
-      showSubtasks: checked
-    }));
-  };
-
-  const handleViewTypeChange = (newViewType: "kanban" | "list" | "weekly" | "monthly" | "daily") => {
-    setViewType(newViewType);
-  };
 
   const fetchWorkspaceData = useCallback(async () => {
     try {
       setLoadingMembers(true);
       setLoadingProjects(true);
       
-      // Buscar membros
       const membersResponse = await fetch(`/api/workspaces/slug/${workspaceSlug}`);
       if (membersResponse.ok) {
         const workspaceData = await membersResponse.json();
         setWorkspaceMembers(workspaceData.members || []);
       }
       
-      // Buscar projetos
       const projectsResponse = await fetch(`/api/workspaces/slug/${workspaceSlug}/projects`);
       if (projectsResponse.ok) {
         const projectsData = await projectsResponse.json();
@@ -308,51 +246,21 @@ function CreateTaskModal({
             </div>
           </div>
 
-          <div className="flex justify-between items-center mt-4 relative">
-            <div className="flex gap-2">
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setIsFilterOpen((prev) => !prev)}
-                  className="flex items-center gap-1 bg-[#2c2c2c] text-white px-3 py-1 rounded-md text-sm border border-gray-700 hover:bg-[#3a3a3a] transition"
-                >
-                  <FaFilter className="text-white" />
-                  Filtros
-                </button>
-                {isFilterOpen && (
-                  <div className="absolute mt-2 z-50">
-                    <FilterDropdown 
-                      filters={filters}
-                      onFilterChange={handleFilterChange}
-                    />
-                  </div>
-                )}
-              </div>
-              <DisplayDropdown 
-                visibleProperties={displayOptions.visibleProperties}
-                showSubtasks={displayOptions.showSubtasks}
-                onDisplayOptionChange={handleDisplayOptionChange}
-                onToggleSubtasks={handleToggleSubtasks}
-                viewType={viewType}
-                onViewTypeChange={handleViewTypeChange}
-              />
-            </div>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-4 py-2 rounded text-sm border border-gray-300 text-gray-700 hover:bg-gray-100"
-              >
-                Cancelar
-              </button>
-              <button
-                type="submit"
-                className="bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded text-sm text-white"
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? "Criando..." : "Criar Tarefa"}
-              </button>
-            </div>
+          <div className="flex justify-end gap-2 mt-4">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 rounded text-sm border border-gray-300 text-gray-700 hover:bg-gray-100"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              className="bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded text-sm text-white"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? "Criando..." : "Criar Tarefa"}
+            </button>
           </div>
         </form>
       </div>

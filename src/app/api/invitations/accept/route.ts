@@ -332,7 +332,6 @@ export async function POST(req: Request) {
     
     if (sessionEmail && invitationEmail.toLowerCase() !== sessionEmail.toLowerCase()) {
       log(`[${requestId}] Email mismatch but allowing acceptance for existing user`);
-      // Continue with the process - don't return error
     }
 
     log('Adding user to workspace');

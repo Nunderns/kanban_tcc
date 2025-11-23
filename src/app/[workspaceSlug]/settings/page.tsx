@@ -133,88 +133,234 @@ export default function SettingsPage() {
       day: 'numeric',
     });
   };
+  const normalizeFieldKey = (field?: string) => field?.replace(/[\s_-]/g, '').toLowerCase() ?? '';
+  const FIELD_LABELS: Record<string, string> = {
+    status: 'status',
+    priority: 'prioridade',
+    duedate: 'prazo',
+    startdate: 'data de início',
+    enddate: 'data final',
+    assignee: 'responsável',
+    assignedto: 'responsável',
+    assigneduserid: 'responsável',
+    title: 'título',
+    description: 'descrição',
+    module: 'módulo',
+    cycle: 'ciclo',
+    project: 'projeto',
+    projectid: 'projeto',
+    workspaceid: 'workspace',
+    assignees: 'responsáveis',
+    labels: 'etiquetas',
+  };
+  const STATUS_LABELS: Record<string, string> = {
+    BACKLOG: 'Backlog',
+    TODO: 'A Fazer',
+    IN_PROGRESS: 'Em andamento',
+    REVIEW: 'Em revisão',
+    DONE: 'Concluído',
+  };
+  const PRIORITY_LABELS: Record<string, string> = {
+    HIGH: 'Alta',
+    MEDIUM: 'Média',
+    LOW: 'Baixa',
+    NONE: 'Nenhuma',
+  };
+  const formatFieldLabel = (field?: string) => {
+    if (!field) return 'campo';
+    const key = normalizeFieldKey(field);
+    return FIELD_LABELS[key] ?? field;
+  };
+  const formatFieldValue = (field?: string, value?: string) => {
+    if (!value) return 'não definido';
+    const normalizedField = normalizeFieldKey(field);
+
+    if (normalizedField.includes('date')) {
+      const parsed = new Date(value);
+      if (!Number.isNaN(parsed.getTime())) {
+        return parsed.toLocaleDateString('pt-BR', {
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric',
+        });
+      }
+    }
+
+    if (normalizedField === 'status') {
+      const key = value.toUpperCase();
+      return STATUS_LABELS[key] ?? value;
+    }
+
+    if (normalizedField === 'priority') {
+      const key = value.toUpperCase();
+      return PRIORITY_LABELS[key] ?? value;
+    }
+
+    return value;
+  };
+  const ACTION_TONES = {
+    create: {
+      label: 'Criação',
+      avatarBg: 'bg-green-100 dark:bg-green-500/10',
+      avatarText: 'text-green-700 dark:text-green-300',
+      badge: 'bg-green-100 text-green-700 dark:bg-green-500/10 dark:text-green-300',
+    },
+    'updated field': {
+      label: 'Atualização',
+      avatarBg: 'bg-blue-100 dark:bg-blue-500/10',
+      avatarText: 'text-blue-700 dark:text-blue-300',
+      badge: 'bg-blue-100 text-blue-700 dark:bg-blue-500/10 dark:text-blue-300',
+    },
+    update: {
+      label: 'Atualização',
+      avatarBg: 'bg-blue-100 dark:bg-blue-500/10',
+      avatarText: 'text-blue-700 dark:text-blue-300',
+      badge: 'bg-blue-100 text-blue-700 dark:bg-blue-500/10 dark:text-blue-300',
+    },
+    comment: {
+      label: 'Comentário',
+      avatarBg: 'bg-yellow-100 dark:bg-yellow-500/10',
+      avatarText: 'text-yellow-700 dark:text-yellow-300',
+      badge: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-500/10 dark:text-yellow-200',
+    },
+    commented: {
+      label: 'Comentário',
+      avatarBg: 'bg-yellow-100 dark:bg-yellow-500/10',
+      avatarText: 'text-yellow-700 dark:text-yellow-300',
+      badge: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-500/10 dark:text-yellow-200',
+    },
+    delete: {
+      label: 'Exclusão',
+      avatarBg: 'bg-red-100 dark:bg-red-500/10',
+      avatarText: 'text-red-700 dark:text-red-300',
+      badge: 'bg-red-100 text-red-700 dark:bg-red-500/10 dark:text-red-300',
+    },
+    deleted: {
+      label: 'Exclusão',
+      avatarBg: 'bg-red-100 dark:bg-red-500/10',
+      avatarText: 'text-red-700 dark:text-red-300',
+      badge: 'bg-red-100 text-red-700 dark:bg-red-500/10 dark:text-red-300',
+    },
+    assigned: {
+      label: 'Atribuição',
+      avatarBg: 'bg-purple-100 dark:bg-purple-500/10',
+      avatarText: 'text-purple-700 dark:text-purple-300',
+      badge: 'bg-purple-100 text-purple-700 dark:bg-purple-500/10 dark:text-purple-300',
+    },
+    default: {
+      label: 'Atividade',
+      avatarBg: 'bg-gray-100 dark:bg-gray-700',
+      avatarText: 'text-gray-700 dark:text-gray-200',
+      badge: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200',
+    },
+  } as const;
+  const getActionTone = (action?: string) => {
+    const normalized = action?.toLowerCase() ?? 'default';
+    return ACTION_TONES[normalized as keyof typeof ACTION_TONES] ?? ACTION_TONES.default;
+  };
   
   const formatActivityMessage = (activity: Activity) => {
     const { action, field, taskTitle, oldValue, newValue } = activity;
-    
-    switch (action) {
-      case 'create':
-        return (
-          <span>
-            <span className="text-green-600 dark:text-green-400 font-medium">criou</span>{' '}
-            a tarefa <span className="font-semibold text-blue-600 dark:text-blue-400">&ldquo;{taskTitle}&rdquo;</span>
-          </span>
-        );
-      case 'update':
-        if (field === 'status') {
-          return (
-            <span>
-              <span className="text-blue-600 dark:text-blue-400 font-medium">alterou o status</span>{' '}
-              da tarefa <span className="font-semibold">&ldquo;{taskTitle}&rdquo;</span>{' '}
-              de <span className="line-through text-red-600 dark:text-red-400">&ldquo;{oldValue}&rdquo;</span>{' '}
-              para <span className="text-green-600 dark:text-green-400 font-medium">&ldquo;{newValue}&rdquo;</span>
-            </span>
-          );
-        } else if (field === 'assignee') {
-          if (newValue) {
-            return (
-              <span>
-                <span className="text-purple-600 dark:text-purple-400 font-medium">atribuiu</span>{' '}
-                a tarefa <span className="font-semibold">&ldquo;{taskTitle}&rdquo;</span>{' '}
-                para <span className="text-blue-600 dark:text-blue-400 font-medium">{newValue}</span>
-              </span>
-            );
-          } else {
-            return (
-              <span>
-                <span className="text-orange-600 dark:text-orange-400 font-medium">removeu a atribuição</span>{' '}
-                da tarefa <span className="font-semibold">&ldquo;{taskTitle}&rdquo;</span>
-              </span>
-            );
-          }
-        } else if (field) {
-          return (
-            <span>
-              <span className="text-indigo-600 dark:text-indigo-400 font-medium">atualizou</span>{' '}
-              o campo <span className="font-medium text-gray-700 dark:text-gray-300">{field}</span>{' '}
-              da tarefa <span className="font-semibold">&ldquo;{taskTitle}&rdquo;</span>
-              {oldValue && newValue && (
-                <span>
-                  {' '}de <span className="line-through text-red-600 dark:text-red-400">&ldquo;{oldValue}&rdquo;</span>{' '}
-                  para <span className="text-green-600 dark:text-green-400 font-medium">&ldquo;{newValue}&rdquo;</span>
-                </span>
-              )}
-            </span>
-          );
-        }
-        return (
-          <span>
-            <span className="text-indigo-600 dark:text-indigo-400 font-medium">atualizou</span>{' '}
-            a tarefa <span className="font-semibold">&ldquo;{taskTitle}&rdquo;</span>
-          </span>
-        );
-      case 'delete':
-        return (
-          <span>
-            <span className="text-red-600 dark:text-red-400 font-medium">excluiu</span>{' '}
-            a tarefa <span className="font-semibold line-through">&ldquo;{taskTitle}&rdquo;</span>
-          </span>
-        );
-      case 'comment':
-        return (
-          <span>
-            <span className="text-yellow-600 dark:text-yellow-400 font-medium">comentou</span>{' '}
-            na tarefa <span className="font-semibold">&ldquo;{taskTitle}&rdquo;</span>
-          </span>
-        );
-      default:
-        return (
-          <span>
-            <span className="text-gray-600 dark:text-gray-400 font-medium">realizou uma ação</span>{' '}
-            na tarefa <span className="font-semibold">&ldquo;{taskTitle}&rdquo;</span>
-          </span>
-        );
+    const normalizedAction = action?.toLowerCase?.() ?? '';
+    const fieldLabel = formatFieldLabel(field);
+    const oldVal = formatFieldValue(field, oldValue);
+    const newVal = formatFieldValue(field, newValue);
+    const hasOldValue = oldValue !== undefined;
+    const hasNewValue = newValue !== undefined;
+    const ValueChip = (value: string, tone: 'old' | 'new') => (
+      <span
+        className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold ${
+          tone === 'old'
+            ? 'border-red-200 text-red-600 dark:border-red-500/30 dark:text-red-300'
+            : 'border-green-200 text-green-600 dark:border-green-500/30 dark:text-green-300'
+        }`}
+      >
+        {value}
+      </span>
+    );
+    const renderTaskReference = () => (
+      <span className="font-semibold text-gray-900 dark:text-gray-100">&ldquo;{taskTitle}&rdquo;</span>
+    );
+
+    if (normalizedAction === 'create') {
+      return (
+        <span>
+          <span className="text-green-600 dark:text-green-400 font-semibold">criou</span>{' '}
+          a tarefa {renderTaskReference()}
+        </span>
+      );
     }
+
+    if (normalizedAction === 'delete' || normalizedAction === 'deleted') {
+      return (
+        <span>
+          <span className="text-red-600 dark:text-red-400 font-semibold">excluiu</span>{' '}
+          a tarefa <span className="font-semibold line-through">&ldquo;{taskTitle}&rdquo;</span>
+        </span>
+      );
+    }
+
+    if (normalizedAction === 'comment' || normalizedAction === 'commented') {
+      return (
+        <span>
+          <span className="text-yellow-600 dark:text-yellow-400 font-semibold">comentou</span>{' '}
+          na tarefa {renderTaskReference()}
+        </span>
+      );
+    }
+
+    const isAssignment = normalizeFieldKey(field) === 'assignee' || normalizeFieldKey(field) === 'assigneduserid';
+    if (isAssignment && hasNewValue && !hasOldValue) {
+      return (
+        <span>
+          <span className="text-purple-600 dark:text-purple-400 font-semibold">atribuiu</span>{' '}
+          a tarefa {renderTaskReference()} para{' '}
+          <span className="font-semibold text-blue-600 dark:text-blue-300">{newVal}</span>
+        </span>
+      );
+    }
+
+    if (isAssignment && hasOldValue && !hasNewValue) {
+      return (
+        <span>
+          <span className="text-orange-600 dark:text-orange-400 font-semibold">removeu a atribuição</span>{' '}
+          da tarefa {renderTaskReference()}
+        </span>
+      );
+    }
+
+    return (
+      <div>
+        <span>
+          <span className="text-indigo-600 dark:text-indigo-400 font-semibold">atualizou</span>{' '}
+          {field ? (
+            <>
+              o campo <span className="font-medium text-gray-900 dark:text-gray-100">{fieldLabel}</span>{' '}
+              da tarefa {renderTaskReference()}
+            </>
+          ) : (
+            <>a tarefa {renderTaskReference()}</>
+          )}
+        </span>
+
+        {(hasOldValue || hasNewValue) && (
+          <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-gray-500 dark:text-gray-300">
+            {hasOldValue && (
+              <>
+                <span>de</span>
+                {ValueChip(oldVal, 'old')}
+              </>
+            )}
+            {hasNewValue && (
+              <>
+                <span>{hasOldValue ? 'para' : 'para'}</span>
+                {ValueChip(newVal, 'new')}
+              </>
+            )}
+          </div>
+        )}
+      </div>
+    );
   };
   
   const [currentPassword, setCurrentPassword] = useState('');
@@ -901,24 +1047,42 @@ export default function SettingsPage() {
                   </div>
                 ) : (
                   <div className="space-y-6">
-                    {activities.map((activity) => (
-                      <div key={activity.id} className="flex items-start pb-4 border-b border-gray-100 dark:border-gray-700 last:border-0 last:pb-0">
-                        <div className="flex-shrink-0 mr-3">
-                          <div className="flex items-center justify-center h-8 w-8 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 font-medium">
+                    {activities.map((activity) => {
+                      const tone = getActionTone(activity.action);
+                      return (
+                        <div key={activity.id} className="relative flex gap-4 pl-4">
+                          <div className="absolute left-0 top-2 bottom-0 w-px bg-gray-200 dark:bg-gray-800" aria-hidden />
+                          <div className={`mt-1 flex h-8 w-8 items-center justify-center rounded-full font-semibold ${tone.avatarBg} ${tone.avatarText}`}>
                             {activity.user.charAt(0).toUpperCase()}
                           </div>
+                          <div className="flex-1 space-y-2 pb-6 border-b border-gray-100 dark:border-gray-800 last:border-0 last:pb-0">
+                            <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                              <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">{activity.user}</span>
+                              <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ${tone.badge}`}>
+                                {tone.label}
+                              </span>
+                              <span>·</span>
+                              <span>{formatDate(activity.createdAt)}</span>
+                            </div>
+
+                            <div className="text-sm text-gray-900 dark:text-gray-100">
+                              {formatActivityMessage(activity)}
+                            </div>
+
+                            <div className="flex flex-wrap gap-2 text-xs text-gray-500 dark:text-gray-400">
+                              <span className="rounded-full bg-gray-100 px-2 py-0.5 text-gray-700 dark:bg-gray-800 dark:text-gray-200">
+                                {activity.taskTitle}
+                              </span>
+                              {activity.field && (
+                                <span className="rounded-full border border-dashed border-gray-300 px-2 py-0.5 text-gray-600 dark:border-gray-700 dark:text-gray-300">
+                                  {formatFieldLabel(activity.field)}
+                                </span>
+                              )}
+                            </div>
+                          </div>
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm text-gray-900 dark:text-gray-100">
-                            <span className="font-medium text-gray-800 dark:text-gray-200">{activity.user}</span>{' '}
-                            {formatActivityMessage(activity)}
-                          </p>
-                          <p className="text-xs text-gray-500 dark:text-gray-400">
-                            {formatDate(activity.createdAt)}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </CardContent>

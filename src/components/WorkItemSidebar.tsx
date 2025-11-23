@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import Link from "next/link";
 
 const formatUserName = (username: string): string => {
   if (!username) return 'Usuário';
@@ -27,7 +28,13 @@ import {
   ArrowsPointingOutIcon,
   ListBulletIcon,
   ArrowPathIcon,
-  ChevronDownIcon
+  ChevronDownIcon,
+  BellSlashIcon,
+  Cog6ToothIcon,
+  SquaresPlusIcon,
+  ArrowsRightLeftIcon,
+  LinkIcon,
+  PaperClipIcon
 } from '@heroicons/react/24/outline';
 import { priorityColors } from "@/lib/constants";
 
@@ -55,14 +62,18 @@ interface Props {
   onClose: () => void;
   onUpdate: (updated: WorkItem) => void;
   workspaceSlug?: string;
+  variant?: "sidebar" | "fullscreen";
+  fullScreenHref?: string;
+  sidebarHref?: string;
 }
 
-export default function WorkItemSidebar({ item, onClose, onUpdate, workspaceSlug }: Props) {
+export default function WorkItemSidebar({ item, onClose, onUpdate, workspaceSlug, variant = "sidebar", fullScreenHref, sidebarHref }: Props) {
   const [localItem, setLocalItem] = useState(item);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [workspaceMembers, setWorkspaceMembers] = useState<WorkspaceMember[]>([]);
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
   const [loadingMembers, setLoadingMembers] = useState(false);
+  const [comment, setComment] = useState("");
 
   const formatDate = (dateString: string): string => {
     if (!dateString) return 'não definida';
@@ -173,6 +184,12 @@ export default function WorkItemSidebar({ item, onClose, onUpdate, workspaceSlug
     }
   }, [workspaceSlug]);
   const prevItemRef = useRef<WorkItem | undefined>(undefined);
+  const actionButtons = [
+    { label: "Adicionar sub-item de trabalho", icon: SquaresPlusIcon },
+    { label: "Adicionar relação", icon: ArrowsRightLeftIcon },
+    { label: "Adicionar link", icon: LinkIcon },
+    { label: "Anexar", icon: PaperClipIcon }
+  ];
   
   useEffect(() => {
     if (JSON.stringify(prevItemRef.current) !== JSON.stringify(item)) {
@@ -296,266 +313,343 @@ export default function WorkItemSidebar({ item, onClose, onUpdate, workspaceSlug
     return <FlagIcon className={`h-5 w-5 text-${color}-500`} />;
   };
 
+  const isFullScreen = variant === "fullscreen";
+  const numericTaskId = String(localItem.id).replace(/^PRIME-/i, "");
+  const friendlyTaskId = String(localItem.id).toUpperCase().startsWith("PRIME-")
+    ? String(localItem.id)
+    : `PRIME-${localItem.id}`;
+  const resolvedFullScreenHref = fullScreenHref ?? (workspaceSlug ? `/${workspaceSlug}/work-items/${friendlyTaskId}` : undefined);
+  const resolvedSidebarHref = sidebarHref ?? (workspaceSlug ? `/${workspaceSlug}/dashboard/my-tasks?task=${numericTaskId}` : undefined);
+
+  const containerClasses = isFullScreen
+    ? "min-h-screen w-full bg-gray-50 dark:bg-[#05060a] flex justify-center px-0 sm:px-6 py-6"
+    : "fixed inset-0 z-50 flex justify-end bg-black/40 dark:bg-black/70 p-4";
+  const panelClasses = `${isFullScreen ? "w-full max-w-5xl" : "h-full w-full md:w-1/2"} bg-white dark:bg-[#0d0f14] text-gray-900 dark:text-gray-100 rounded-2xl shadow-2xl flex flex-col overflow-hidden`;
+
   return (
-    <aside className="w-full max-w-full bg-white dark:bg-gray-800 text-gray-900 dark:text-white border-l border-gray-200 dark:border-gray-700 p-4 overflow-y-auto h-full fixed right-0 top-0 z-50 shadow-xl sm:w-[450px] sm:p-6 sm:h-screen">
-      <div className="flex justify-between items-center mb-6 pb-4 border-b border-gray-100 dark:border-gray-700">
-        <h2 className="text-2xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
-          <span className="text-blue-600 dark:text-blue-400">#{String(item.id).startsWith('PRIME-') ? item.id : `PRIME-${item.id}`}</span>
-        </h2>
-        <button 
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            onClose();
-          }}
-          className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-          aria-label="Fechar"
-        >
-          <XMarkIcon className="h-6 w-6" />
-        </button>
-      </div>
-
-      <div className="mb-6">
-        <input
-          value={localItem.title}
-          onChange={(e) => handleChange("title", e.target.value)}
-          className="w-full text-2xl font-bold border-0 border-b border-transparent focus:border-blue-500 dark:focus:border-blue-400 focus:ring-0 p-0 bg-transparent text-gray-900 dark:text-white"
-          placeholder="Título da tarefa"
-        />
-        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{localItem.id.startsWith('PRIME-') ? localItem.id : `PRIME-${localItem.id}`}</p>
-        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 flex items-center">
-          <UserCircleIcon className="h-4 w-4 mr-1" />
-          Criado por {formatUserName(item.creator || "henri.okayama")}
-        </p>
-        <div className="mt-2">
-          <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Responsável</p>
-          <div className="relative">
-            <button
-              type="button"
-              onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
-              className="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded p-2 text-sm flex items-center justify-between hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-white"
-            >
-              <div className="flex items-center gap-2">
-                <UserCircleIcon className="h-4 w-4 text-gray-500 dark:text-gray-400" />
-                {localItem.assignedUserId 
-                  ? formatUserName(workspaceMembers.find(m => m.id === localItem.assignedUserId)?.fullName || localItem.assignedUserName || 'Usuário')
-                  : 'Selecione um responsável'
-                }
-              </div>
-              <ChevronDownIcon className="h-4 w-4 text-gray-500 dark:text-gray-400" />
-            </button>
-            
-            {isUserDropdownOpen && (
-              <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg max-h-60 overflow-y-auto">
-                <div className="p-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      handleChange("assignedUserId", "");
-                      setIsUserDropdownOpen(false);
-                    }}
-                    className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded flex items-center gap-2"
-                  >
-                    <UserCircleIcon className="h-4 w-4 text-gray-400 dark:text-gray-500" />
-                    Nenhum responsável
-                  </button>
-                  {loadingMembers ? (
-                    <div className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400">Carregando...</div>
-                  ) : (
-                    workspaceMembers.map((member) => (
-                      <button
-                        key={member.id}
-                        type="button"
-                        onClick={() => {
-                          handleChange("assignedUserId", member.id);
-                          setIsUserDropdownOpen(false);
-                        }}
-                        className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded flex items-center gap-2"
-                      >
-                        <UserCircleIcon className="h-4 w-4 text-gray-500 dark:text-gray-400" />
-                        <div>
-                          <div className="font-medium">{member.fullName}</div>
-                          <div className="text-xs text-gray-500 dark:text-gray-400">{member.email}</div>
-                        </div>
-                      </button>
-                    ))
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      <div className="space-y-4">
-        <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="p-2 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
-              {getStatusIcon(localItem.status)}
-            </div>
-            <div className="flex-1">
-              <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Status</p>
-              <select
-                value={localItem.status}
-                onChange={(e) => handleChange("status", e.target.value)}
-                className="w-full p-1.5 text-sm border-0 border-b border-transparent focus:border-blue-500 focus:ring-0 bg-transparent text-gray-900 dark:text-white"
-              >
-                <option value="BACKLOG">Backlog</option>
-                <option value="TODO">A Fazer</option>
-                <option value="IN_PROGRESS">Em Progresso</option>
-                <option value="DONE">Concluído</option>
-              </select>
-            </div>
-          </div>
-        </div>
-
-        {/* Priority Section */}
-        <div className="flex items-center gap-3 bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-          <div className="p-2 bg-yellow-50 dark:bg-yellow-900/30 rounded-lg">
-            {getPriorityIcon(localItem.priority)}
-          </div>
-          <div className="flex-1">
-            <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Prioridade</p>
-            <select
-              value={localItem.priority}
-              onChange={(e) => handleChange("priority", e.target.value)}
-              className="w-full p-1.5 text-sm border-0 border-b border-transparent focus:border-blue-500 focus:ring-0 bg-transparent text-gray-900 dark:text-white"
-            >
-              <option value="NONE">Nenhuma</option>
-              <option value="LOW">Baixa</option>
-              <option value="MEDIUM">Média</option>
-              <option value="HIGH">Alta</option>
-            </select>
-          </div>
-        </div>
-        <div className="grid grid-cols-2 gap-4">
-          <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-green-50 dark:bg-green-900/30 rounded-lg">
-                <CalendarIcon className="h-5 w-5 text-green-500 dark:text-green-400" />
-              </div>
-              <div className="flex-1">
-                <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Data de Início</p>
-                <FormattedDateInput
-                  value={localItem.startDate || ''}
-                  onChange={(value) => handleChange("startDate", value)}
-                  className="w-full p-1.5 text-sm border-0 border-b border-transparent focus:border-blue-500 focus:ring-0 bg-transparent text-gray-900 dark:text-white"
-                  placeholder="dd/mm/aaaa"
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-red-50 dark:bg-red-900/30 rounded-lg">
-                <ClockIcon className="h-5 w-5 text-red-500 dark:text-red-400" />
-              </div>
-              <div className="flex-1">
-                <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Data de Entrega</p>
-                <FormattedDateInput
-                  value={localItem.dueDate || ''}
-                  onChange={(value) => handleChange("dueDate", value)}
-                  className="w-full p-1.5 text-sm border-0 border-b border-transparent focus:border-blue-500 focus:ring-0 bg-transparent text-gray-900 dark:text-white"
-                  placeholder="dd/mm/aaaa"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Module and Cycle Section */}
-        <div className="grid grid-cols-2 gap-4">
-          <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
-                <CubeIcon className="h-5 w-5 text-blue-500 dark:text-blue-400" />
-              </div>
-              <div className="flex-1">
-                <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Módulo</p>
-                <input
-                  value={localItem.module || ""}
-                  onChange={(e) => handleChange("module", e.target.value)}
-                  className="w-full p-1.5 text-sm border-0 border-b border-transparent focus:border-blue-500 focus:ring-0 bg-transparent text-gray-900 dark:text-white"
-                  placeholder="Sem módulo"
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-yellow-50 dark:bg-yellow-900/30 rounded-lg">
-                <ArrowsPointingOutIcon className="h-5 w-5 text-yellow-500 dark:text-yellow-400" />
-              </div>
-              <div className="flex-1">
-                <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Ciclo</p>
-                <input
-                  value={localItem.cycle || ""}
-                  onChange={(e) => handleChange("cycle", e.target.value)}
-                  className="w-full p-1.5 text-sm border-0 border-b border-transparent focus:border-blue-500 focus:ring-0 bg-transparent text-gray-900 dark:text-white"
-                  placeholder="Sem ciclo"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Labels Section */}
-        <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-purple-50 dark:bg-purple-900/30 rounded-lg">
-              <TagIcon className="h-5 w-5 text-purple-500 dark:text-purple-400" />
-            </div>
-            <div className="flex-1">
-              <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Etiquetas</p>
+    <div className={containerClasses}>
+      <aside className={panelClasses}>
+        <div className="flex flex-col gap-4 border-b border-gray-200 dark:border-white/5 p-6 sm:flex-row sm:items-start sm:justify-between">
+          <div className="flex-1 space-y-4">
+            <div>
+              <p className="text-[11px] uppercase tracking-[0.35em] text-gray-500 dark:text-white/60">{localItem.id.startsWith('PRIME-') ? localItem.id : `PRIME-${localItem.id}`}</p>
               <input
-                value={localItem.labels?.join(", ") || ""}
-                onChange={(e) => handleChange("labels", e.target.value.split(", "))}
-                className="w-full p-1.5 text-sm border-0 border-b border-transparent focus:border-blue-500 focus:ring-0 bg-transparent text-gray-900 dark:text-white"
-                placeholder="Adicione etiquetas separadas por vírgula"
+                value={localItem.title}
+                onChange={(e) => handleChange("title", e.target.value)}
+                className="mt-3 w-full bg-transparent text-3xl font-semibold leading-tight text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-white/30 focus:outline-none"
+                placeholder="Título da tarefa"
               />
             </div>
+            <textarea
+              value={localItem.description || ""}
+              onChange={(e) => handleChange("description", e.target.value)}
+              placeholder="Adicione uma descrição muito bem feita"
+              className="w-full resize-none rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-100 dark:bg-white/[0.02] px-4 py-3 text-sm text-gray-700 dark:text-white/80 placeholder-gray-500 dark:placeholder-white/40 focus:border-gray-400 dark:focus:border-white/40 focus:outline-none"
+              rows={3}
+            />
+            <p className="text-xs text-gray-500 dark:text-white/50 flex items-center gap-2">
+              <UserCircleIcon className="h-4 w-4 text-gray-500 dark:text-white/50" />
+              Criado por {formatUserName(item.creator || "henri.okayama")}
+            </p>
           </div>
-        </div>
-
-        {/* Activities Section */}
-        <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="p-2 bg-gray-100 dark:bg-gray-600 rounded-lg">
-              <ListBulletIcon className="h-5 w-5 text-gray-500 dark:text-gray-300" />
-            </div>
-            <h3 className="text-sm font-medium text-gray-700 dark:text-gray-200">Atividades</h3>
-          </div>
-          
-          <div className="space-y-3 max-h-60 overflow-y-auto pr-2">
-            {activities.length === 0 ? (
-              <p className="text-xs text-gray-500 dark:text-gray-400 italic">Nenhuma atividade registrada</p>
-            ) : (
-              activities.map((activity) => (
-                <div key={activity.id} className="flex items-start gap-2 p-2 bg-white dark:bg-gray-600 rounded-lg border border-gray-100 dark:border-gray-500 shadow-xs">
-                  <div className="mt-0.5">
-                    <div className="h-2 w-2 rounded-full bg-blue-500"></div>
-                  </div>
-                  <p className="text-xs text-gray-700 dark:text-gray-200">
-                    {formatActivity(activity)}
-                  </p>
-                </div>
-              ))
+          <div className="flex flex-col items-stretch gap-3 sm:items-end">
+            {!isFullScreen && resolvedFullScreenHref && (
+              <Link
+                href={resolvedFullScreenHref}
+                className="inline-flex items-center gap-2 rounded-full border border-gray-300 dark:border-white/20 px-4 py-2 text-sm font-medium text-gray-900 dark:text-white transition hover:bg-gray-50 dark:hover:bg-white/10"
+              >
+                Tela cheia
+              </Link>
+            )}
+            {isFullScreen && resolvedSidebarHref && (
+              <Link
+                href={resolvedSidebarHref}
+                className="inline-flex items-center gap-2 rounded-full border border-gray-300 dark:border-white/20 px-4 py-2 text-sm font-medium text-gray-900 dark:text-white transition hover:bg-gray-50 dark:hover:bg-white/10"
+              >
+                Ver no dashboard
+              </Link>
+            )}
+            <button className="inline-flex items-center gap-2 rounded-full border border-gray-300 dark:border-white/20 px-4 py-2 text-sm font-medium text-gray-900 dark:text-white transition hover:bg-gray-50 dark:hover:bg-white/10">
+              <BellSlashIcon className="h-4 w-4 text-gray-600 dark:text-white/70" />
+              Cancelar inscrição
+            </button>
+            {onClose && (
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onClose();
+                }}
+                className={`inline-flex items-center justify-center rounded-full border border-gray-300 dark:border-white/10 ${
+                  isFullScreen ? "px-4 py-2 text-sm" : "p-2"
+                } text-gray-600 dark:text-white/70 transition hover:bg-gray-50 dark:hover:bg-white/10`}
+                aria-label="Fechar"
+              >
+                {isFullScreen ? (
+                  <span className="flex items-center gap-2">
+                    <XMarkIcon className="h-4 w-4" />
+                    Fechar
+                  </span>
+                ) : (
+                  <XMarkIcon className="h-5 w-5" />
+                )}
+              </button>
             )}
           </div>
         </div>
-      </div>
 
-      <div className="pt-4">
-        <button
-          onClick={handleUpdateClick}
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2.5 px-4 rounded-lg transition-colors font-medium flex items-center justify-center gap-2"
-        >
-          <CheckCircleIcon className="h-5 w-5" />
-          Salvar Alterações
-        </button>
-      </div>
-    </aside>
+        <div className="flex flex-col gap-8 overflow-y-auto p-6">
+          <div className="flex flex-wrap items-center gap-3">
+            <button className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 dark:border-white/10 bg-gray-100 dark:bg-white/[0.04] text-gray-600 dark:text-white/70 transition hover:border-gray-300 dark:hover:border-white/40">
+              <Cog6ToothIcon className="h-5 w-5" />
+            </button>
+            {actionButtons.map(({ label, icon: Icon }) => (
+              <button
+                key={label}
+                className="inline-flex items-center gap-2 rounded-full border border-gray-200 dark:border-white/10 bg-gray-100 dark:bg-white/[0.02] px-4 py-2 text-sm text-gray-700 dark:text-white/80 transition hover:border-gray-300 dark:hover:border-white/40 hover:text-gray-900 dark:hover:text-white"
+              >
+                <Icon className="h-4 w-4" />
+                {label}
+              </button>
+            ))}
+          </div>
+
+          <div className="grid gap-8 lg:grid-cols-[1.2fr_0.8fr]">
+            <section className="rounded-2xl border border-gray-200 dark:border-white/5 bg-white dark:bg-white/[0.02] p-6">
+              <div className="flex flex-col gap-2 border-b border-gray-200 dark:border-white/5 pb-4 sm:flex-row sm:items-center sm:justify-between">
+                <h3 className="text-sm font-semibold uppercase tracking-widest text-gray-600 dark:text-white/60">Propriedades</h3>
+                <p className="text-xs text-gray-500 dark:text-white/40">Última edição por {formatUserName(item.creator || "henri.okayama")}</p>
+              </div>
+
+              <div className="mt-6 grid gap-4 sm:grid-cols-2">
+                <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-black/20 p-4">
+                  <p className="text-[11px] uppercase tracking-wide text-gray-500 dark:text-white/40">Estado</p>
+                  <div className="mt-3 flex items-center gap-3">
+                    <div className="rounded-full bg-gray-200 dark:bg-white/10 p-2">
+                      {getStatusIcon(localItem.status)}
+                    </div>
+                    <select
+                      value={localItem.status}
+                      onChange={(e) => handleChange("status", e.target.value)}
+                      className="flex-1 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-transparent px-3 py-2 text-sm text-gray-700 dark:text-white focus:border-gray-400 dark:focus:border-white/40 focus:outline-none"
+                    >
+                      <option value="BACKLOG" className="bg-white dark:bg-[#0d0f14]">Backlog</option>
+                      <option value="TODO" className="bg-white dark:bg-[#0d0f14]">A Fazer</option>
+                      <option value="IN_PROGRESS" className="bg-white dark:bg-[#0d0f14]">Em Progresso</option>
+                      <option value="DONE" className="bg-white dark:bg-[#0d0f14]">Concluído</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4 dark:border-white/10 dark:bg-black/20">
+                  <p className="text-[11px] uppercase tracking-wide text-gray-500 dark:text-white/40">Responsáveis</p>
+                  <div className="mt-3 relative">
+                    <button
+                      type="button"
+                      onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
+                      className="flex w-full items-center justify-between rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 transition hover:border-gray-300 dark:border-white/10 dark:bg-white/[0.02] dark:text-white/80 dark:hover:border-white/30"
+                    >
+                      <span className="flex min-w-0 items-center gap-2">
+                        <UserCircleIcon className="h-5 w-5 text-gray-500 dark:text-white/50" />
+                        <span className="truncate">
+                          {localItem.assignedUserId
+                            ? formatUserName(
+                                workspaceMembers.find((m) => m.id === localItem.assignedUserId)?.fullName ||
+                                localItem.assignedUserName ||
+                                'Usuário'
+                              )
+                            : 'Adicionar responsáveis'}
+                        </span>
+                      </span>
+                      <ChevronDownIcon className="h-4 w-4 text-gray-500 dark:text-white/50" />
+                    </button>
+                    {isUserDropdownOpen && (
+                      <div className="absolute z-20 mt-2 w-full rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#11131a] shadow-2xl">
+                        <div className="p-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              handleChange("assignedUserId", "");
+                              setIsUserDropdownOpen(false);
+                            }}
+                            className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-gray-700 dark:text-white/70 hover:bg-gray-100 dark:hover:bg-white/10"
+                          >
+                            <UserCircleIcon className="h-4 w-4 text-gray-400 dark:text-white/40" />
+                            Nenhum responsável
+                          </button>
+                          {loadingMembers ? (
+                            <div className="px-3 py-2 text-xs text-gray-500 dark:text-white/50">Carregando...</div>
+                          ) : (
+                            workspaceMembers.map((member) => (
+                              <button
+                                key={member.id}
+                                type="button"
+                                onClick={() => {
+                                  handleChange("assignedUserId", member.id);
+                                  setIsUserDropdownOpen(false);
+                                }}
+                                className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-white/80 dark:hover:bg-white/10"
+                              >
+                                <UserCircleIcon className="h-5 w-5 text-gray-500 dark:text-white/50" />
+                                <div className="flex min-w-0 flex-col">
+                                  <p className="font-medium text-gray-900 dark:text-white truncate">{member.fullName}</p>
+                                  <p className="text-xs text-gray-500 dark:text-white/50 truncate">{member.email}</p>
+                                </div>
+                              </button>
+                            ))
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-black/20 p-4">
+                  <p className="text-[11px] uppercase tracking-wide text-gray-500 dark:text-white/40">Prioridade</p>
+                  <div className="mt-3 flex items-center gap-3">
+                    <div className="rounded-full bg-gray-200 dark:bg-white/10 p-2">
+                      {getPriorityIcon(localItem.priority)}
+                    </div>
+                    <select
+                      value={localItem.priority}
+                      onChange={(e) => handleChange("priority", e.target.value)}
+                      className="flex-1 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-transparent px-3 py-2 text-sm text-gray-700 dark:text-white focus:border-gray-400 dark:focus:border-white/40 focus:outline-none"
+                    >
+                      <option value="NONE" className="bg-white dark:bg-[#0d0f14]">None</option>
+                      <option value="LOW" className="bg-white dark:bg-[#0d0f14]">Low</option>
+                      <option value="MEDIUM" className="bg-white dark:bg-[#0d0f14]">Medium</option>
+                      <option value="HIGH" className="bg-white dark:bg-[#0d0f14]">High</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-black/20 p-4">
+                  <p className="text-[11px] uppercase tracking-wide text-gray-500 dark:text-white/40">Criado por</p>
+                  <div className="mt-3 flex items-center gap-2 text-sm text-gray-700 dark:text-white/80">
+                    <UserCircleIcon className="h-5 w-5 text-emerald-400" />
+                    {formatUserName(item.creator || "henri.okayama")}
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-black/20 p-4">
+                  <p className="text-[11px] uppercase tracking-wide text-gray-500 dark:text-white/40">Data de início</p>
+                  <div className="mt-3 flex items-center gap-3">
+                    <CalendarIcon className="h-5 w-5 text-gray-500 dark:text-white/60" />
+                    <FormattedDateInput
+                      value={localItem.startDate || ''}
+                      onChange={(value) => handleChange("startDate", value)}
+                      className="flex-1 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-transparent px-3 py-2 text-sm text-gray-700 dark:text-white focus:border-gray-400 dark:focus:border-white/40 focus:outline-none"
+                      placeholder="dd/mm/aaaa"
+                    />
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4 dark:border-white/10 dark:bg-black/20">
+                  <p className="text-[11px] uppercase tracking-wide text-gray-500 dark:text-white/40">Data de vencimento</p>
+                  <div className="mt-3 flex items-center gap-3">
+                    <ClockIcon className="h-5 w-5 text-gray-500 dark:text-white/60" />
+                    <FormattedDateInput
+                      value={localItem.dueDate || ''}
+                      onChange={(value) => handleChange("dueDate", value)}
+                      className="flex-1 rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 placeholder-gray-500 focus:border-gray-400 focus:outline-none dark:border-white/10 dark:bg-transparent dark:text-white dark:placeholder-white/40"
+                      placeholder="dd/mm/aaaa"
+                    />
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-gray-200 bg-white p-4 dark:border-white/10 dark:bg-black/20">
+                  <p className="text-[11px] uppercase tracking-wide text-gray-500 dark:text-white/40">Módulos</p>
+                  <div className="mt-3 flex items-center gap-3">
+                    <CubeIcon className="h-5 w-5 text-gray-500 dark:text-white/60" />
+                    <input
+                      value={localItem.module || ""}
+                      onChange={(e) => handleChange("module", e.target.value)}
+                      className="flex-1 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-gray-400 focus:outline-none dark:border-white/10 dark:bg-transparent dark:text-white dark:placeholder-white/40"
+                      placeholder="Nenhum módulo"
+                    />
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-gray-200 bg-white p-4 dark:border-white/10 dark:bg-black/20">
+                  <p className="text-[11px] uppercase tracking-wide text-gray-500 dark:text-white/40">Ciclo</p>
+                  <div className="mt-3 flex items-center gap-3">
+                    <ArrowsPointingOutIcon className="h-5 w-5 text-gray-500 dark:text-white/60" />
+                    <input
+                      value={localItem.cycle || ""}
+                      onChange={(e) => handleChange("cycle", e.target.value)}
+                      className="flex-1 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-gray-400 focus:outline-none dark:border-white/10 dark:bg-transparent dark:text-white dark:placeholder-white/40"
+                      placeholder="Nenhum ciclo"
+                    />
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-gray-200 bg-white p-4 dark:border-white/10 dark:bg-black/20 sm:col-span-2">
+                  <p className="text-[11px] uppercase tracking-wide text-gray-500 dark:text-white/40">Etiquetas</p>
+                  <div className="mt-3 flex items-center gap-3">
+                    <TagIcon className="h-5 w-5 text-gray-500 dark:text-white/60" />
+                    <input
+                      value={localItem.labels?.join(", ") || ""}
+                      onChange={(e) => handleChange("labels", e.target.value.split(/,\s*/))}
+                      className="flex-1 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-gray-400 focus:outline-none dark:border-white/10 dark:bg-transparent dark:text-white dark:placeholder-white/40"
+                      placeholder="Selecionar etiqueta"
+                    />
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-white/5 dark:bg-white/[0.02]">
+              <div className="mb-4 flex items-center justify-between">
+                <h3 className="text-sm font-semibold uppercase tracking-widest text-gray-600 dark:text-white/60">Atividade</h3>
+                <button className="rounded-full border border-gray-200 px-3 py-1 text-xs text-gray-700 hover:border-gray-400 dark:border-white/10 dark:text-white/70 dark:hover:border-white/40">Filtros</button>
+              </div>
+              <div className="space-y-3 overflow-y-auto pr-2">
+                {activities.length === 0 ? (
+                  <p className="text-xs italic text-gray-500 dark:text-white/50">Nenhuma atividade registrada</p>
+                ) : (
+                  activities.map((activity) => (
+                    <div key={activity.id} className="rounded-2xl border border-gray-200 bg-gray-50 p-3 dark:border-white/10 dark:bg-black/30">
+                      <p className="text-xs text-gray-700 dark:text-white/70">{formatActivity(activity)}</p>
+                    </div>
+                  ))
+                )}
+              </div>
+              <div className="mt-6 rounded-2xl border border-gray-200 bg-white dark:border-white/10 dark:bg-black/30">
+                <textarea
+                  value={comment}
+                  onChange={(e) => setComment(e.target.value)}
+                  rows={4}
+                  placeholder="Adicionar comentário"
+                  className="w-full resize-none rounded-2xl bg-transparent px-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:outline-none dark:text-white dark:placeholder-white/40"
+                />
+                <div className="flex items-center justify-between border-t border-gray-200 px-4 py-3 dark:border-white/10">
+                  <span className="text-xs text-gray-500 dark:text-white/40">Adicionar comentário</span>
+                  <button
+                    type="button"
+                    className="rounded-full bg-blue-600 px-4 py-1.5 text-sm font-medium text-white disabled:bg-blue-600/40"
+                    disabled={!comment.trim()}
+                    onClick={() => setComment("")}
+                  >
+                    Comentar
+                  </button>
+                </div>
+              </div>
+            </section>
+          </div>
+        </div>
+
+        <div className="border-t border-white/5 bg-black/30 p-6">
+          <div className="flex justify-end">
+            <button
+              onClick={handleUpdateClick}
+              className="inline-flex items-center gap-2 rounded-full bg-blue-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-blue-500"
+            >
+              <CheckCircleIcon className="h-5 w-5" />
+              Salvar alterações
+            </button>
+          </div>
+        </div>
+      </aside>
+    </div>
   );
 }

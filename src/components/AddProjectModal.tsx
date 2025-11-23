@@ -63,7 +63,6 @@ export function AddProjectModal({ isOpen, onClose, onProjectAdded }: AddProjectM
       setDescription("");
       setColor("#3b82f6");
       
-      // Get the current workspace slug from the URL
       const pathParts = window.location.pathname.split('/');
       const workspaceSlug = pathParts[1];
       router.push(`/${workspaceSlug}/projects/${newProject.id}`);

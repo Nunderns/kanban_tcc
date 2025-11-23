@@ -86,7 +86,6 @@ export default function ExportSettings() {
     setError(null);
 
     try {
-      // Fetch real data from API
       const response = await fetch('/api/export');
       
       if (!response.ok) {
@@ -233,7 +232,7 @@ export default function ExportSettings() {
           doc.rect(15, yPosition - 5, 180, 35, 'F');
           
           doc.setFontSize(16);
-          doc.setTextColor(31, 41, 55); // Dark gray
+          doc.setTextColor(31, 41, 55);
           doc.text("Resumo", 20, yPosition);
           yPosition += 10;
           

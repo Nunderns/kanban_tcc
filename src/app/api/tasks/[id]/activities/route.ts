@@ -3,7 +3,6 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 
 const handleServerError = (error: unknown) => {
-  // console.error("Server error:", error);
   return NextResponse.json(
     {
       error: "Internal server error",

@@ -2,10 +2,10 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { Calendar, ArrowLeft, Settings, LayoutGrid, List, Plus } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Calendar, ArrowLeft, Settings, LayoutGrid, List } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ProjectViewClient from "@/components/ProjectViewClient";
+import { ProjectSettings } from "@/components/ProjectSettings";
 
 type RouteParams = { 
   id: string;
@@ -171,15 +171,14 @@ export default async function ProjectPage({
             <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-lg font-medium text-gray-900 dark:text-white">Tarefas do Projeto</h2>
-                <Button>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Nova Tarefa
-                </Button>
               </div>
               <ProjectViewClient 
                 projectId={project.id} 
                 projectName={project.name} 
                 workspaceSlug={workspaceSlug}
+                onTaskCreated={async () => {
+                  'use server';
+                }}
               />
             </div>
           </TabsContent>
@@ -187,25 +186,15 @@ export default async function ProjectPage({
           <TabsContent value="settings">
             <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
               <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-6">Configurações do Projeto</h2>
-              <div className="space-y-6">
-                <div>
-                  <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Nome do Projeto</h3>
-                  <p className="text-gray-900 dark:text-white">{project.name}</p>
-                </div>
-                <div>
-                  <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Data de Criação</h3>
-                  <p className="text-gray-600 dark:text-gray-400">{formatDate(project.createdAt)}</p>
-                </div>
-                <div>
-                  <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Última Atualização</h3>
-                  <p className="text-gray-600 dark:text-gray-400">{formatDate(project.updatedAt)}</p>
-                </div>
-                <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
-                  <Button variant="outline" className="text-red-600 border-red-600 hover:bg-red-50 dark:text-red-400 dark:border-red-400 dark:hover:bg-red-900/20">
-                    Excluir Projeto
-                  </Button>
-                </div>
-              </div>
+              <ProjectSettings 
+                project={{
+                  id: project.id,
+                  name: project.name,
+                  createdAt: project.createdAt,
+                  updatedAt: project.updatedAt
+                }} 
+                workspaceSlug={workspaceSlug} 
+              />
             </div>
           </TabsContent>
         </Tabs>
