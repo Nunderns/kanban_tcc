@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { Calendar, ArrowLeft, Settings, LayoutGrid, List, Plus } from "lucide-react";
+import { Calendar, ArrowLeft, Settings, LayoutGrid, List } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ProjectViewClient from "@/components/ProjectViewClient";
