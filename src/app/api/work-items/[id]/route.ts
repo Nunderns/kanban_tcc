@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 export async function PATCH(request: NextRequest) {
   try {
     const url = new URL(request.url);
-    const idParam = url.pathname.split("/").pop(); // extrai o ID da URL
+    const idParam = url.pathname.split("/").pop();
     const id = idParam ? Number(idParam) : null;
 
     if (!id || isNaN(id)) {

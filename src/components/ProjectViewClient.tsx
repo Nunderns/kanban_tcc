@@ -122,7 +122,6 @@ export default function ProjectViewClient({ projectId, projectName, workspaceSlu
         throw new Error(errorData.error || `Falha ao atualizar a tarefa (${response.status})`);
       }
 
-      // Atualiza a lista de tarefas após a edição
       await fetchTasks();
       console.log('Task updated successfully');
     } catch (error) {
@@ -270,7 +269,6 @@ export default function ProjectViewClient({ projectId, projectName, workspaceSlu
                         <td className="px-4 py-3 text-sm">
                           <button 
                             onClick={() => {
-                              // Implementar abertura do modal de edição
                               console.log('Editar tarefa:', t.id);
                             }}
                             className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 mr-3"
@@ -279,7 +277,6 @@ export default function ProjectViewClient({ projectId, projectName, workspaceSlu
                           </button>
                           <button 
                             onClick={() => {
-                              // Implementar exclusão
                               console.log('Excluir tarefa:', t.id);
                             }}
                             className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"

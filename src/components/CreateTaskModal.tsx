@@ -60,14 +60,12 @@ function CreateTaskModal({
       setLoadingMembers(true);
       setLoadingProjects(true);
       
-      // Buscar membros
       const membersResponse = await fetch(`/api/workspaces/slug/${workspaceSlug}`);
       if (membersResponse.ok) {
         const workspaceData = await membersResponse.json();
         setWorkspaceMembers(workspaceData.members || []);
       }
       
-      // Buscar projetos
       const projectsResponse = await fetch(`/api/workspaces/slug/${workspaceSlug}/projects`);
       if (projectsResponse.ok) {
         const projectsData = await projectsResponse.json();

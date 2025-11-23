@@ -15,7 +15,6 @@ export default async function NewProjectPage({ params }: NewProjectPageProps) {
     return notFound();
   }
 
-  // Verify the workspace exists and user has access to it
   const workspace = await prisma.workspace.findFirst({
     where: {
       slug: workspaceSlug,

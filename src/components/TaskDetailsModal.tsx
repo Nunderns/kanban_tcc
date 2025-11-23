@@ -92,7 +92,6 @@ export default function TaskDetailsModal({ task: initialTask, onClose, onStatusC
       const response = await fetch(`/api/tasks/${taskId}/activities`);
       if (response.ok) {
         const data = await response.json();
-        // Ensure activities are sorted by date, newest first
         const activities = Array.isArray(data) ? data : data.activities || [];
         activities.sort((a: Activity, b: Activity) => 
           new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
@@ -119,8 +118,7 @@ export default function TaskDetailsModal({ task: initialTask, onClose, onStatusC
       if (response.ok) {
         const data = await response.json();
         const members = Array.isArray(data) ? data : data.members || [];
-        
-        // Sort members alphabetically by name
+
         members.sort((a: WorkspaceMember, b: WorkspaceMember) => {
           const nameA = (a.displayName || a.fullName || a.email).toLowerCase();
           const nameB = (b.displayName || b.fullName || b.email).toLowerCase();
@@ -136,14 +134,12 @@ export default function TaskDetailsModal({ task: initialTask, onClose, onStatusC
     }
   }, [workspaceSlug]);
 
-  // Load workspace members when modal opens or workspaceSlug changes
   useEffect(() => {
     if (workspaceSlug) {
       fetchWorkspaceMembers();
     }
   }, [workspaceSlug, fetchWorkspaceMembers]);
   
-  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (isUserDropdownOpen) {
@@ -165,7 +161,6 @@ export default function TaskDetailsModal({ task: initialTask, onClose, onStatusC
     setTask(prev => {
       if (!prev) return prev;
       
-      // Special handling for priority to ensure it's always a valid value
       if (field === 'priority') {
         const validPriorities = ['HIGH', 'MEDIUM', 'LOW', 'NONE'] as const;
         type Priority = typeof validPriorities[number];
@@ -191,13 +186,10 @@ export default function TaskDetailsModal({ task: initialTask, onClose, onStatusC
     try {
       setIsLoading(true);
       
-      // Get the current user ID (replace with actual auth context)
       const currentUserId = 'current-user-id';
       
-      // Prepare updates object with only changed fields
       const updates: Partial<Task> = {};
       
-      // Check each field and add to updates if changed
       if (initialTask) {
         if (task.title !== initialTask.title) updates.title = task.title;
         if (task.description !== initialTask.description) updates.description = task.description || '';
@@ -206,29 +198,23 @@ export default function TaskDetailsModal({ task: initialTask, onClose, onStatusC
         if (task.assignedTo !== initialTask.assignedTo) updates.assignedTo = task.assignedTo || null;
       }
       
-      // If no changes, just close the editing mode
       if (Object.keys(updates).length === 0) {
         setIsEditing(false);
         return;
       }
       
-      // Save the task updates
       await onStatusChange(task.id, updates);
       
-      // Log activities for changed fields
       if (initialTask) {
         await Promise.all(
           Object.entries(updates).map(async ([field, newValue]) => {
             try {
               const oldValue = initialTask[field as keyof Task];
               
-              // Skip if values are the when both are falsy (null/undefined/'')
               if (!oldValue && !newValue) return;
               
-              // Skip if values are equal
               if (oldValue === newValue) return;
-              
-              // For assignedTo, get the user's name for better readability
+
               let displayOldValue = String(oldValue || '');
               let displayNewValue = String(newValue || '');
               
@@ -248,7 +234,6 @@ export default function TaskDetailsModal({ task: initialTask, onClose, onStatusC
                 }
               }
               
-              // For priority, translate the values
               if (field === 'priority') {
                 const priorityMap: Record<string, string> = {
                   'HIGH': 'Alta',
@@ -260,7 +245,6 @@ export default function TaskDetailsModal({ task: initialTask, onClose, onStatusC
                 displayNewValue = priorityMap[displayNewValue] || displayNewValue;
               }
               
-              // Post the activity
               await fetch(`/api/tasks/${task.id}/activities`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -280,7 +264,6 @@ export default function TaskDetailsModal({ task: initialTask, onClose, onStatusC
         );
       }
       
-      // Refresh activities and close edit mode
       await fetchActivities(task.id);
       setIsEditing(false);
     } catch (error) {
@@ -309,17 +292,6 @@ export default function TaskDetailsModal({ task: initialTask, onClose, onStatusC
       console.error('Error adding comment:', error);
     }
   };
-
-  // Status icon component (commented out since it's not currently used)
-  // const getStatusIcon = (status: Status) => {
-  //   const icons: Record<Status, JSX.Element> = {
-  //     BACKLOG: <ListBulletIcon className="h-4 w-4" />,
-  //     TODO: <ClipboardDocumentListIcon className="h-4 w-4" />,
-  //     IN_PROGRESS: <ArrowPathIcon className="h-4 w-4 animate-spin" />,
-  //     DONE: <CheckCircleIcon className="h-4 w-4" />
-  //   };
-  //   return icons[status] || <ListBulletIcon className="h-4 w-4" />;
-  // };
 
   const getPriorityColor = (priority: string = 'NONE') => {
     return priorityColors[priority as keyof typeof priorityColors] || 'gray';

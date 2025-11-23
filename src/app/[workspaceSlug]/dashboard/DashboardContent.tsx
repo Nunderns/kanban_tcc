@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
 import { FiPlus } from "react-icons/fi";
-// Removed unused imports
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface Project {
@@ -24,7 +23,6 @@ interface DashboardContentProps {
 }
 
 export default function DashboardContent({ params }: DashboardContentProps) {
-  // State and data fetching
   const [isLoading, setIsLoading] = useState(true);
   const [stats, setStats] = useState<{
     projects: Project[];

@@ -18,9 +18,6 @@ declare module "next-auth" {
   }
 }
 
-// JWT type is now available from next-auth/jwt/types
-// No need to declare module for JWT in v5
-
 const prisma = new PrismaClient();
 
 export const authOptions: NextAuthConfig = {
@@ -103,7 +100,6 @@ export const authOptions: NextAuthConfig = {
     },
     async jwt({ token, user }) {
       if (user) {
-        // Ensure we're not mutating the token directly
         return {
           ...token,
           id: String(user.id),

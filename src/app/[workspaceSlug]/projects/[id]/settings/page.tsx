@@ -166,7 +166,6 @@ export default function ProjectSettings() {
               <button
                 onClick={() => {
                   setIsEditing(false);
-                  // Reset form
                   fetch(`/api/projects/${params.id}`)
                     .then(res => res.json())
                     .then(data => setProject(data));

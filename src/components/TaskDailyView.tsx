@@ -69,7 +69,6 @@ export default function TaskDailyView({ tasks, onTaskClick }: TaskDailyViewProps
   const tomorrowTasks = getTasksForDate(tomorrow);
   const yesterdayTasks = getTasksForDate(yesterday);
 
-  // Get other dates that have tasks
   const otherDates = tasks
     .map(task => {
       if (!task.dueDate && !task.startDate) return null;
