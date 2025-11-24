@@ -34,7 +34,8 @@ import {
   SquaresPlusIcon,
   ArrowsRightLeftIcon,
   LinkIcon,
-  PaperClipIcon
+  PaperClipIcon,
+  ChatBubbleLeftRightIcon
 } from '@heroicons/react/24/outline';
 import { priorityColors } from "@/lib/constants";
 
@@ -74,6 +75,8 @@ export default function WorkItemSidebar({ item, onClose, onUpdate, workspaceSlug
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
   const [loadingMembers, setLoadingMembers] = useState(false);
   const [comment, setComment] = useState("");
+  const [isSubmittingComment, setIsSubmittingComment] = useState(false);
+  const [commentError, setCommentError] = useState<string | null>(null);
 
   const formatDate = (dateString: string): string => {
     if (!dateString) return 'não definida';
@@ -102,9 +105,38 @@ export default function WorkItemSidebar({ item, onClose, onUpdate, workspaceSlug
     return fieldMap[field] || field;
   };
 
+  const formatActivityDateTime = (isoString: string): string => {
+    if (!isoString) return "";
+
+    try {
+      const date = new Date(isoString);
+      if (Number.isNaN(date.getTime())) {
+        return "";
+      }
+
+      const datePart = date.toLocaleDateString("pt-BR", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric"
+      });
+      const timePart = date.toLocaleTimeString("pt-BR", {
+        hour: "2-digit",
+        minute: "2-digit"
+      });
+
+      return `${datePart} • ${timePart}`;
+    } catch (error) {
+      console.error("Error formatting activity timestamp:", error);
+      return "";
+    }
+  };
+
   const formatActivity = (activity: Activity): string => {
-    const { user, action, field, oldValue, newValue, createdAt } = activity;
-    const formattedDate = new Date(createdAt).toLocaleString('pt-BR');
+    const { action, field, oldValue, newValue } = activity;
+
+    if (action === 'commented') {
+      return newValue?.trim() || 'Comentou na tarefa';
+    }
 
     if (field === 'assignedUserName') {
       return '';
@@ -116,17 +148,17 @@ export default function WorkItemSidebar({ item, onClose, onUpdate, workspaceSlug
         if (newValue && (!oldValue || oldValue === 'null' || oldValue === 'undefined')) {
           const assignedUser = workspaceMembers.find(member => member.id === newValue);
           const userName = assignedUser?.displayName || assignedUser?.fullName || 'um usuário';
-          return `${formattedDate} - ${user} atribuiu a tarefa para ${userName}`;
+          return `Atribuiu a tarefa para ${userName}`;
         } else if (!newValue || newValue === 'null' || newValue === 'undefined') {
           const previousUser = workspaceMembers.find(member => member.id === oldValue);
           const userName = previousUser?.displayName || previousUser?.fullName || 'um usuário';
-          return `${formattedDate} - ${user} removeu a atribuição de ${userName}`;
+          return `Removeu a atribuição de ${userName}`;
         } else {
           const oldUser = workspaceMembers.find(member => member.id === oldValue);
           const newUser = workspaceMembers.find(member => member.id === newValue);
           const oldUserName = oldUser?.displayName || oldUser?.fullName || 'um usuário';
           const newUserName = newUser?.displayName || newUser?.fullName || 'um usuário';
-          return `${formattedDate} - ${user} transferiu a tarefa de ${oldUserName} para ${newUserName}`;
+          return `Transferiu a tarefa de ${oldUserName} para ${newUserName}`;
         }
       }
       
@@ -141,17 +173,17 @@ export default function WorkItemSidebar({ item, onClose, onUpdate, workspaceSlug
       
       if (field === 'assignedUserId') return '';
       
-      return `${formattedDate} - ${user} alterou o campo ${fieldName} de "${oldVal}" para "${newVal}"`;
+      return `Alterou o campo ${fieldName} de "${oldVal}" para "${newVal}"`;
     }
     
     const actionMap: Record<string, string> = {
-      'created': 'criou a tarefa',
-      'deleted': 'excluiu a tarefa',
-      'assigned': 'atribuiu a tarefa',
-      'commented': 'comentou na tarefa'
+      'created': 'Criou a tarefa',
+      'deleted': 'Excluiu a tarefa',
+      'assigned': 'Atribuiu a tarefa',
+      'commented': 'Comentou na tarefa'
     };
     
-    return `${formattedDate} - ${user} ${actionMap[action] || action}`;
+    return actionMap[action] || action;
   };
 
   const fetchActivities = useCallback(async () => {
@@ -208,6 +240,34 @@ export default function WorkItemSidebar({ item, onClose, onUpdate, workspaceSlug
     fetchActivities();
     fetchWorkspaceMembers();
   }, [fetchActivities, fetchWorkspaceMembers, item.id]);
+
+  const handleSubmitComment = async () => {
+    if (!comment.trim() || isSubmittingComment) return;
+
+    try {
+      setIsSubmittingComment(true);
+      setCommentError(null);
+
+      const response = await fetch(`/api/tasks/${item.id}/comments`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: comment.trim() })
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || "Failed to submit comment");
+      }
+
+      setComment("");
+      await fetchActivities();
+    } catch (error) {
+      console.error("Failed to submit comment", error);
+      setCommentError("Não foi possível adicionar o comentário. Tente novamente.");
+    } finally {
+      setIsSubmittingComment(false);
+    }
+  };
 
   const handleChange = (field: keyof WorkItem, value: string | string[] | null | undefined) => {
     setLocalItem(prev => {
@@ -400,13 +460,13 @@ export default function WorkItemSidebar({ item, onClose, onUpdate, workspaceSlug
 
         <div className="flex flex-col gap-8 overflow-y-auto p-4 sm:p-6">
           <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
-            <button className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 dark:border-white/10 bg-gray-100 dark:bg-white/[0.04] text-gray-600 dark:text-white/70 transition hover:border-gray-300 dark:hover:border-white/40">
+            <button className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 bg-gray-100 text-gray-600 transition hover:border-gray-300 dark:border-white/10 dark:bg-white/10 dark:text-white/70 dark:hover:border-white/40">
               <Cog6ToothIcon className="h-5 w-5" />
             </button>
             {actionButtons.map(({ label, icon: Icon }) => (
               <button
                 key={label}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-gray-200 dark:border-white/10 bg-gray-100 dark:bg-white/[0.02] px-4 py-2 text-sm text-gray-700 dark:text-white/80 transition hover:border-gray-300 dark:hover:border-white/40 hover:text-gray-900 dark:hover:text-white sm:w-auto"
+                className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-gray-200 bg-gray-100 px-4 py-2 text-sm text-gray-700 transition hover:border-gray-300 hover:text-gray-900 dark:border-white/10 dark:bg-white/5 dark:text-white/80 dark:hover:border-white/40 dark:hover:text-white sm:w-auto"
               >
                 <Icon className="h-4 w-4" />
                 {label}
@@ -414,231 +474,268 @@ export default function WorkItemSidebar({ item, onClose, onUpdate, workspaceSlug
             ))}
           </div>
 
-          <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr] lg:gap-8">
-            <section className="rounded-2xl border border-gray-200 dark:border-white/5 bg-white dark:bg-white/[0.02] p-4 sm:p-6">
-              <div className="flex flex-col gap-2 border-b border-gray-200 dark:border-white/5 pb-4 sm:flex-row sm:items-center sm:justify-between">
-                <h3 className="text-sm font-semibold uppercase tracking-widest text-gray-600 dark:text-white/60">Propriedades</h3>
-                <p className="text-xs text-gray-500 dark:text-white/40">Última edição por {formatUserName(item.creator || "henri.okayama")}</p>
+          <section className="rounded-2xl border border-gray-200 bg-white p-4 dark:border-white/5 dark:bg-white/[0.02] sm:p-6">
+            <div className="flex flex-col gap-2 border-b border-gray-200 pb-4 dark:border-white/5 sm:flex-row sm:items-center sm:justify-between">
+              <h3 className="text-sm font-semibold uppercase tracking-widest text-gray-600 dark:text-white/60">Propriedades</h3>
+              <p className="text-xs text-gray-500 dark:text-white/40">Última edição por {formatUserName(item.creator || "henri.okayama")}</p>
+            </div>
+
+            <div className="mt-4 grid gap-4 sm:mt-6 sm:grid-cols-2">
+              <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4 dark:border-white/10 dark:bg-black/20">
+                <p className="text-[11px] uppercase tracking-wide text-gray-500 dark:text-white/40">Estado</p>
+                <div className="mt-3 flex items-center gap-3">
+                  <div className="rounded-full bg-gray-200 p-2 dark:bg-white/10">{getStatusIcon(localItem.status)}</div>
+                  <select
+                    value={localItem.status}
+                    onChange={(e) => handleChange("status", e.target.value)}
+                    className="flex-1 rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 focus:border-gray-400 focus:outline-none dark:border-white/10 dark:bg-transparent dark:text-white"
+                  >
+                    <option value="BACKLOG" className="bg-white dark:bg-[#0d0f14]">Backlog</option>
+                    <option value="TODO" className="bg-white dark:bg-[#0d0f14]">A Fazer</option>
+                    <option value="IN_PROGRESS" className="bg-white dark:bg-[#0d0f14]">Em Progresso</option>
+                    <option value="DONE" className="bg-white dark:bg-[#0d0f14]">Concluído</option>
+                  </select>
+                </div>
               </div>
 
-              <div className="mt-4 grid gap-4 sm:mt-6 sm:grid-cols-2">
-                <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-black/20 p-4">
-                  <p className="text-[11px] uppercase tracking-wide text-gray-500 dark:text-white/40">Estado</p>
-                  <div className="mt-3 flex items-center gap-3">
-                    <div className="rounded-full bg-gray-200 dark:bg-white/10 p-2">
-                      {getStatusIcon(localItem.status)}
-                    </div>
-                    <select
-                      value={localItem.status}
-                      onChange={(e) => handleChange("status", e.target.value)}
-                      className="flex-1 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-transparent px-3 py-2 text-sm text-gray-700 dark:text-white focus:border-gray-400 dark:focus:border-white/40 focus:outline-none"
-                    >
-                      <option value="BACKLOG" className="bg-white dark:bg-[#0d0f14]">Backlog</option>
-                      <option value="TODO" className="bg-white dark:bg-[#0d0f14]">A Fazer</option>
-                      <option value="IN_PROGRESS" className="bg-white dark:bg-[#0d0f14]">Em Progresso</option>
-                      <option value="DONE" className="bg-white dark:bg-[#0d0f14]">Concluído</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4 dark:border-white/10 dark:bg-black/20">
-                  <p className="text-[11px] uppercase tracking-wide text-gray-500 dark:text-white/40">Responsáveis</p>
-                  <div className="mt-3 relative">
-                    <button
-                      type="button"
-                      onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
-                      className="flex w-full items-center justify-between rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 transition hover:border-gray-300 dark:border-white/10 dark:bg-white/[0.02] dark:text-white/80 dark:hover:border-white/30"
-                    >
-                      <span className="flex min-w-0 items-center gap-2">
-                        <UserCircleIcon className="h-5 w-5 text-gray-500 dark:text-white/50" />
-                        <span className="truncate">
-                          {localItem.assignedUserId
-                            ? formatUserName(
-                                workspaceMembers.find((m) => m.id === localItem.assignedUserId)?.fullName ||
+              <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4 dark:border-white/10 dark:bg-black/20">
+                <p className="text-[11px] uppercase tracking-wide text-gray-500 dark:text-white/40">Responsáveis</p>
+                <div className="relative mt-3">
+                  <button
+                    type="button"
+                    onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
+                    className="flex w-full items-center justify-between rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 transition hover:border-gray-300 dark:border-white/10 dark:bg-white/10 dark:text-white/80 dark:hover:border-white/30"
+                  >
+                    <span className="flex min-w-0 items-center gap-2">
+                      <UserCircleIcon className="h-5 w-5 text-gray-500 dark:text-white/50" />
+                      <span className="truncate">
+                        {localItem.assignedUserId
+                          ? formatUserName(
+                              workspaceMembers.find((m) => m.id === localItem.assignedUserId)?.fullName ||
                                 localItem.assignedUserName ||
-                                'Usuário'
-                              )
-                            : 'Adicionar responsáveis'}
-                        </span>
+                                "Usuário"
+                            )
+                          : "Adicionar responsáveis"}
                       </span>
-                      <ChevronDownIcon className="h-4 w-4 text-gray-500 dark:text-white/50" />
-                    </button>
-                    {isUserDropdownOpen && (
-                      <div className="absolute z-20 mt-2 w-full rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#11131a] shadow-2xl">
-                        <div className="p-2">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              handleChange("assignedUserId", "");
-                              setIsUserDropdownOpen(false);
-                            }}
-                            className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-gray-700 dark:text-white/70 hover:bg-gray-100 dark:hover:bg-white/10"
-                          >
-                            <UserCircleIcon className="h-4 w-4 text-gray-400 dark:text-white/40" />
-                            Nenhum responsável
-                          </button>
-                          {loadingMembers ? (
-                            <div className="px-3 py-2 text-xs text-gray-500 dark:text-white/50">Carregando...</div>
-                          ) : (
-                            workspaceMembers.map((member) => (
-                              <button
-                                key={member.id}
-                                type="button"
-                                onClick={() => {
-                                  handleChange("assignedUserId", member.id);
-                                  setIsUserDropdownOpen(false);
-                                }}
-                                className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-white/80 dark:hover:bg-white/10"
-                              >
-                                <UserCircleIcon className="h-5 w-5 text-gray-500 dark:text-white/50" />
-                                <div className="flex min-w-0 flex-col">
-                                  <p className="font-medium text-gray-900 dark:text-white truncate">{member.fullName}</p>
-                                  <p className="text-xs text-gray-500 dark:text-white/50 truncate">{member.email}</p>
-                                </div>
-                              </button>
-                            ))
-                          )}
-                        </div>
+                    </span>
+                    <ChevronDownIcon className="h-4 w-4 text-gray-500 dark:text-white/50" />
+                  </button>
+                  {isUserDropdownOpen && (
+                    <div className="absolute left-0 right-0 z-20 mt-2 rounded-2xl border border-gray-200 bg-white shadow-2xl dark:border-white/10 dark:bg-[#11131a]">
+                      <div className="max-h-60 overflow-y-auto p-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            handleChange("assignedUserId", "");
+                            setIsUserDropdownOpen(false);
+                          }}
+                          className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-white/70 dark:hover:bg-white/10"
+                        >
+                          <UserCircleIcon className="h-4 w-4 text-gray-400 dark:text-white/40" />
+                          Nenhum responsável
+                        </button>
+                        {loadingMembers ? (
+                          <div className="px-3 py-2 text-xs text-gray-500 dark:text-white/50">Carregando...</div>
+                        ) : (
+                          workspaceMembers.map((member) => (
+                            <button
+                              key={member.id}
+                              type="button"
+                              onClick={() => {
+                                handleChange("assignedUserId", member.id);
+                                setIsUserDropdownOpen(false);
+                              }}
+                              className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-white/80 dark:hover:bg-white/10"
+                            >
+                              <UserCircleIcon className="h-5 w-5 text-gray-500 dark:text-white/50" />
+                              <div className="flex min-w-0 flex-col">
+                                <p className="truncate font-medium text-gray-900 dark:text-white">{member.fullName}</p>
+                                <p className="truncate text-xs text-gray-500 dark:text-white/50">{member.email}</p>
+                              </div>
+                            </button>
+                          ))
+                        )}
                       </div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-black/20 p-4">
-                  <p className="text-[11px] uppercase tracking-wide text-gray-500 dark:text-white/40">Prioridade</p>
-                  <div className="mt-3 flex items-center gap-3">
-                    <div className="rounded-full bg-gray-200 dark:bg-white/10 p-2">
-                      {getPriorityIcon(localItem.priority)}
                     </div>
-                    <select
-                      value={localItem.priority}
-                      onChange={(e) => handleChange("priority", e.target.value)}
-                      className="flex-1 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-transparent px-3 py-2 text-sm text-gray-700 dark:text-white focus:border-gray-400 dark:focus:border-white/40 focus:outline-none"
-                    >
-                      <option value="NONE" className="bg-white dark:bg-[#0d0f14]">None</option>
-                      <option value="LOW" className="bg-white dark:bg-[#0d0f14]">Low</option>
-                      <option value="MEDIUM" className="bg-white dark:bg-[#0d0f14]">Medium</option>
-                      <option value="HIGH" className="bg-white dark:bg-[#0d0f14]">High</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-black/20 p-4">
-                  <p className="text-[11px] uppercase tracking-wide text-gray-500 dark:text-white/40">Criado por</p>
-                  <div className="mt-3 flex items-center gap-2 text-sm text-gray-700 dark:text-white/80">
-                    <UserCircleIcon className="h-5 w-5 text-emerald-400" />
-                    {formatUserName(item.creator || "henri.okayama")}
-                  </div>
-                </div>
-
-                <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-black/20 p-4">
-                  <p className="text-[11px] uppercase tracking-wide text-gray-500 dark:text-white/40">Data de início</p>
-                  <div className="mt-3 flex items-center gap-3">
-                    <CalendarIcon className="h-5 w-5 text-gray-500 dark:text-white/60" />
-                    <FormattedDateInput
-                      value={localItem.startDate || ''}
-                      onChange={(value) => handleChange("startDate", value)}
-                      className="flex-1 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-transparent px-3 py-2 text-sm text-gray-700 dark:text-white focus:border-gray-400 dark:focus:border-white/40 focus:outline-none"
-                      placeholder="dd/mm/aaaa"
-                    />
-                  </div>
-                </div>
-
-                <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4 dark:border-white/10 dark:bg-black/20">
-                  <p className="text-[11px] uppercase tracking-wide text-gray-500 dark:text-white/40">Data de vencimento</p>
-                  <div className="mt-3 flex items-center gap-3">
-                    <ClockIcon className="h-5 w-5 text-gray-500 dark:text-white/60" />
-                    <FormattedDateInput
-                      value={localItem.dueDate || ''}
-                      onChange={(value) => handleChange("dueDate", value)}
-                      className="flex-1 rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 placeholder-gray-500 focus:border-gray-400 focus:outline-none dark:border-white/10 dark:bg-transparent dark:text-white dark:placeholder-white/40"
-                      placeholder="dd/mm/aaaa"
-                    />
-                  </div>
-                </div>
-
-                <div className="rounded-2xl border border-gray-200 bg-white p-4 dark:border-white/10 dark:bg-black/20">
-                  <p className="text-[11px] uppercase tracking-wide text-gray-500 dark:text-white/40">Módulos</p>
-                  <div className="mt-3 flex items-center gap-3">
-                    <CubeIcon className="h-5 w-5 text-gray-500 dark:text-white/60" />
-                    <input
-                      value={localItem.module || ""}
-                      onChange={(e) => handleChange("module", e.target.value)}
-                      className="flex-1 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-gray-400 focus:outline-none dark:border-white/10 dark:bg-transparent dark:text-white dark:placeholder-white/40"
-                      placeholder="Nenhum módulo"
-                    />
-                  </div>
-                </div>
-
-                <div className="rounded-2xl border border-gray-200 bg-white p-4 dark:border-white/10 dark:bg-black/20">
-                  <p className="text-[11px] uppercase tracking-wide text-gray-500 dark:text-white/40">Ciclo</p>
-                  <div className="mt-3 flex items-center gap-3">
-                    <ArrowsPointingOutIcon className="h-5 w-5 text-gray-500 dark:text-white/60" />
-                    <input
-                      value={localItem.cycle || ""}
-                      onChange={(e) => handleChange("cycle", e.target.value)}
-                      className="flex-1 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-gray-400 focus:outline-none dark:border-white/10 dark:bg-transparent dark:text-white dark:placeholder-white/40"
-                      placeholder="Nenhum ciclo"
-                    />
-                  </div>
-                </div>
-
-                <div className="rounded-2xl border border-gray-200 bg-white p-4 dark:border-white/10 dark:bg-black/20 sm:col-span-2">
-                  <p className="text-[11px] uppercase tracking-wide text-gray-500 dark:text-white/40">Etiquetas</p>
-                  <div className="mt-3 flex items-center gap-3">
-                    <TagIcon className="h-5 w-5 text-gray-500 dark:text-white/60" />
-                    <input
-                      value={localItem.labels?.join(", ") || ""}
-                      onChange={(e) => handleChange("labels", e.target.value.split(/,\s*/))}
-                      className="flex-1 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-gray-400 focus:outline-none dark:border-white/10 dark:bg-transparent dark:text-white dark:placeholder-white/40"
-                      placeholder="Selecionar etiqueta"
-                    />
-                  </div>
+                  )}
                 </div>
               </div>
-            </section>
 
-            <section className="rounded-2xl border border-gray-200 bg-white p-4 dark:border-white/5 dark:bg-white/[0.02] sm:p-6">
-              <div className="mb-4 flex items-center justify-between">
-                <h3 className="text-sm font-semibold uppercase tracking-widest text-gray-600 dark:text-white/60">Atividade</h3>
-                <button className="rounded-full border border-gray-200 px-3 py-1 text-xs text-gray-700 hover:border-gray-400 dark:border-white/10 dark:text-white/70 dark:hover:border-white/40">Filtros</button>
+              <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4 dark:border-white/10 dark:bg-black/20">
+                <p className="text-[11px] uppercase tracking-wide text-gray-500 dark:text-white/40">Prioridade</p>
+                <div className="mt-3 flex items-center gap-3">
+                  <div className="rounded-full bg-gray-200 p-2 dark:bg-white/10">{getPriorityIcon(localItem.priority)}</div>
+                  <select
+                    value={localItem.priority}
+                    onChange={(e) => handleChange("priority", e.target.value)}
+                    className="flex-1 rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 focus:border-gray-400 focus:outline-none dark:border-white/10 dark:bg-transparent dark:text-white"
+                  >
+                    <option value="NONE" className="bg-white dark:bg-[#0d0f14]">None</option>
+                    <option value="LOW" className="bg-white dark:bg-[#0d0f14]">Low</option>
+                    <option value="MEDIUM" className="bg-white dark:bg-[#0d0f14]">Medium</option>
+                    <option value="HIGH" className="bg-white dark:bg-[#0d0f14]">High</option>
+                  </select>
+                </div>
               </div>
-              <div className="space-y-3 overflow-y-auto pr-2">
+
+              <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4 dark:border-white/10 dark:bg-black/20">
+                <p className="text-[11px] uppercase tracking-wide text-gray-500 dark:text-white/40">Criado por</p>
+                <div className="mt-3 flex items-center gap-2 text-sm text-gray-700 dark:text-white/80">
+                  <UserCircleIcon className="h-5 w-5 text-emerald-400" />
+                  {formatUserName(item.creator || "henri.okayama")}
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4 dark:border-white/10 dark:bg-black/20">
+                <p className="text-[11px] uppercase tracking-wide text-gray-500 dark:text-white/40">Data de início</p>
+                <div className="mt-3 flex items-center gap-3">
+                  <CalendarIcon className="h-5 w-5 text-gray-500 dark:text-white/60" />
+                  <FormattedDateInput
+                    value={localItem.startDate || ""}
+                    onChange={(value) => handleChange("startDate", value)}
+                    className="flex-1 rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 focus:border-gray-400 focus:outline-none dark:border-white/10 dark:bg-transparent dark:text-white"
+                    placeholder="dd/mm/aaaa"
+                  />
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4 dark:border-white/10 dark:bg-black/20">
+                <p className="text-[11px] uppercase tracking-wide text-gray-500 dark:text-white/40">Data de vencimento</p>
+                <div className="mt-3 flex items-center gap-3">
+                  <ClockIcon className="h-5 w-5 text-gray-500 dark:text-white/60" />
+                  <FormattedDateInput
+                    value={localItem.dueDate || ""}
+                    onChange={(value) => handleChange("dueDate", value)}
+                    className="flex-1 rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 placeholder-gray-500 focus:border-gray-400 focus:outline-none dark:border-white/10 dark:bg-transparent dark:text-white dark:placeholder-white/40"
+                    placeholder="dd/mm/aaaa"
+                  />
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-gray-200 bg-white p-4 dark:border-white/10 dark:bg-black/20">
+                <p className="text-[11px] uppercase tracking-wide text-gray-500 dark:text-white/40">Módulos</p>
+                <div className="mt-3 flex items-center gap-3">
+                  <CubeIcon className="h-5 w-5 text-gray-500 dark:text-white/60" />
+                  <input
+                    value={localItem.module || ""}
+                    onChange={(e) => handleChange("module", e.target.value)}
+                    className="flex-1 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-gray-400 focus:outline-none dark:border-white/10 dark:bg-transparent dark:text-white dark:placeholder-white/40"
+                    placeholder="Nenhum módulo"
+                  />
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-gray-200 bg-white p-4 dark:border-white/10 dark:bg-black/20">
+                <p className="text-[11px] uppercase tracking-wide text-gray-500 dark:text-white/40">Ciclo</p>
+                <div className="mt-3 flex items-center gap-3">
+                  <ArrowsPointingOutIcon className="h-5 w-5 text-gray-500 dark:text-white/60" />
+                  <input
+                    value={localItem.cycle || ""}
+                    onChange={(e) => handleChange("cycle", e.target.value)}
+                    className="flex-1 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-gray-400 focus:outline-none dark:border-white/10 dark:bg-transparent dark:text-white dark:placeholder-white/40"
+                    placeholder="Nenhum ciclo"
+                  />
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-gray-200 bg-white p-4 dark:border-white/10 dark:bg-black/20 sm:col-span-2">
+                <p className="text-[11px] uppercase tracking-wide text-gray-500 dark:text-white/40">Etiquetas</p>
+                <div className="mt-3 flex items-center gap-3">
+                  <TagIcon className="h-5 w-5 text-gray-500 dark:text-white/60" />
+                  <input
+                    value={localItem.labels?.join(", ") || ""}
+                    onChange={(e) => handleChange("labels", e.target.value.split(/,\s*/))}
+                    className="flex-1 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-gray-400 focus:outline-none dark:border-white/10 dark:bg-transparent dark:text-white dark:placeholder-white/40"
+                    placeholder="Selecionar etiqueta"
+                  />
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section className="rounded-2xl border border-gray-200 bg-white p-4 dark:border-white/5 dark:bg-white/[0.02] sm:p-6">
+            <div className="flex items-center justify-between border-b border-gray-200 pb-4 dark:border-white/5">
+              <div className="flex items-center gap-3">
+                <div className="rounded-full bg-blue-50 p-2 dark:bg-white/10">
+                  <ChatBubbleLeftRightIcon className="h-5 w-5 text-blue-600 dark:text-white" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold uppercase tracking-widest text-gray-700 dark:text-white/70">Atividade</h3>
+                  <p className="text-xs text-gray-500 dark:text-white/40">
+                    {activities.length === 1 ? "1 registro" : `${activities.length} registros`}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-4 space-y-4">
+              <div className="space-y-3">
                 {activities.length === 0 ? (
-                  <p className="text-xs italic text-gray-500 dark:text-white/50">Nenhuma atividade registrada</p>
+                  <p className="text-sm italic text-gray-500 dark:text-white/60">Nenhuma atividade registrada</p>
                 ) : (
                   activities.map((activity) => (
-                    <div key={activity.id} className="rounded-2xl border border-gray-200 bg-gray-50 p-3 dark:border-white/10 dark:bg-black/30">
-                      <p className="text-xs text-gray-700 dark:text-white/70">{formatActivity(activity)}</p>
+                    <div
+                      key={activity.id}
+                      className={`rounded-2xl border p-3 transition ${
+                        activity.action === "commented"
+                          ? "border-blue-200 bg-blue-50 dark:border-blue-500/40 dark:bg-blue-500/10 shadow-sm"
+                          : "border-gray-200 bg-gray-50 dark:border-white/10 dark:bg-black/20"
+                      }`}
+                    >
+                      <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-gray-500 dark:text-white/50">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium text-gray-700 dark:text-white">
+                            {formatUserName(activity.user)}
+                          </span>
+                          {activity.action === "commented" && (
+                            <span className="inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-blue-700 dark:bg-blue-500/20 dark:text-blue-200">
+                              Comentário
+                            </span>
+                          )}
+                        </div>
+                        <span>{formatActivityDateTime(activity.createdAt)}</span>
+                      </div>
+                      <p
+                        className={`mt-2 text-sm ${
+                          activity.action === "commented"
+                            ? "text-gray-900 dark:text-white"
+                            : "text-gray-800 dark:text-white/80"
+                        }`}
+                      >
+                        {formatActivity(activity)}
+                      </p>
                     </div>
                   ))
                 )}
               </div>
-              <div className="mt-6 rounded-2xl border border-gray-200 bg-white dark:border-white/10 dark:bg-black/30">
+
+              <div className="rounded-2xl border border-gray-200 bg-white dark:border-white/10 dark:bg-black/20">
                 <textarea
                   value={comment}
                   onChange={(e) => setComment(e.target.value)}
-                  rows={4}
+                  rows={3}
                   placeholder="Adicionar comentário"
                   className="w-full resize-none rounded-2xl bg-transparent px-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:outline-none dark:text-white dark:placeholder-white/40"
                 />
-                <div className="flex items-center justify-between border-t border-gray-200 px-4 py-3 dark:border-white/10">
-                  <span className="text-xs text-gray-500 dark:text-white/40">Adicionar comentário</span>
+                {commentError && (
+                  <p className="px-4 text-xs text-red-500">{commentError}</p>
+                )}
+                <div className="flex items-center justify-end border-t border-gray-200 px-4 py-3 dark:border-white/10">
                   <button
                     type="button"
-                    className="rounded-full bg-blue-600 px-4 py-1.5 text-sm font-medium text-white disabled:bg-blue-600/40"
-                    disabled={!comment.trim()}
-                    onClick={() => setComment("")}
+                    onClick={handleSubmitComment}
+                    disabled={!comment.trim() || isSubmittingComment}
+                    className="inline-flex items-center gap-2 rounded-full bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-blue-600/40"
                   >
-                    Comentar
+                    {isSubmittingComment ? "Enviando..." : "Comentar"}
                   </button>
                 </div>
               </div>
-            </section>
-          </div>
+            </div>
+          </section>
         </div>
 
-        <div className="border-t border-white/5 bg-white dark:bg-black/30 p-4 sm:p-6">
+        <div className="border-t border-white/5 bg-white px-4 py-4 dark:bg-black/30 sm:px-6 sm:py-6">
           <div className="flex justify-end">
             <button
               onClick={handleUpdateClick}
