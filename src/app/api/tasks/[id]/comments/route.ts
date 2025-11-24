@@ -34,7 +34,7 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
     let taskId: number;
     try {
       taskId = await parseTaskId(context.params);
-    } catch (error) {
+    } catch {
       return NextResponse.json({ error: "Invalid task ID" }, { status: 400 });
     }
 
@@ -74,7 +74,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     let taskId: number;
     try {
       taskId = await parseTaskId(context.params);
-    } catch (error) {
+    } catch {
       return NextResponse.json({ error: "Invalid task ID" }, { status: 400 });
     }
 
