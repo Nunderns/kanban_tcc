@@ -106,7 +106,7 @@ function KanbanPage() {
     visibleProperties: DisplayOption[];
   }>({
     showSubtasks: true,
-    visibleProperties: ["ID", "Responsável", "Data de início", "Prazo", "Prioridade", "Estado"],
+    visibleProperties: ["ID", "Responsável", "Data de início", "Prazo", "Prioridade", "Estado", "Etiquetas"],
   });
   
   const [viewType, setViewType] = useState<"kanban" | "list" | "weekly" | "monthly" | "daily">("kanban");
