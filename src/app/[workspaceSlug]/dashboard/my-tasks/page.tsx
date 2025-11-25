@@ -42,6 +42,12 @@ export default KanbanPageContent;
 export type Priority = "NONE" | "LOW" | "MEDIUM" | "HIGH";
 export type Status = "BACKLOG" | "TODO" | "IN_PROGRESS" | "DONE";
 
+export type WorkItemLink = {
+  id: string;
+  url: string;
+  displayName: string;
+};
+
 export type WorkItem = {
   id: string;
   title: string;
@@ -57,6 +63,7 @@ export type WorkItem = {
   cycle?: string;
   labels?: string[];
   creator?: string;
+  links?: WorkItemLink[];
 };
 
 
@@ -106,7 +113,7 @@ function KanbanPage() {
     visibleProperties: DisplayOption[];
   }>({
     showSubtasks: true,
-    visibleProperties: ["ID", "Responsável", "Data de início", "Prazo", "Prioridade", "Estado"],
+    visibleProperties: ["ID", "Responsável", "Data de início", "Prazo", "Prioridade", "Estado", "Etiquetas"],
   });
   
   const [viewType, setViewType] = useState<"kanban" | "list" | "weekly" | "monthly" | "daily">("kanban");
