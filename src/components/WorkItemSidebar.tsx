@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import type { WorkItem } from "@/app/[workspaceSlug]/dashboard/my-tasks/page";
 import Link from "next/link";
 
 const formatUserName = (username: string): string => {
@@ -14,7 +15,6 @@ const formatUserName = (username: string): string => {
     .join(' ');
 };
 import { FormattedDateInput } from "./FormattedDateInput";
-import type { WorkItem } from "@/app/[workspaceSlug]/dashboard/my-tasks/page";
 import { parseLocalDate } from "@/lib/utils";
 import { 
   XMarkIcon, 
@@ -35,7 +35,10 @@ import {
   ArrowsRightLeftIcon,
   LinkIcon,
   PaperClipIcon,
-  ChatBubbleLeftRightIcon
+  ChatBubbleLeftRightIcon,
+  PlusIcon,
+  PencilIcon,
+  TrashIcon
 } from '@heroicons/react/24/outline';
 import { priorityColors } from "@/lib/constants";
 
@@ -77,6 +80,17 @@ export default function WorkItemSidebar({ item, onClose, onUpdate, workspaceSlug
   const [comment, setComment] = useState("");
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
   const [commentError, setCommentError] = useState<string | null>(null);
+  const [showLinkModal, setShowLinkModal] = useState(false);
+  const [linkForm, setLinkForm] = useState({
+    url: '',
+    displayName: ''
+  });
+  const [isSubmittingLink, setIsSubmittingLink] = useState(false);
+  const [editingLinkId, setEditingLinkId] = useState<string | null>(null);
+  const [editingLinkForm, setEditingLinkForm] = useState({
+    url: '',
+    displayName: ''
+  });
 
   const formatDate = (dateString: string): string => {
     if (!dateString) return 'não definida';
@@ -223,6 +237,182 @@ export default function WorkItemSidebar({ item, onClose, onUpdate, workspaceSlug
     { label: "Anexar", icon: PaperClipIcon }
   ];
   
+  const handleActionClick = (action: string) => {
+    if (action === "Adicionar link") {
+      setShowLinkModal(true);
+      return;
+    }
+
+    console.info(`Ação não implementada: ${action}`);
+  };
+
+  const closeLinkModal = () => {
+    setShowLinkModal(false);
+    setLinkForm({ url: '', displayName: '' });
+    setIsSubmittingLink(false);
+  };
+
+  const handleEditingLinkChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setEditingLinkForm(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleEditLink = (link: { id: string; url: string; displayName: string }) => {
+    setEditingLinkId(link.id);
+    setEditingLinkForm({
+      url: link.url,
+      displayName: link.displayName || ''
+    });
+  };
+
+  const handleUpdateLink = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingLinkId || !editingLinkForm.url.trim()) return;
+
+    const updatedLinks = (localItem.links || []).map(link => 
+      link.id === editingLinkId 
+        ? { 
+            ...link, 
+            url: editingLinkForm.url.trim(), 
+            displayName: editingLinkForm.displayName.trim() || editingLinkForm.url.trim() 
+          }
+        : link
+    );
+
+    const updatedItem = { ...localItem, links: updatedLinks };
+    setLocalItem(updatedItem);
+    onUpdate(updatedItem);
+    setEditingLinkId(null);
+    setEditingLinkForm({ url: '', displayName: '' });
+  };
+
+  const handleDeleteLink = (linkId: string) => {
+    const updatedLinks = (localItem.links || []).filter(link => link.id !== linkId);
+    const updatedItem = { ...localItem, links: updatedLinks };
+    setLocalItem(updatedItem);
+    onUpdate(updatedItem);
+    setEditingLinkId(null);
+    setEditingLinkForm({ url: '', displayName: '' });
+  };
+
+  const handleAddLink = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!linkForm.url.trim()) return;
+
+    setIsSubmittingLink(true);
+    try {
+      // TODO: Integrate with backend API when available
+      console.info("Adicionando link", {
+        url: linkForm.url,
+        displayName: linkForm.displayName || linkForm.url,
+        taskId: localItem.id,
+      });
+
+      // Create new link object
+      const newLink = {
+        id: `link-${Date.now()}`,
+        url: linkForm.url.trim(),
+        displayName: linkForm.displayName.trim() || linkForm.url.trim(),
+        createdAt: new Date().toISOString(),
+      };
+
+      // Update local state
+      const updatedLinks = [...(localItem.links || []), newLink];
+      const updatedItem = { ...localItem, links: updatedLinks };
+      setLocalItem(updatedItem);
+      
+      // Notify parent component
+      onUpdate(updatedItem);
+
+      closeLinkModal();
+    } catch (error) {
+      console.error("Erro ao adicionar link", error);
+    } finally {
+      setIsSubmittingLink(false);
+    }
+  };
+
+  const renderLinkModal = useCallback(() => (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 px-4">
+      <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl dark:bg-[#0d0f14]">
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Adicionar link</h3>
+          <button
+            type="button"
+            onClick={closeLinkModal}
+            className="text-gray-400 transition hover:text-gray-600 dark:text-white/60 dark:hover:text-white"
+            aria-label="Fechar modal"
+          >
+            <XMarkIcon className="h-5 w-5" />
+          </button>
+        </div>
+
+        <div className="mt-6 space-y-5">
+          <div>
+            <label htmlFor="link-url" className="text-sm font-medium text-gray-700 dark:text-white/80">
+              URL <span className="text-red-500">*</span>
+            </label>
+            <input
+              id="link-url"
+              type="url"
+              value={linkForm.url}
+              onChange={(e) => setLinkForm((prev) => ({ ...prev, url: e.target.value }))}
+              placeholder="https://exemplo.com/meu-link"
+              className="mt-1 w-full rounded-xl border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-white/10 dark:bg-white/5 dark:text-white"
+              required
+            />
+          </div>
+
+          <div>
+            <label htmlFor="link-title" className="text-sm font-medium text-gray-700 dark:text-white/80">
+              Título de exibição <span className="text-gray-400">(opcional)</span>
+            </label>
+            <input
+              id="link-title"
+              type="text"
+              value={linkForm.displayName}
+              onChange={(e) => setLinkForm((prev) => ({ ...prev, displayName: e.target.value }))}
+              placeholder="Como você gostaria de ver este link"
+              className="mt-1 w-full rounded-xl border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-white/10 dark:bg-white/5 dark:text-white"
+            />
+          </div>
+        </div>
+
+        <div className="mt-6 flex justify-end gap-3">
+          <button
+            type="button"
+            onClick={closeLinkModal}
+            className="rounded-full border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 dark:border-white/20 dark:text-white/80 dark:hover:bg-white/10"
+            disabled={isSubmittingLink}
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            onClick={handleAddLink}
+            disabled={!linkForm.url.trim() || isSubmittingLink}
+            className="inline-flex items-center gap-2 rounded-full bg-blue-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-blue-600/50"
+          >
+            {isSubmittingLink ? (
+              <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+            ) : (
+              <>
+                <LinkIcon className="h-4 w-4" />
+                Adicionar
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  ), [closeLinkModal, handleAddLink, isSubmittingLink, linkForm.displayName, linkForm.url]);
+
   useEffect(() => {
     if (JSON.stringify(prevItemRef.current) !== JSON.stringify(item)) {
       setLocalItem(prev => {
@@ -278,115 +468,115 @@ export default function WorkItemSidebar({ item, onClose, onUpdate, workspaceSlug
 
       if (field === 'assignedUserId' && typeof value === 'string') {
         const assignedUser = workspaceMembers.find(member => member.id === value);
-        if (assignedUser) {
-          updatedItem.assignedUserName = assignedUser.displayName || assignedUser.fullName || '';
-        } else {
-          updatedItem.assignedUserName = '';
-        }
+        updatedItem.assignedUserName = assignedUser
+          ? assignedUser.displayName || assignedUser.fullName || ''
+          : '';
       }
 
       return updatedItem;
     });
   };
 
-  const handleUpdateClick = async () => {
-    try {
-      const updateData = { ...localItem };
-      
-      if (updateData.assignees && typeof updateData.assignees === 'string') {
-        updateData.assignees = (updateData.assignees as string)
-          .split(',')
-          .map((s: string) => s.trim())
-          .filter(Boolean);
-      } else if (!updateData.assignees) {
-        updateData.assignees = [];
+const handleUpdateClick = async () => {
+  try {
+    const updateData = { ...localItem };
+    
+    if (updateData.assignees && typeof updateData.assignees === 'string') {
+      updateData.assignees = (updateData.assignees as string)
+        .split(',')
+        .map((s: string) => s.trim())
+        .filter(Boolean);
+    } else if (!updateData.assignees) {
+      updateData.assignees = [];
+    }
+    
+    const updateResponse = await fetch(`/api/tasks?id=${item.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(updateData)
+    });
+
+    if (!updateResponse.ok) {
+      let errorData;
+      try {
+        const responseText = await updateResponse.text();
+        errorData = responseText ? JSON.parse(responseText) : {};
+      } catch (e) {
+        console.error('Failed to parse error response:', e);
+        errorData = {};
       }
       
-      const updateResponse = await fetch(`/api/tasks?id=${item.id}`, {
-        method: "PATCH",
+      console.error('Update failed with status:', updateResponse.status, 'Details:', errorData);
+      
+      const errorMessage = [
+        `Failed to update task (Status: ${updateResponse.status})`,
+        errorData.error && `Error: ${errorData.error}`,
+        errorData.details?.message && `Details: ${errorData.details.message}`
+      ].filter(Boolean).join(' - ');
+      
+      throw new Error(errorMessage || 'Failed to update task');
+    }
+
+    const changedFields = Object.keys(localItem).filter(
+      key => JSON.stringify(localItem[key as keyof WorkItem]) !== JSON.stringify(item[key as keyof WorkItem])
+    );
+    await Promise.all(changedFields.map(async (field) => {
+      const oldValue = item[field as keyof WorkItem];
+      const newValue = localItem[field as keyof WorkItem];
+      
+      await fetch(`/api/tasks/${item.id}/activities`, {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updateData)
+        body: JSON.stringify({
+          user: "henri.okayama",
+          action: "updated field",
+          field,
+          oldValue: Array.isArray(oldValue) ? oldValue.join(", ") : (oldValue?.toString() || ""),
+          newValue: Array.isArray(newValue) ? newValue.join(", ") : (newValue?.toString() || "")
+        })
       });
+    }));
 
-      if (!updateResponse.ok) {
-        let errorData;
-        try {
-          const responseText = await updateResponse.text();
-          errorData = responseText ? JSON.parse(responseText) : {};
-        } catch (e) {
-          console.error('Failed to parse error response:', e);
-          errorData = {};
-        }
-        
-        console.error('Update failed with status:', updateResponse.status, 'Details:', errorData);
-        
-        const errorMessage = [
-          `Failed to update task (Status: ${updateResponse.status})`,
-          errorData.error && `Error: ${errorData.error}`,
-          errorData.details?.message && `Details: ${errorData.details.message}`
-        ].filter(Boolean).join(' - ');
-        
-        throw new Error(errorMessage || 'Failed to update task');
-      }
+    await fetchActivities();
+    onUpdate(localItem);
+    onClose();
+  } catch (error) {
+    console.error('Error updating task:', error);
+  }
+};
 
-      const changedFields = Object.keys(localItem).filter(
-        key => JSON.stringify(localItem[key as keyof WorkItem]) !== JSON.stringify(item[key as keyof WorkItem])
-      );
-      await Promise.all(changedFields.map(async (field) => {
-        const oldValue = item[field as keyof WorkItem];
-        const newValue = localItem[field as keyof WorkItem];
-        
-        await fetch(`/api/tasks/${item.id}/activities`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            user: "henri.okayama",
-            action: "updated field",
-            field,
-            oldValue: Array.isArray(oldValue) ? oldValue.join(", ") : (oldValue?.toString() || ""),
-            newValue: Array.isArray(newValue) ? newValue.join(", ") : (newValue?.toString() || "")
-          })
-        });
-      }));
+const getStatusIcon = (status: string) => {
+  switch (status) {
+    case 'DONE':
+      return <CheckCircleIcon className="h-5 w-5 text-green-500" />;
+    case 'IN_PROGRESS':
+      return <ArrowPathIcon className="h-5 w-5 text-blue-500 animate-spin" />;
+    default:
+      return <ListBulletIcon className="h-5 w-5 text-gray-400" />;
+  }
+};
 
-      await fetchActivities();
-      onUpdate(localItem);
-      onClose();
-    } catch (error) {
-      console.error('Error updating task:', error);
-    }
-  };
+const getPriorityIcon = (priority: string) => {
+  const color = priorityColors[priority as keyof typeof priorityColors] || 'gray';
+  return <FlagIcon className={`h-5 w-5 text-${color}-500`} />;
+};
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'DONE':
-        return <CheckCircleIcon className="h-5 w-5 text-green-500" />;
-      case 'IN_PROGRESS':
-        return <ArrowPathIcon className="h-5 w-5 text-blue-500 animate-spin" />;
-      default:
-        return <ListBulletIcon className="h-5 w-5 text-gray-400" />;
-    }
-  };
+const isFullScreen = variant === "fullscreen";
+const numericTaskId = String(localItem.id).replace(/^PRIME-/i, "");
+const friendlyTaskId = String(localItem.id).toUpperCase().startsWith("PRIME-")
+  ? String(localItem.id)
+  : `PRIME-${localItem.id}`;
+const resolvedFullScreenHref = fullScreenHref ?? (workspaceSlug ? `/${workspaceSlug}/work-items/${friendlyTaskId}` : undefined);
+const resolvedSidebarHref = sidebarHref ?? (workspaceSlug ? `/${workspaceSlug}/dashboard/my-tasks?task=${numericTaskId}` : undefined);
 
-  const getPriorityIcon = (priority: string) => {
-    const color = priorityColors[priority as keyof typeof priorityColors] || 'gray';
-    return <FlagIcon className={`h-5 w-5 text-${color}-500`} />;
-  };
+const containerClasses = isFullScreen
+  ? "min-h-screen w-full bg-gray-50 dark:bg-[#05060a] flex justify-center px-4 sm:px-6 py-6"
+  : "fixed inset-0 z-50 flex justify-center sm:justify-end bg-black/40 dark:bg-black/70 px-4 py-6";
+const panelClasses = `${isFullScreen ? "w-full max-w-5xl" : "h-full w-full max-w-full sm:w-[90%] md:w-2/3 lg:w-1/2"} bg-white dark:bg-[#0d0f14] text-gray-900 dark:text-gray-100 rounded-2xl shadow-2xl flex flex-col overflow-hidden max-h-screen`;
 
-  const isFullScreen = variant === "fullscreen";
-  const numericTaskId = String(localItem.id).replace(/^PRIME-/i, "");
-  const friendlyTaskId = String(localItem.id).toUpperCase().startsWith("PRIME-")
-    ? String(localItem.id)
-    : `PRIME-${localItem.id}`;
-  const resolvedFullScreenHref = fullScreenHref ?? (workspaceSlug ? `/${workspaceSlug}/work-items/${friendlyTaskId}` : undefined);
-  const resolvedSidebarHref = sidebarHref ?? (workspaceSlug ? `/${workspaceSlug}/dashboard/my-tasks?task=${numericTaskId}` : undefined);
-
-  const containerClasses = isFullScreen
-    ? "min-h-screen w-full bg-gray-50 dark:bg-[#05060a] flex justify-center px-4 sm:px-6 py-6"
-    : "fixed inset-0 z-50 flex justify-center sm:justify-end bg-black/40 dark:bg-black/70 px-4 py-6";
-  const panelClasses = `${isFullScreen ? "w-full max-w-5xl" : "h-full w-full max-w-full sm:w-[90%] md:w-2/3 lg:w-1/2"} bg-white dark:bg-[#0d0f14] text-gray-900 dark:text-gray-100 rounded-2xl shadow-2xl flex flex-col overflow-hidden max-h-screen`;
-
-  return (
+return (
+  <>
+    {showLinkModal && renderLinkModal()}
     <div className={containerClasses}>
       <aside className={panelClasses}>
         <div className="flex flex-col gap-4 border-b border-gray-200 dark:border-white/5 p-4 sm:p-6 sm:flex-row sm:items-start sm:justify-between">
@@ -404,7 +594,7 @@ export default function WorkItemSidebar({ item, onClose, onUpdate, workspaceSlug
               value={localItem.description || ""}
               onChange={(e) => handleChange("description", e.target.value)}
               placeholder="Adicione uma descrição muito bem feita"
-              className="w-full resize-none rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-100 dark:bg-white/[0.02] px-4 py-3 text-sm text-gray-700 dark:text-white/80 placeholder-gray-500 dark:placeholder-white/40 focus:border-gray-400 dark:focus:border-white/40 focus:outline-none"
+              className="w-full resize-none rounded-2xl border border-gray-200 bg-gray-100 dark:bg-white/[0.02] px-4 py-3 text-sm text-gray-700 dark:text-white/80 placeholder-gray-500 dark:placeholder-white/40 focus:border-gray-400 dark:focus:border-white/40 focus:outline-none"
               rows={3}
             />
             <p className="text-xs text-gray-500 dark:text-white/50 flex items-center gap-2">
@@ -466,6 +656,7 @@ export default function WorkItemSidebar({ item, onClose, onUpdate, workspaceSlug
             {actionButtons.map(({ label, icon: Icon }) => (
               <button
                 key={label}
+                onClick={() => handleActionClick(label)}
                 className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-gray-200 bg-gray-100 px-4 py-2 text-sm text-gray-700 transition hover:border-gray-300 hover:text-gray-900 dark:border-white/10 dark:bg-white/5 dark:text-white/80 dark:hover:border-white/40 dark:hover:text-white sm:w-auto"
               >
                 <Icon className="h-4 w-4" />
@@ -653,6 +844,150 @@ export default function WorkItemSidebar({ item, onClose, onUpdate, workspaceSlug
             </div>
           </section>
 
+          {/* Links Section - Only show if there are links or modal is open */}
+          {((localItem.links && localItem.links.length > 0) || showLinkModal) && (
+            <section className="rounded-2xl border border-gray-200 bg-white p-4 dark:border-white/5 dark:bg-white/[0.02] sm:p-6">
+              <div className="flex items-center justify-between border-b border-gray-200 pb-4 dark:border-white/5">
+                <div className="flex items-center gap-3">
+                  <div className="rounded-full bg-blue-50 p-2 dark:bg-white/10">
+                    <LinkIcon className="h-5 w-5 text-blue-600 dark:text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-semibold uppercase tracking-widest text-gray-700 dark:text-white/70">Links</h3>
+                    <p className="text-xs text-gray-500 dark:text-white/40">
+                      {localItem.links && localItem.links.length > 0 ? `${localItem.links.length} link${localItem.links.length !== 1 ? 's' : ''}` : 'Nenhum link adicionado'}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowLinkModal(true)}
+                  className="inline-flex items-center gap-1 rounded-full bg-blue-600 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-blue-500"
+                >
+                  <PlusIcon className="h-3.5 w-3.5" />
+                  Adicionar link
+                </button>
+              </div>
+
+              <div className="mt-4 space-y-2">
+                {localItem.links && localItem.links.length > 0 ? (
+                  <div className="space-y-2">
+                    {localItem.links?.map((link) => (
+                      <div 
+                        key={link.id} 
+                        className="group relative rounded-lg border border-gray-200 p-3 transition hover:border-blue-300 hover:bg-blue-50 dark:border-white/10 dark:hover:border-blue-500/40 dark:hover:bg-blue-500/10"
+                      >
+                        {editingLinkId === link.id ? (
+                          <div className="space-y-2">
+                            <form onSubmit={handleUpdateLink} className="space-y-2">
+                              <input
+                                type="url"
+                                name="url"
+                                value={editingLinkForm.url}
+                                onChange={handleEditingLinkChange}
+                                className="w-full rounded border border-gray-300 p-2 text-sm dark:bg-white/5 dark:text-white dark:border-white/10"
+                                placeholder="URL"
+                                required
+                              />
+                              <input
+                                type="text"
+                                name="displayName"
+                                value={editingLinkForm.displayName}
+                                onChange={handleEditingLinkChange}
+                                className="w-full rounded border border-gray-300 p-2 text-sm dark:bg-white/5 dark:text-white dark:border-white/10"
+                                placeholder="Título de exibição (opcional)"
+                              />
+                              <div className="flex justify-end gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setEditingLinkId(null);
+                                    setEditingLinkForm({ url: '', displayName: '' });
+                                  }}
+                                  className="rounded border border-gray-300 bg-white px-3 py-1 text-sm text-gray-700 hover:bg-gray-50 dark:border-white/10 dark:bg-white/10 dark:text-white/80 dark:hover:bg-white/20"
+                                >
+                                  Cancelar
+                                </button>
+                                <button
+                                  type="submit"
+                                  className="rounded bg-blue-600 px-3 py-1 text-sm font-medium text-white hover:bg-blue-700"
+                                >
+                                  Salvar
+                                </button>
+                              </div>
+                            </form>
+                          </div>
+                        ) : (
+                          <>
+                            <a
+                              href={link.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-2"
+                            >
+                              <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md bg-gray-100 group-hover:bg-blue-100 dark:bg-white/10 dark:group-hover:bg-blue-500/20">
+                                <LinkIcon className="h-4 w-4 text-gray-500 group-hover:text-blue-600 dark:text-white/60 dark:group-hover:text-white" />
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <p className="truncate text-sm font-medium text-gray-900 group-hover:text-blue-600 dark:text-white">
+                                  {link.displayName}
+                                </p>
+                                <p className="truncate text-xs text-gray-500 group-hover:text-blue-500 dark:text-white/50">
+                                  {new URL(link.url).hostname.replace('www.', '')}
+                                </p>
+                              </div>
+                            </a>
+                            <div className="absolute right-2 top-2 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                              <button
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  handleEditLink(link);
+                                }}
+                                className="rounded p-1 text-gray-500 hover:bg-gray-200 hover:text-gray-700 dark:text-white/60 dark:hover:bg-white/10 dark:hover:text-white"
+                                title="Editar link"
+                              >
+                                <PencilIcon className="h-3.5 w-3.5" />
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  handleDeleteLink(link.id);
+                                }}
+                                className="rounded p-1 text-gray-500 hover:bg-red-100 hover:text-red-600 dark:text-white/60 dark:hover:bg-red-500/20 dark:hover:text-red-400"
+                                title="Excluir link"
+                              >
+                                <TrashIcon className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="rounded-lg border-2 border-dashed border-gray-300 p-6 text-center dark:border-white/10">
+                    <LinkIcon className="mx-auto h-8 w-8 text-gray-400 dark:text-white/30" />
+                    <h4 className="mt-2 text-sm font-medium text-gray-700 dark:text-white/70">Nenhum link adicionado</h4>
+                    <p className="mt-1 text-xs text-gray-500 dark:text-white/50">
+                      Adicione links relacionados a esta tarefa
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setShowLinkModal(true)}
+                      className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-blue-600 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-blue-500"
+                    >
+                      <PlusIcon className="h-3.5 w-3.5" />
+                      Adicionar link
+                    </button>
+                  </div>
+                )}
+              </div>
+            </section>
+          )}
+
+          {/* Activity Section */}
           <section className="rounded-2xl border border-gray-200 bg-white p-4 dark:border-white/5 dark:bg-white/[0.02] sm:p-6">
             <div className="flex items-center justify-between border-b border-gray-200 pb-4 dark:border-white/5">
               <div className="flex items-center gap-3">
@@ -748,5 +1083,6 @@ export default function WorkItemSidebar({ item, onClose, onUpdate, workspaceSlug
         </div>
       </aside>
     </div>
+  </>
   );
 }
