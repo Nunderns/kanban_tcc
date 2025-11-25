@@ -86,8 +86,6 @@ function KanbanPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [showFilter, setShowFilter] = useState(false);
-  const [isCreating, setIsCreating] = useState(false);
-
   
   useEffect(() => {
     const taskId = searchParams?.get('task');
@@ -661,10 +659,7 @@ function KanbanPage() {
               {Object.entries(collapsedColumns).map(([statusKey, isCollapsed]) => {
               const typedStatus = statusKey as Status;
               return (
-                <div
-                  key={typedStatus}
-                  className="w-full sm:w-72 sm:flex-shrink-0"
-                >
+                <div key={typedStatus} className="w-full sm:w-72 sm:flex-shrink-0">
                   <div
                     className="flex justify-between items-center bg-gray-100 dark:bg-gray-800 p-2 rounded-t cursor-pointer"
                     onClick={() => toggleColumnCollapse(typedStatus)}
@@ -674,14 +669,9 @@ function KanbanPage() {
                       <div className="transition-transform duration-300 ease-in-out">
                         {isCollapsed ? <FaChevronRight /> : <FaChevronDown />}
                       </div>
-                      <h2 className="font-semibold">
-                        {typedStatus.replace("_", " ")}
-                      </h2>
+                      <h2 className="font-semibold">{typedStatus.replace("_", " ")}</h2>
                       <span className="text-gray-500 text-sm">
-                        {
-                          filteredTasks.filter((i) => i.status === typedStatus)
-                            .length
-                        }
+                        {filteredTasks.filter(i => i.status === typedStatus).length}
                       </span>
                     </div>
                     <button
@@ -694,84 +684,66 @@ function KanbanPage() {
                       <FaPlus />
                     </button>
                   </div>
-                  {/* Conteúdo da coluna com animação */}
-                  <ColumnDroppable status={typedStatus}>
-                    <div
-                      className={`bg-white dark:bg-gray-800 rounded-b overflow-hidden transition-all duration-300 ease-in-out ${
-                        isCollapsed
-                          ? "max-h-0 opacity-0"
-                          : "max-h-[999px] sm:max-h-[calc(100vh-220px)] opacity-100"
-                      }`}
-                    >
-                      <div className="p-2 space-y-2 sm:h-[calc(100vh-280px)] sm:overflow-y-auto">
-                        {(() => {
-                          const columnItems = filteredTasks.filter(
-                            (item) => item.status === typedStatus
-                          );
-                          return (
-                            <SortableContext
-                              items={columnItems.map((i) => String(i.id))}
-                              strategy={verticalListSortingStrategy}
-                            >
-                              {columnItems.map((item) => (
-                                <SortableCard key={item.id} item={item} />
-                              ))}
-                            </SortableContext>
-                          );
-                        })()}
-                        {creatingTaskInColumn === typedStatus ? (
-                          <div className="w-full mt-2">
-                            <input
-                              type="text"
-                              value={newTaskTitle}
-                              autoFocus
-                              placeholder="Título da tarefa"
-                              className="w-full px-3 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded shadow-sm focus:outline-none focus:ring focus:border-blue-500"
-                              onChange={(e) => setNewTaskTitle(e.target.value)}
-                              onKeyDown={async (e) => {
-                                if (e.key === "Enter") {
-                                  if (!newTaskTitle.trim()) return;
-                                  if (isCreating) return;
-                                  setIsCreating(true);
-                                  try {
-                                    setTargetStatus(typedStatus);
-                                    await handleCreateTask({
-                                      title: newTaskTitle.trim(),
-                                      description: "",
-                                    });
-                                    setNewTaskTitle("");
-                                    setCreatingTaskInColumn(null);
-                                  } finally {
-                                    setIsCreating(false);
-                                  }
-                                }
-                                if (e.key === "Escape") {
-                                  setCreatingTaskInColumn(null);
-                                  setNewTaskTitle("");
-                                }
-                              }}
-                            />
-                            <p className="text-xs text-gray-500 mt-1 px-1 italic">
-                              Pressione &apos;Enter&apos; para adicionar um
-                              outro item de tarefa
-                            </p>
-                          </div>
-                        ) : (
-                          <button
-                            className="w-full mt-2 px-3 py-2 border border-dashed border-gray-400 rounded text-sm text-gray-500 hover:bg-gray-50"
-                            onClick={() => {
-                              setTargetStatus(typedStatus);
-                              setCreatingTaskInColumn(typedStatus);
+                {/* Conteúdo da coluna com animação */}
+                <ColumnDroppable status={typedStatus}>
+                  <div
+                    className={`bg-white dark:bg-gray-800 rounded-b overflow-hidden transition-all duration-300 ease-in-out ${
+                      isCollapsed ? 'max-h-0 opacity-0' : 'max-h-[999px] sm:max-h-[calc(100vh-220px)] opacity-100'
+                    }`}
+                  >
+                    <div className="p-2 space-y-2 sm:h-[calc(100vh-280px)] sm:overflow-y-auto">
+                      {(() => {
+                        const columnItems = filteredTasks.filter(item => item.status === typedStatus);
+                        return (
+                          <SortableContext items={columnItems.map(i => String(i.id))} strategy={verticalListSortingStrategy}>
+                            {columnItems.map((item) => (
+                              <SortableCard key={item.id} item={item} />
+                            ))}
+                          </SortableContext>
+                        );
+                      })()}
+
+                      {creatingTaskInColumn === typedStatus ? (
+                        <div className="w-full mt-2">
+                          <input
+                            type="text"
+                            value={newTaskTitle}
+                            autoFocus
+                            placeholder="Título da tarefa"
+                            className="w-full px-3 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded shadow-sm focus:outline-none focus:ring focus:border-blue-500"
+                            onChange={(e) => setNewTaskTitle(e.target.value)}
+                            onKeyDown={async (e) => {
+                              if (e.key === "Enter" && newTaskTitle.trim()) {
+                                setTargetStatus(typedStatus);
+                                await handleCreateTask({ title: newTaskTitle.trim(), description: "" });
+                                setNewTaskTitle("");
+                                setCreatingTaskInColumn(null);
+                              } else if (e.key === "Escape") {
+                                setCreatingTaskInColumn(null);
+                                setNewTaskTitle("");
+                              }
                             }}
-                          >
-                            + Criar tarefa
-                          </button>
-                        )}
-                      </div>
+                          />
+                          <p className="text-xs text-gray-500 mt-1 px-1 italic">
+                            Pressione &apos;Enter&apos; para adicionar um outro item de tarefa
+                          </p>
+                        </div>
+                      ) : (
+                        <button
+                          className="w-full mt-2 px-3 py-2 border border-dashed border-gray-400 rounded text-sm text-gray-500 hover:bg-gray-50"
+                          onClick={() => {
+                            setTargetStatus(typedStatus);
+                            setCreatingTaskInColumn(typedStatus);
+                          }}
+                        >
+                          + Criar tarefa
+                        </button>
+                      )}
                     </div>
-                  </ColumnDroppable>
-                </div>
-              );
+                  </div>
+                </ColumnDroppable>
+              </div>
+            );
           })}
         </div>
         <DragOverlay dropAnimation={{ duration: 180 }}>
