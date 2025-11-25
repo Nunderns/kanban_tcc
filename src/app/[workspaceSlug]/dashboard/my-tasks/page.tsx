@@ -86,6 +86,8 @@ function KanbanPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [showFilter, setShowFilter] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+
   
   useEffect(() => {
     const taskId = searchParams?.get('task');
@@ -702,33 +704,40 @@ function KanbanPage() {
                           </SortableContext>
                         );
                       })()}
-
-                      {creatingTaskInColumn === typedStatus ? (
-                        <div className="w-full mt-2">
-                          <input
-                            type="text"
-                            value={newTaskTitle}
-                            autoFocus
-                            placeholder="Título da tarefa"
-                            className="w-full px-3 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded shadow-sm focus:outline-none focus:ring focus:border-blue-500"
-                            onChange={(e) => setNewTaskTitle(e.target.value)}
-                            onKeyDown={async (e) => {
-                              if (e.key === "Enter" && newTaskTitle.trim()) {
-                                setTargetStatus(typedStatus);
-                                await handleCreateTask({ title: newTaskTitle.trim(), description: "" });
-                                setNewTaskTitle("");
-                                setCreatingTaskInColumn(null);
-                              } else if (e.key === "Escape") {
-                                setCreatingTaskInColumn(null);
-                                setNewTaskTitle("");
-                              }
-                            }}
-                          />
-                          <p className="text-xs text-gray-500 mt-1 px-1 italic">
-                            Pressione &apos;Enter&apos; para adicionar um outro item de tarefa
-                          </p>
-                        </div>
-                      ) : (
+                        {creatingTaskInColumn === typedStatus ? (
+                          <div className="w-full mt-2">
+                            <input
+                              type="text"
+                              value={newTaskTitle}
+                              autoFocus
+                              placeholder="Título da tarefa"
+                              className="w-full px-3 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded shadow-sm focus:outline-none focus:ring focus:border-blue-500"
+                              onChange={(e) => setNewTaskTitle(e.target.value)}
+                              onKeyDown={async (e) => {
+                                if (e.key === "Enter") {
+                                  if (!newTaskTitle.trim()) return;
+                                  if (isCreating) return; 
+                                  setIsCreating(true);
+                                  setTargetStatus(typedStatus);
+                                  await handleCreateTask({
+                                    title: newTaskTitle.trim(),
+                                    description: "",
+                                  });
+                                  setNewTaskTitle("");
+                                  setCreatingTaskInColumn(null);
+                                  setIsCreating(false);
+                                }
+                                if (e.key === "Escape") {
+                                  setCreatingTaskInColumn(null);
+                                  setNewTaskTitle("");
+                                }
+                              }}
+                            />
+                            <p className="text-xs text-gray-500 mt-1 px-1 italic">
+                              Pressione &apos;Enter&apos; para adicionar um outro item de tarefa
+                            </p>
+                          </div>
+                        ) : (
                         <button
                           className="w-full mt-2 px-3 py-2 border border-dashed border-gray-400 rounded text-sm text-gray-500 hover:bg-gray-50"
                           onClick={() => {
