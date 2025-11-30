@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "react-hot-toast";
 import { Lock, Mail, User, ArrowRight } from "lucide-react";
 import Link from "next/link";
+import { FaTimes } from "react-icons/fa";
 
 function RegisterPageContent() {
   const router = useRouter();
@@ -15,6 +16,8 @@ function RegisterPageContent() {
   const [errors, setErrors] = useState({ name: "", email: "", password: "" });
   const [invitationId, setInvitationId] = useState<string | null>(null);
   const [workspace, setWorkspace] = useState<string | null>(null);
+  const [showTerms, setShowTerms] = useState(false);
+  const [showPrivacy, setShowPrivacy] = useState(false);
 
   useEffect(() => {
     const emailParam = searchParams.get("email");
@@ -238,6 +241,24 @@ function RegisterPageContent() {
           </div>
 
           <div>
+            <p className="mb-4 text-xs text-center text-gray-500 dark:text-gray-400">
+              Ao se registrar, você concorda com nossos{' '}
+              <button 
+                type="button" 
+                onClick={() => setShowTerms(true)} 
+                className="text-indigo-600 hover:underline dark:text-indigo-400 focus:outline-none"
+              >
+                Termos de Serviço
+              </button>{' '}
+              e{' '}
+              <button 
+                type="button" 
+                onClick={() => setShowPrivacy(true)} 
+                className="text-indigo-600 hover:underline dark:text-indigo-400 focus:outline-none"
+              >
+                Política de Privacidade
+              </button>
+            </p>
             <button
               type="submit"
               className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:bg-indigo-500 dark:hover:bg-indigo-600"
@@ -248,6 +269,294 @@ function RegisterPageContent() {
           </div>
         </form>
       </div>
+
+      {/* Terms of Service Modal */}
+      {showTerms && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70 flex items-center justify-center z-50 p-4 overflow-y-auto">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-4xl max-h-[90vh] flex flex-col shadow-xl">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                Termos de Serviço – TaskFlow
+              </h2>
+              <button
+                onClick={() => setShowTerms(false)}
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white transition-colors p-2 -mr-2"
+                aria-label="Fechar"
+              >
+                <FaTimes className="h-5 w-5" />
+              </button>
+            </div>
+            
+            <div className="text-sm text-gray-600 dark:text-gray-300 overflow-y-auto pr-2">
+              <p className="mb-4">
+                <strong>Última atualização:</strong> 29/11/2025
+              </p>
+              <p className="mb-6">
+                Bem-vindo ao TaskFlow ("Plataforma", "Serviço", "nós", "nosso"). Ao criar uma conta ou utilizar qualquer recurso da Plataforma, você ("usuário") concorda integralmente com estes Termos de Serviço. Caso não concorde, não continue o uso.
+              </p>
+              
+              <h3 className="text-lg font-semibold mt-6 mb-2">1. Aceitação dos Termos</h3>
+              <p className="mb-4">
+                Ao se cadastrar no TaskFlow, você concorda em cumprir estes Termos, nossa Política de Privacidade e todas as leis aplicáveis. Se você estiver usando o TaskFlow em nome de uma organização, você está concordando com estes Termos em nome dessa organização.
+              </p>
+              
+              <h3 className="text-lg font-semibold mt-6 mb-2">2. Conta do Usuário</h3>
+              <p className="mb-2">Para usar o TaskFlow, você deve:</p>
+              <ul className="list-disc pl-6 mb-4 space-y-1">
+                <li>Ter pelo menos 13 anos de idade</li>
+                <li>Fornecer informações precisas e completas durante o cadastro</li>
+                <li>Manter a segurança de sua senha</li>
+                <li>Ser responsável por todas as atividades que ocorram em sua conta</li>
+              </ul>
+              
+              <h3 className="text-lg font-semibold mt-6 mb-2">3. Uso Aceitável</h3>
+              <p className="mb-2">Você concorda em não:</p>
+              <ul className="list-disc pl-6 mb-4 space-y-1">
+                <li>Usar o serviço para qualquer finalidade ilegal ou não autorizada</li>
+                <li>Violar quaisquer leis em sua jurisdição</li>
+                <li>Enviar spam, vírus ou código malicioso</li>
+                <li>Interferir na segurança ou integridade do serviço</li>
+              </ul>
+              
+              <h3 className="text-lg font-semibold mt-6 mb-2">4. Conteúdo do Usuário</h3>
+              <p className="mb-4">
+                Você é responsável por todo o conteúdo que enviar, publicar ou exibir no TaskFlow. Ao fazer upload de conteúdo, você nos concede uma licença mundial, não exclusiva e livre de royalties para usar, reproduzir, modificar e exibir tal conteúdo.
+              </p>
+              
+              <h3 className="text-lg font-semibold mt-6 mb-2">5. Propriedade Intelectual</h3>
+              <p className="mb-4">
+                O TaskFlow e seu conteúdo original, recursos e funcionalidades são de nossa propriedade exclusiva. Nossas marcas registradas não podem ser usadas sem nossa permissão por escrito.
+              </p>
+              
+              <h3 className="text-lg font-semibold mt-6 mb-2">6. Limitação de Responsabilidade</h3>
+              <p className="mb-4">
+                O TaskFlow é fornecido "no estado em que se encontra". Não garantimos que o serviço será ininterrupto, oportuno, seguro ou livre de erros. Em nenhuma circunstância seremos responsáveis por quaisquer danos decorrentes do uso ou incapacidade de usar o serviço.
+              </p>
+              
+              <h3 className="text-lg font-semibold mt-6 mb-2">7. Modificações nos Termos</h3>
+              <p className="mb-4">
+                Reservamo-nos o direito de modificar estes Termos a qualquer momento. Notificaremos sobre alterações significativas. O uso contínuo do serviço após tais alterações constitui aceitação dos novos Termos.
+              </p>
+              
+              <h3 className="text-lg font-semibold mt-6 mb-2">8. Encerramento</h3>
+              <p className="mb-4">
+                Podemos encerrar ou suspender sua conta imediatamente, sem aviso prévio, por qualquer motivo, incluindo violação destes Termos.
+              </p>
+              
+              <h3 className="text-lg font-semibold mt-6 mb-2">9. Lei Aplicável</h3>
+              <p className="mb-6">
+                Estes Termos serão regidos pelas leis do Brasil, sem considerar seus conflitos de disposições legais.
+              </p>
+              
+              <h3 className="text-lg font-semibold mt-6 mb-2">10. Contato</h3>
+              <p className="mb-2">
+                Dúvidas sobre estes Termos? Entre em contato:
+              </p>
+              <p className="mb-6">
+                📧 suporte@taskflow.app
+              </p>
+            </div>
+            
+            <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 flex justify-end">
+              <button
+                onClick={() => setShowTerms(false)}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+              >
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Privacy Policy Modal */}
+      {showPrivacy && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70 flex items-center justify-center z-50 p-4 overflow-y-auto">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-4xl max-h-[90vh] flex flex-col shadow-xl">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                Política de Privacidade – TaskFlow
+              </h2>
+              <button
+                onClick={() => setShowPrivacy(false)}
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white transition-colors p-2 -mr-2"
+                aria-label="Fechar"
+              >
+                <FaTimes className="h-5 w-5" />
+              </button>
+            </div>
+            
+            <div className="text-sm text-gray-600 dark:text-gray-300 overflow-y-auto pr-2">
+              <p className="mb-4">
+                <strong>Última atualização:</strong> 29/11/2025
+              </p>
+              
+              <p className="mb-6">
+                No TaskFlow, sua privacidade é prioridade. Levamos a sério o compromisso de tratar seus dados com responsabilidade, segurança e transparência — seja você um usuário do TaskFlow Cloud ou de uma eventual versão self-hosted instalada na sua própria infraestrutura.
+              </p>
+              <p className="mb-6">
+                Esta Política de Privacidade explica como coletamos, usamos, armazenamos e protegemos suas informações, além dos seus direitos em relação aos seus dados.
+              </p>
+              <p className="mb-6">
+                Se você utiliza uma versão self-hosted, esta política se aplica apenas às interações com nosso site, canais de suporte e recursos opcionais de telemetria. Não temos acesso ao conteúdo da sua instância instalada localmente, a menos que você escolha compartilhar algo explicitamente.
+              </p>
+
+              <h3 className="text-lg font-semibold mt-6 mb-2">1. Escopo desta Política</h3>
+              <p className="mb-4">Esta política se aplica às seguintes interações:</p>
+              <ul className="list-disc pl-6 mb-4 space-y-1">
+                <li>Serviços em nuvem fornecidos pelo TaskFlow Cloud</li>
+                <li>Website taskflow.app, taskflow.com e páginas relacionadas</li>
+                <li>Comunicações feitas via suporte, vendas ou formulários de contato</li>
+                <li>Telemetria opcional utilizada em instalações self-hosted (somente com consentimento)</li>
+              </ul>
+              <p className="mb-6">
+                Esta política <strong>NÃO</strong> se aplica ao conteúdo salvo em sua instância self-hosted do TaskFlow.
+                Se você hospedar o TaskFlow por conta própria, seus dados permanecem exclusivamente no seu ambiente, exceto quando você nos envia algo voluntariamente para suporte.
+              </p>
+
+              <h3 className="text-lg font-semibold mt-6 mb-2">2. Informações que Coletamos</h3>
+              <p className="mb-4">A coleta pode variar conforme sua interação com o TaskFlow.</p>
+              
+              <p className="font-medium mb-2">Quando você usa o TaskFlow Cloud ou visita nosso site:</p>
+              <p className="mb-2">Coletamos:</p>
+              <ul className="list-disc pl-6 mb-4 space-y-1">
+                <li><strong>Dados de contato:</strong> nome, email, telefone (quando fornecidos)</li>
+                <li><strong>Dados de conta:</strong> foto de perfil, senha (criptografada), preferências, equipes</li>
+                <li><strong>Informações de pagamento e faturamento</strong> (processadas por parceiros como Stripe)</li>
+                <li><strong>Dados de uso:</strong> IP, navegador, sistema operacional, páginas acessadas, logs de atividade</li>
+                <li><strong>Comunicações:</strong> mensagens enviadas via suporte, feedbacks, solicitações</li>
+              </ul>
+
+              <p className="font-medium mb-2">Quando utiliza o TaskFlow Self-Hosted:</p>
+              <ul className="list-disc pl-6 mb-6 space-y-1">
+                <li>Nenhuma informação sobre suas tarefas, dados internos ou projetos é coletada por padrão.</li>
+                <li>Podemos coletar telemetria mínima (ex.: versão do software, ambiente básico) somente se você optar por isso.</li>
+              </ul>
+
+              <h3 className="text-lg font-semibold mt-6 mb-2">3. Como Utilizamos Seus Dados</h3>
+              <p className="mb-2">Usamos seus dados pessoais para:</p>
+              <ul className="list-disc pl-6 mb-4 space-y-1">
+                <li>Operar, fornecer e melhorar o TaskFlow</li>
+                <li>Autenticar e proteger sua conta</li>
+                <li>Processar pagamentos e cobranças</li>
+                <li>Responder a pedidos de suporte e dúvidas</li>
+                <li>Enviar atualizações, novidades e conteúdos educativos</li>
+                <li>Monitorar segurança, prevenir fraudes e cumprir obrigações legais</li>
+              </ul>
+              <p className="mb-6">
+                Tratamos seus dados somente quando houver:
+                <br />- Consentimento,
+                <br />- Necessidade contratual, ou
+                <br />- Interesse legítimo, quando permitido.
+                <br /><br />
+                Você pode cancelar comunicações promocionais a qualquer momento.
+              </p>
+
+              <h3 className="text-lg font-semibold mt-6 mb-2">4. Como Compartilhamos Informações</h3>
+              <p className="mb-4">Nunca vendemos seus dados pessoais.</p>
+              <p className="mb-2">Podemos compartilhá-los apenas com parceiros confiáveis que auxiliam na operação do serviço:</p>
+              <ul className="list-disc pl-6 mb-6 space-y-1">
+                <li>Processadores de pagamento (ex.: Stripe)</li>
+                <li>Provedores de hospedagem e infraestrutura</li>
+                <li>Ferramentas de suporte e atendimento</li>
+                <li>Serviços de e-mail e automação</li>
+                <li>Obrigações legais (quando exigido por lei)</li>
+              </ul>
+              <p className="mb-6">Todos os parceiros seguem contratos rigorosos de proteção de dados.</p>
+
+              <h3 className="text-lg font-semibold mt-6 mb-2">5. Sobre Usuários Self-Hosted</h3>
+              <p className="mb-2">Para usuários que instalam o TaskFlow por conta própria:</p>
+              <ul className="list-disc pl-6 mb-6 space-y-1">
+                <li>Não acessamos sua instância nem os dados nela armazenados.</li>
+                <li>Você é o controlador total das informações e responsável pela segurança do ambiente.</li>
+                <li>Somente coletaremos dados caso você:
+                  <ul className="list-disc pl-6 mt-1">
+                    <li>habilite telemetria voluntária, ou</li>
+                    <li>compartilhe logs ou dados para receber suporte técnico.</li>
+                  </ul>
+                </li>
+              </ul>
+
+              <h3 className="text-lg font-semibold mt-6 mb-2">6. Seus Direitos e Opções</h3>
+              <p className="mb-2">Dependendo da legislação da sua região (LGPD, GDPR, etc.), você pode:</p>
+              <ul className="list-disc pl-6 mb-4 space-y-1">
+                <li>Solicitar acesso aos seus dados</li>
+                <li>Solicitar retificação ou exclusão</li>
+                <li>Pedir a portabilidade das informações</li>
+                <li>Restringir ou contestar o processamento</li>
+                <li>Revogar consentimento</li>
+                <li>Cancelar comunicações não essenciais</li>
+                <li>Solicitar que deixemos de compartilhar seus dados com terceiros permitidos por lei</li>
+              </ul>
+              <p className="mb-6">
+                Para exercer esses direitos, entre em contato:
+                <br />📧 privacidade@taskflow.app
+              </p>
+
+              <h3 className="text-lg font-semibold mt-6 mb-2">7. Transferência Internacional de Dados</h3>
+              <p className="mb-4">
+                Se você estiver fora do Brasil ou dos EUA, seus dados podem ser processados em países onde operamos ou onde nossos parceiros possuem servidores.
+              </p>
+              <p className="mb-2">Empregamos salvaguardas como:</p>
+              <ul className="list-disc pl-6 mb-6 space-y-1">
+                <li>Cláusulas contratuais padrão</li>
+                <li>Criptografia</li>
+                <li>Processamento mínimo necessário</li>
+              </ul>
+
+              <h3 className="text-lg font-semibold mt-6 mb-2">8. Retenção de Dados</h3>
+              <p className="mb-2">Mantemos seus dados apenas pelo tempo necessário para:</p>
+              <ul className="list-disc pl-6 mb-6 space-y-1">
+                <li>fornecer e manter sua conta ativa</li>
+                <li>cumprir obrigações legais e fiscais</li>
+                <li>resolver disputas e prevenir abusos</li>
+                <li>melhorar nossos serviços e segurança</li>
+              </ul>
+              <p className="mb-6">Quando os dados não forem mais necessários, eles são excluídos ou anonimizados.</p>
+
+              <h3 className="text-lg font-semibold mt-6 mb-2">9. Segurança</h3>
+              <p className="mb-2">Utilizamos medidas de segurança padrão da indústria, como:</p>
+              <ul className="list-disc pl-6 mb-4 space-y-1">
+                <li>Criptografia em repouso e em trânsito</li>
+                <li>Controle de acesso</li>
+                <li>Monitoramento e auditoria</li>
+                <li>Proteção contra ataques comuns (DDoS, brute force etc.)</li>
+              </ul>
+              <p className="mb-6">
+                Nenhum sistema é totalmente infalível.
+                <br />Você também é responsável por proteger sua senha e dispositivos.
+              </p>
+
+              <h3 className="text-lg font-semibold mt-6 mb-2">10. Crianças e Menores de Idade</h3>
+              <p className="mb-6">
+                O TaskFlow não é destinado a menores de 13 anos.
+                <br />Se identificarmos dados coletados inadvertidamente de um menor, removeremos imediatamente.
+              </p>
+
+              <h3 className="text-lg font-semibold mt-6 mb-2">11. Alterações nesta Política</h3>
+              <p className="mb-6">
+                Podemos atualizar esta Política conforme nossa evolução.
+                <br />Mudanças significativas serão comunicadas por e-mail ou notificação no produto.
+                <br />A versão mais recente estará sempre disponível em: <span className="text-blue-600">/privacy</span>
+              </p>
+
+              <h3 className="text-lg font-semibold mt-6 mb-2">12. Contato</h3>
+              <p className="mb-2">Se tiver dúvidas, sugestões ou solicitações relacionadas à privacidade:</p>
+              <p className="mb-1">TaskFlow – Departamento de Privacidade</p>
+              <p className="mb-6">📧 privacidade@taskflow.app</p>
+            </div>
+            
+            <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 flex justify-end">
+              <button
+                onClick={() => setShowPrivacy(false)}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+              >
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
