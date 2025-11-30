@@ -405,7 +405,7 @@ export default function WorkItemSidebar({ item, onClose, onUpdate, workspaceSlug
       console.error('Error creating subtask:', error);
       throw error;
     }
-  }, [localItem, onUpdate, fetchActivities, workspaceSlug]);
+  }, [localItem, onUpdate, fetchActivities, workspaceSlug, onClose]);
 
   const handleAddExistingSubtasks = useCallback(async (taskIds: string[]) => {
     try {
@@ -548,7 +548,7 @@ export default function WorkItemSidebar({ item, onClose, onUpdate, workspaceSlug
             if (!res.ok) return { id, title: '' };
             const data = await res.json();
             return { id, title: data.title || '' };
-          } catch (e) {
+          } catch {
             return { id, title: '' };
           }
         }));
@@ -1028,7 +1028,7 @@ return (
               </div>
 
               <div className="mt-4 space-y-2">
-                {localItem.subtasks.map((subtaskId: any) => {
+                {localItem.subtasks.map((subtaskId: string | number | null | undefined) => {
                   const subtaskIdStr = subtaskId != null ? String(subtaskId) : "";
                   const numericSubtaskId = subtaskIdStr.replace(/^PRIME-/i, "");
 
