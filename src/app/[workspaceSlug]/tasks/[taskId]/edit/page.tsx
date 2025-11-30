@@ -6,6 +6,18 @@ import * as React from 'react';
 import { format } from 'date-fns';
 import { ArrowLeft } from "lucide-react";
 
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
 interface WorkspaceMember {
   id: number | string;
   name: string | null;
@@ -45,7 +57,7 @@ export default function EditTaskPage() {
           status: taskData.status,
           priority: taskData.priority,
           dueDate: taskData.dueDate ? format(new Date(taskData.dueDate), 'yyyy-MM-dd') : '',
-          assignedUserId: taskData.assignedUser?.id?.toString() || ''
+          assignedUserId: taskData.assignedUser?.id?.toString() || 'none'
         });
       } catch (error) {
         console.error('Error loading task data:', error);
@@ -57,7 +69,7 @@ export default function EditTaskPage() {
     fetchData();
   }, [workspaceSlug, taskId]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
@@ -67,7 +79,7 @@ export default function EditTaskPage() {
     try {
       const dataToSend = {
         ...formData,
-        assignedUserId: formData.assignedUserId ? parseInt(formData.assignedUserId) : null
+        assignedUserId: formData.assignedUserId !== 'none' ? parseInt(formData.assignedUserId) : null
       };
       
       const response = await fetch(`/api/tasks/${taskId}`, {
@@ -88,115 +100,130 @@ export default function EditTaskPage() {
     }
   };
 
-  if (loading) return <div className="min-h-screen flex justify-center items-center text-white">Carregando...</div>;
+  if (loading) return <div className="min-h-screen flex justify-center items-center text-foreground">Carregando...</div>;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 px-4 py-10">
-      <div className="max-w-3xl mx-auto bg-gray-800 border border-gray-700 rounded-2xl shadow-xl backdrop-blur-lg p-8">
-        <button
+    <div className="min-h-screen bg-background px-4 py-10">
+      <div className="max-w-3xl mx-auto bg-card text-card-foreground border rounded-2xl shadow-lg p-6">
+        <Button
+          variant="ghost"
           onClick={() => router.push(`/${workspaceSlug}/tasks/${taskId}`)}
-          className="flex items-center gap-2 text-blue-400 hover:text-blue-300 mb-6"
+          className="flex items-center gap-2 text-primary mb-6 pl-0"
         >
           <ArrowLeft size={18} />
           Voltar para a tarefa
-        </button>
+        </Button>
 
-        <h1 className="text-3xl font-semibold text-white mb-2">Editar Tarefa</h1>
-        <p className="text-gray-400 mb-6">Atualize os detalhes da tarefa</p>
+        <h1 className="text-3xl font-semibold text-foreground mb-2">Editar Tarefa</h1>
+        <p className="text-muted-foreground mb-6">Atualize os detalhes da tarefa</p>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label className="block text-sm text-gray-300 mb-1">Título</label>
-            <input
-              type="text"
+            <Label htmlFor="title" className="mb-2">Título</Label>
+            <Input
+              id="title"
               name="title"
               value={formData.title}
               onChange={handleChange}
               required
-              className="w-full rounded-lg bg-gray-700 text-white px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
+              className="w-full"
             />
           </div>
 
           <div>
-            <label className="block text-sm text-gray-300 mb-1">Descrição</label>
-            <textarea
+            <Label htmlFor="description" className="mb-2">Descrição</Label>
+            <Textarea
+              id="description"
               name="description"
               value={formData.description}
               onChange={handleChange}
               rows={4}
-              className="w-full rounded-lg bg-gray-700 text-white px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
+              className="w-full"
             />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm text-gray-300 mb-1">Status</label>
-              <select
+            <div className="space-y-2">
+              <Label htmlFor="status">Status</Label>
+              <Select
                 name="status"
                 value={formData.status}
-                onChange={handleChange}
-                className="w-full rounded-lg bg-gray-700 text-white px-4 py-2 focus:ring-2 focus:ring-blue-500"
+                onValueChange={(value) => setFormData(prev => ({ ...prev, status: value }))}
               >
-                <option value="BACKLOG">Backlog</option>
-                <option value="TODO">A Fazer</option>
-                <option value="IN_PROGRESS">Em Andamento</option>
-                <option value="DONE">Concluído</option>
-              </select>
+                <SelectTrigger id="status" className="w-full">
+                  <SelectValue placeholder="Selecione o status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="BACKLOG">Backlog</SelectItem>
+                  <SelectItem value="TODO">A Fazer</SelectItem>
+                  <SelectItem value="IN_PROGRESS">Em Andamento</SelectItem>
+                  <SelectItem value="DONE">Concluído</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
-            <div>
-              <label className="block text-sm text-gray-300 mb-1">Prioridade</label>
-              <select
+            <div className="space-y-2">
+              <Label htmlFor="priority">Prioridade</Label>
+              <Select
                 name="priority"
                 value={formData.priority}
-                onChange={handleChange}
-                className="w-full rounded-lg bg-gray-700 text-white px-4 py-2 focus:ring-2 focus:ring-blue-500"
+                onValueChange={(value) => setFormData(prev => ({ ...prev, priority: value }))}
               >
-                <option value="NONE">Nenhuma</option>
-                <option value="LOW">Baixa</option>
-                <option value="MEDIUM">Média</option>
-                <option value="HIGH">Alta</option>
-              </select>
+                <SelectTrigger id="priority" className="w-full">
+                  <SelectValue placeholder="Selecione a prioridade" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="NONE">Nenhuma</SelectItem>
+                  <SelectItem value="LOW">Baixa</SelectItem>
+                  <SelectItem value="MEDIUM">Média</SelectItem>
+                  <SelectItem value="HIGH">Alta</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
-            <div>
-              <label className="block text-sm text-gray-300 mb-1">Data de Vencimento</label>
-              <input
+            <div className="space-y-2">
+              <Label htmlFor="dueDate">Data de Vencimento</Label>
+              <Input
                 type="date"
+                id="dueDate"
                 name="dueDate"
                 value={formData.dueDate}
                 onChange={handleChange}
-                className="w-full rounded-lg bg-gray-700 text-white px-4 py-2 focus:ring-2 focus:ring-blue-500"
+                className="w-full"
               />
             </div>
 
-            <div>
-              <label className="block text-sm text-gray-300 mb-1">Responsável</label>
-              <select
+            <div className="space-y-2">
+              <Label htmlFor="assignedUserId">Responsável</Label>
+              <Select
                 name="assignedUserId"
                 value={formData.assignedUserId}
-                onChange={handleChange}
-                className="w-full rounded-lg bg-gray-700 text-white px-4 py-2 focus:ring-2 focus:ring-blue-500"
+                onValueChange={(value) => setFormData(prev => ({ ...prev, assignedUserId: value }))}
               >
-                <option value="">Nenhum responsável</option>
-                {workspaceMembers.map((member: WorkspaceMember) => (
-                  <option key={member.id} value={member.id}>
-                    {member.name || member.email}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger id="assignedUserId" className="w-full">
+                  <SelectValue placeholder="Selecione um responsável" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Nenhum responsável</SelectItem>
+                  {workspaceMembers.map((member: WorkspaceMember) => (
+                    <SelectItem key={member.id} value={member.id.toString()}>
+                      <div className="flex flex-col">
+                        <span>{member.name}</span>
+                        <span className="text-xs text-muted-foreground">{member.email}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
-          {error && <p className="text-red-500 text-sm">{error}</p>}
+          {error && <p className="text-destructive text-sm">{error}</p>}
 
           <div className="flex justify-end">
-            <button
-              type="submit"
-              className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium shadow-lg transition-all duration-300"
-            >
+            <Button type="submit">
               Salvar alterações
-            </button>
+            </Button>
           </div>
         </form>
       </div>
