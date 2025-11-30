@@ -75,16 +75,20 @@ model Task {
   projectId      Int?
   workspaceId    Int?
   assignedUserId Int?
+  parentTaskId   Int?
   assignedUser   User?          @relation("TaskAssignedUser", fields: [assignedUserId], references: [id])
   project        Project?       @relation(fields: [projectId], references: [id])
   user           User           @relation(fields: [userId], references: [id])
   workspace      Workspace?     @relation(fields: [workspaceId], references: [id])
+  parentTask     Task?          @relation("TaskSubtasks", fields: [parentTaskId], references: [id])
+  subtasks       Task[]         @relation("TaskSubtasks")
   activities     TaskActivity[]
 
   @@index([userId])
   @@index([projectId])
   @@index([workspaceId])
   @@index([assignedUserId])
+  @@index([parentTaskId])
 }
 
 model Notification {
