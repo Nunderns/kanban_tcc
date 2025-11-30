@@ -3,6 +3,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import type { WorkItem } from "@/app/[workspaceSlug]/dashboard/my-tasks/page";
 import Link from "next/link";
+import CreateTaskModal from './CreateTaskModal';
+import AddExistingTaskModal from './AddExistingTaskModal';
+import SubtaskActionModal from './SubtaskActionModal';
 
 const formatUserName = (username: string): string => {
   if (!username) return 'Usuário';
@@ -91,6 +94,9 @@ export default function WorkItemSidebar({ item, onClose, onUpdate, workspaceSlug
     url: '',
     displayName: ''
   });
+  const [showSubtaskActionModal, setShowSubtaskActionModal] = useState(false);
+  const [showCreateTaskModal, setShowCreateTaskModal] = useState(false);
+  const [showAddExistingTaskModal, setShowAddExistingTaskModal] = useState(false);
 
   const formatDate = (dateString: string): string => {
     if (!dateString) return 'não definida';
@@ -243,6 +249,11 @@ export default function WorkItemSidebar({ item, onClose, onUpdate, workspaceSlug
       return;
     }
 
+    if (action === "Adicionar sub-item de trabalho") {
+      setShowSubtaskActionModal(true);
+      return;
+    }
+
     console.info(`Ação não implementada: ${action}`);
   };
 
@@ -334,6 +345,77 @@ export default function WorkItemSidebar({ item, onClose, onUpdate, workspaceSlug
       setIsSubmittingLink(false);
     }
   }, [linkForm.url, linkForm.displayName, localItem, onUpdate, closeLinkModal]);
+
+  const handleCreateNewSubtask = useCallback(async (taskData: { title: string; description: string; assignedUserId?: string; projectId?: string }) => {
+    try {
+      // Get workspace info to get the workspace ID
+      const workspaceResponse = await fetch(`/api/workspaces/slug/${workspaceSlug}`);
+      if (!workspaceResponse.ok) {
+        throw new Error('Failed to get workspace info');
+      }
+      
+      const workspaceData = await workspaceResponse.json();
+      const workspaceId = workspaceData.id;
+      
+      // Create the new task
+      const response = await fetch('/api/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...taskData,
+          parentTaskId: localItem.id, // Link as subtask
+          workspaceId: workspaceId,
+          status: 'BACKLOG',
+          priority: 'NONE'
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create subtask');
+      }
+
+      const newTask = await response.json();
+      
+      // Update current task to include the new subtask
+      const updatedSubtasks = [...(localItem.subtasks || []), newTask.id];
+      const updatedItem = { ...localItem, subtasks: updatedSubtasks };
+      setLocalItem(updatedItem);
+      onUpdate(updatedItem);
+      
+      await fetchActivities();
+    } catch (error) {
+      console.error('Error creating subtask:', error);
+      throw error;
+    }
+  }, [localItem, onUpdate, fetchActivities, workspaceSlug]);
+
+  const handleAddExistingSubtasks = useCallback(async (taskIds: string[]) => {
+    try {
+      // Update each task to set the parent
+      await Promise.all(taskIds.map(async (taskId) => {
+        const response = await fetch(`/api/tasks?id=${taskId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ parentTaskId: localItem.id })
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed to update task ${taskId}`);
+        }
+      }));
+
+      // Update current task to include the new subtasks
+      const updatedSubtasks = [...(localItem.subtasks || []), ...taskIds];
+      const updatedItem = { ...localItem, subtasks: updatedSubtasks };
+      setLocalItem(updatedItem);
+      onUpdate(updatedItem);
+      
+      await fetchActivities();
+    } catch (error) {
+      console.error('Error adding existing subtasks:', error);
+      throw error;
+    }
+  }, [localItem, onUpdate, fetchActivities]);
 
   const renderLinkModal = useCallback(() => (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 px-4">
@@ -577,6 +659,37 @@ const panelClasses = `${isFullScreen ? "w-full max-w-5xl" : "h-full w-full max-w
 return (
   <>
     {showLinkModal && renderLinkModal()}
+    {showSubtaskActionModal && (
+      <SubtaskActionModal
+        isOpen={showSubtaskActionModal}
+        onClose={() => setShowSubtaskActionModal(false)}
+        onCreateNew={() => {
+          setShowSubtaskActionModal(false);
+          setShowCreateTaskModal(true);
+        }}
+        onAddExisting={() => {
+          setShowSubtaskActionModal(false);
+          setShowAddExistingTaskModal(true);
+        }}
+      />
+    )}
+    {showCreateTaskModal && workspaceSlug && (
+      <CreateTaskModal
+        isOpen={showCreateTaskModal}
+        onClose={() => setShowCreateTaskModal(false)}
+        onSubmit={handleCreateNewSubtask}
+        workspaceSlug={workspaceSlug}
+      />
+    )}
+    {showAddExistingTaskModal && (
+      <AddExistingTaskModal
+        isOpen={showAddExistingTaskModal}
+        onClose={() => setShowAddExistingTaskModal(false)}
+        onAddTasks={handleAddExistingSubtasks}
+        workspaceSlug={workspaceSlug}
+        currentTaskId={localItem.id}
+      />
+    )}
     <div className={containerClasses}>
       <aside className={panelClasses}>
         <div className="flex flex-col gap-4 border-b border-gray-200 dark:border-white/5 p-4 sm:p-6 sm:flex-row sm:items-start sm:justify-between">
@@ -843,6 +956,54 @@ return (
               </div>
             </div>
           </section>
+
+          {/* Subtasks Section */}
+          {(localItem.subtasks && localItem.subtasks.length > 0) && (
+            <section className="rounded-2xl border border-gray-200 bg-white p-4 dark:border-white/5 dark:bg-white/[0.02] sm:p-6">
+              <div className="flex items-center justify-between border-b border-gray-200 pb-4 dark:border-white/5">
+                <div className="flex items-center gap-3">
+                  <div className="rounded-full bg-purple-50 p-2 dark:bg-white/10">
+                    <SquaresPlusIcon className="h-5 w-5 text-purple-600 dark:text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-semibold uppercase tracking-widest text-gray-700 dark:text-white/70">Subtarefas</h3>
+                    <p className="text-xs text-gray-500 dark:text-white/40">
+                      {localItem.subtasks.length === 1 ? "1 subtarefa" : `${localItem.subtasks.length} subtarefas`}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-4 space-y-2">
+                {localItem.subtasks.map((subtaskId: string) => (
+                  <div
+                    key={subtaskId}
+                    className="flex items-center gap-3 rounded-lg border border-gray-200 bg-gray-50 p-3 dark:border-white/10 dark:bg-white/5"
+                  >
+                    <div className="flex-shrink-0">
+                      <div className="h-2 w-2 rounded-full bg-purple-500"></div>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                        {subtaskId}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-white/60">
+                        Subtarefa
+                      </p>
+                    </div>
+                    <div className="flex-shrink-0">
+                      <Link
+                        href={workspaceSlug ? `/${workspaceSlug}/dashboard/my-tasks?task=${subtaskId.replace(/^PRIME-/i, "")}` : "#"}
+                        className="text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+                      >
+                        Ver
+                      </Link>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
 
           {/* Links Section - Only show if there are links or modal is open */}
           {((localItem.links && localItem.links.length > 0) || showLinkModal) && (

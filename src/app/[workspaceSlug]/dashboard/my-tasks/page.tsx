@@ -64,6 +64,8 @@ export type WorkItem = {
   labels?: string[];
   creator?: string;
   links?: WorkItemLink[];
+  subtasks?: string[];
+  parentTaskId?: string;
 };
 
 
