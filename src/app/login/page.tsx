@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useSession, signIn } from "next-auth/react";
 import { toast } from "react-hot-toast";
-import { FaSpinner, FaGoogle, FaTimes, FaChevronLeft } from "react-icons/fa";
+import { FaSpinner, FaGoogle, FaTimes } from "react-icons/fa";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -573,8 +573,8 @@ export default function LoginPage() {
               </p>
               
               <p className="mb-6">
-                Bem-vindo ao TaskFlow ("Plataforma", "Serviço", "nós", "nosso").
-                Ao criar uma conta ou utilizar qualquer recurso da Plataforma, você ("usuário") concorda integralmente com estes Termos de Serviço. Caso não concorde, não continue o uso.
+                Bem-vindo ao TaskFlow (&quot;Plataforma&quot;, &quot;Serviço&quot;, &quot;nós&quot;, &quot;nosso&quot;).
+                Ao criar uma conta ou utilizar qualquer recurso da Plataforma, você (&quot;usuário&quot;) concorda integralmente com estes Termos de Serviço. Caso não concorde, não continue o uso.
               </p>
 
               <h3 className="text-lg font-semibold mt-6 mb-2">1. Sobre o TaskFlow</h3>
@@ -630,7 +630,7 @@ export default function LoginPage() {
               <p className="mb-6">Detectado uso indevido, sua conta pode ser suspensa imediatamente.</p>
 
               <h3 className="text-lg font-semibold mt-6 mb-2">6. Conteúdo do Usuário</h3>
-              <p className="mb-2">Você mantém seus direitos sobre qualquer conteúdo enviado ou criado no TaskFlow ("Conteúdo do Usuário").</p>
+              <p className="mb-2">Você mantém seus direitos sobre qualquer conteúdo enviado ou criado no TaskFlow (&quot;Conteúdo do Usuário&quot;).</p>
               <p className="mb-2">Ao usar o Serviço, você nos concede permissão limitada para:</p>
               <ul className="list-disc pl-6 mb-4 space-y-1">
                 <li>armazenar seus dados;</li>
@@ -642,9 +642,9 @@ export default function LoginPage() {
               <h3 className="text-lg font-semibold mt-6 mb-2">7. Privacidade</h3>
               <p className="mb-6">
                 O uso do TaskFlow também é regido pela nossa Política de Privacidade, disponível em:{' '}
-                <a href="/privacy" className="text-blue-600 hover:underline dark:text-blue-400">
+                <Link href="/privacy" className="text-blue-600 hover:underline dark:text-blue-400">
                   /privacy
-                </a>
+                </Link>
               </p>
 
               <h3 className="text-lg font-semibold mt-6 mb-2">8. Planos, Pagamentos e Assinaturas (se aplicável)</h3>
@@ -666,7 +666,7 @@ export default function LoginPage() {
               <p className="mb-6">Sempre que possível, notificaremos com antecedência.</p>
 
               <h3 className="text-lg font-semibold mt-6 mb-2">10. Disponibilidade e Garantias</h3>
-              <p className="mb-2">O TaskFlow é oferecido "como está".</p>
+              <p className="mb-2">O TaskFlow é oferecido &quot;como está&quot;.</p>
               <p className="mb-2">Não garantimos:</p>
               <ul className="list-disc pl-6 mb-4 space-y-1">
                 <li>disponibilidade contínua 24/7;</li>

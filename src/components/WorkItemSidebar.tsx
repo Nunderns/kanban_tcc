@@ -246,11 +246,11 @@ export default function WorkItemSidebar({ item, onClose, onUpdate, workspaceSlug
     console.info(`Ação não implementada: ${action}`);
   };
 
-  const closeLinkModal = () => {
+  const closeLinkModal = useCallback(() => {
     setShowLinkModal(false);
     setLinkForm({ url: '', displayName: '' });
     setIsSubmittingLink(false);
-  };
+  }, []);
 
   const handleEditingLinkChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -298,7 +298,7 @@ export default function WorkItemSidebar({ item, onClose, onUpdate, workspaceSlug
     setEditingLinkForm({ url: '', displayName: '' });
   };
 
-  const handleAddLink = (e: React.FormEvent) => {
+  const handleAddLink = useCallback((e: React.FormEvent) => {
     e.preventDefault();
     if (!linkForm.url.trim()) return;
 
@@ -333,7 +333,7 @@ export default function WorkItemSidebar({ item, onClose, onUpdate, workspaceSlug
     } finally {
       setIsSubmittingLink(false);
     }
-  };
+  }, [linkForm.url, linkForm.displayName, localItem, onUpdate, closeLinkModal]);
 
   const renderLinkModal = useCallback(() => (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 px-4">

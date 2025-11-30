@@ -292,7 +292,7 @@ function RegisterPageContent() {
                 <strong>Última atualização:</strong> 29/11/2025
               </p>
               <p className="mb-6">
-                Bem-vindo ao TaskFlow ("Plataforma", "Serviço", "nós", "nosso"). Ao criar uma conta ou utilizar qualquer recurso da Plataforma, você ("usuário") concorda integralmente com estes Termos de Serviço. Caso não concorde, não continue o uso.
+                Bem-vindo ao TaskFlow (&quot;Plataforma&quot;, &quot;Serviço&quot;, &quot;nós&quot;, &quot;nosso&quot;). Ao criar uma conta ou utilizar qualquer recurso da Plataforma, você (&quot;usuário&quot;) concorda integralmente com estes Termos de Serviço. Caso não concorde, não continue o uso.
               </p>
               
               <h3 className="text-lg font-semibold mt-6 mb-2">1. Aceitação dos Termos</h3>
@@ -330,7 +330,7 @@ function RegisterPageContent() {
               
               <h3 className="text-lg font-semibold mt-6 mb-2">6. Limitação de Responsabilidade</h3>
               <p className="mb-4">
-                O TaskFlow é fornecido "no estado em que se encontra". Não garantimos que o serviço será ininterrupto, oportuno, seguro ou livre de erros. Em nenhuma circunstância seremos responsáveis por quaisquer danos decorrentes do uso ou incapacidade de usar o serviço.
+                O TaskFlow é fornecido &quot;no estado em que se encontra&quot;. Não garantimos que o serviço será ininterrupto, oportuno, seguro ou livre de erros. Em nenhuma circunstância seremos responsáveis por quaisquer danos decorrentes do uso ou incapacidade de usar o serviço.
               </p>
               
               <h3 className="text-lg font-semibold mt-6 mb-2">7. Modificações nos Termos</h3>
