@@ -97,6 +97,7 @@ export default function WorkItemSidebar({ item, onClose, onUpdate, workspaceSlug
   const [showSubtaskActionModal, setShowSubtaskActionModal] = useState(false);
   const [showCreateTaskModal, setShowCreateTaskModal] = useState(false);
   const [showAddExistingTaskModal, setShowAddExistingTaskModal] = useState(false);
+  const [subtaskTitles, setSubtaskTitles] = useState<Record<string, string>>({});
 
   const formatDate = (dateString: string): string => {
     if (!dateString) return 'não definida';
@@ -363,7 +364,8 @@ export default function WorkItemSidebar({ item, onClose, onUpdate, workspaceSlug
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...taskData,
-          parentTaskId: localItem.id, // Link as subtask
+          // Ensure we send a numeric parentTaskId (API expects a number)
+          parentTaskId: String(localItem.id).replace(/^PRIME-/i, ""), // Link as subtask (numeric string)
           workspaceId: workspaceId,
           status: 'BACKLOG',
           priority: 'NONE'
@@ -377,17 +379,33 @@ export default function WorkItemSidebar({ item, onClose, onUpdate, workspaceSlug
       const newTask = await response.json();
       
       // Update current task to include the new subtask
-      const updatedSubtasks = [...(localItem.subtasks || []), newTask.id];
+      const newTaskIdStr = String(newTask.id);
+      const updatedSubtasks = [...(localItem.subtasks || []), newTaskIdStr];
       const updatedItem = { ...localItem, subtasks: updatedSubtasks };
       setLocalItem(updatedItem);
       onUpdate(updatedItem);
-      
+      // Notify other parts of the app to refresh their task lists
+      try {
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new Event('workspaceChanged'));
+        }
+      } catch (e) {
+        console.warn('Could not dispatch workspaceChanged event', e);
+      }
+
+      // Close the sidebar (parent's onClose will also clear the selected item)
+      try {
+        onClose();
+      } catch (e) {
+        console.warn('onClose not available or failed', e);
+      }
+
       await fetchActivities();
     } catch (error) {
       console.error('Error creating subtask:', error);
       throw error;
     }
-  }, [localItem, onUpdate, fetchActivities, workspaceSlug]);
+  }, [localItem, onUpdate, fetchActivities, workspaceSlug, onClose]);
 
   const handleAddExistingSubtasks = useCallback(async (taskIds: string[]) => {
     try {
@@ -512,6 +530,41 @@ export default function WorkItemSidebar({ item, onClose, onUpdate, workspaceSlug
     fetchActivities();
     fetchWorkspaceMembers();
   }, [fetchActivities, fetchWorkspaceMembers, item.id]);
+
+  // Fetch titles for subtasks (localItem.subtasks contains ids as strings)
+  useEffect(() => {
+    let mounted = true;
+    const fetchSubtasks = async () => {
+      try {
+        const ids = localItem.subtasks || [];
+        if (!ids.length) {
+          if (mounted) setSubtaskTitles({});
+          return;
+        }
+
+        const results = await Promise.all(ids.map(async (id) => {
+          try {
+            const res = await fetch(`/api/tasks/${id}`);
+            if (!res.ok) return { id, title: '' };
+            const data = await res.json();
+            return { id, title: data.title || '' };
+          } catch {
+            return { id, title: '' };
+          }
+        }));
+
+        if (!mounted) return;
+        const map: Record<string, string> = {};
+        results.forEach(r => { map[String(r.id)] = r.title || ''; });
+        setSubtaskTitles(map);
+      } catch (error) {
+        console.error('Error fetching subtask titles:', error);
+      }
+    };
+
+    fetchSubtasks();
+    return () => { mounted = false; };
+  }, [localItem.subtasks]);
 
   const handleSubmitComment = async () => {
     if (!comment.trim() || isSubmittingComment) return;
@@ -975,32 +1028,37 @@ return (
               </div>
 
               <div className="mt-4 space-y-2">
-                {localItem.subtasks.map((subtaskId: string) => (
-                  <div
-                    key={subtaskId}
-                    className="flex items-center gap-3 rounded-lg border border-gray-200 bg-gray-50 p-3 dark:border-white/10 dark:bg-white/5"
-                  >
-                    <div className="flex-shrink-0">
-                      <div className="h-2 w-2 rounded-full bg-purple-500"></div>
+                {localItem.subtasks.map((subtaskId: string | number | null | undefined) => {
+                  const subtaskIdStr = subtaskId != null ? String(subtaskId) : "";
+                  const numericSubtaskId = subtaskIdStr.replace(/^PRIME-/i, "");
+
+                  return (
+                    <div
+                      key={subtaskIdStr}
+                      className="flex items-center gap-3 rounded-lg border border-gray-200 bg-gray-50 p-3 dark:border-white/10 dark:bg-white/5"
+                    >
+                      <div className="flex-shrink-0">
+                        <div className="h-2 w-2 rounded-full bg-purple-500"></div>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                          {subtaskTitles[subtaskIdStr] || subtaskIdStr}
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-white/60">
+                          Subtarefa
+                        </p>
+                      </div>
+                      <div className="flex-shrink-0">
+                        <Link
+                          href={workspaceSlug ? `/${workspaceSlug}/dashboard/my-tasks?task=${encodeURIComponent(numericSubtaskId)}` : "#"}
+                          className="text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+                        >
+                          Ver
+                        </Link>
+                      </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                        {subtaskId}
-                      </p>
-                      <p className="text-xs text-gray-500 dark:text-white/60">
-                        Subtarefa
-                      </p>
-                    </div>
-                    <div className="flex-shrink-0">
-                      <Link
-                        href={workspaceSlug ? `/${workspaceSlug}/dashboard/my-tasks?task=${subtaskId.replace(/^PRIME-/i, "")}` : "#"}
-                        className="text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
-                      >
-                        Ver
-                      </Link>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </section>
           )}
