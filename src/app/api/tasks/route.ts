@@ -271,7 +271,18 @@ export async function PATCH(req: NextRequest) {
 
     updatableFields.forEach((field: UpdatableField) => {
       if (field in safeBody && safeBody[field] !== undefined) {
-        (updateData as Record<string, unknown>)[field] = safeBody[field];
+        if (field === 'parentTaskId') {
+          const raw = safeBody[field];
+          if (raw === null || raw === '' || raw === undefined) {
+            updateData.parentTaskId = null;
+          } else {
+            const asString = String(raw);
+            const numeric = Number(asString.replace(/^PRIME-/i, ''));
+            updateData.parentTaskId = Number.isNaN(numeric) ? null : numeric;
+          }
+        } else {
+          (updateData as Record<string, unknown>)[field] = safeBody[field];
+        }
       }
     });
     updateData.updatedAt = new Date();
