@@ -1,8 +1,20 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { signOut } from "next-auth/react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useSession } from "next-auth/react";
 import { useParams } from "next/navigation";
@@ -26,9 +38,12 @@ export default function SettingsPage() {
   const [activeSection, setActiveSection] = useState<Section>('profile');
   const [mounted, setMounted] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const { theme, setTheme } = useTheme();
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const router = useRouter();
   const { data: session } = useSession();
   const params = useParams();
+  const { theme, setTheme } = useTheme();
   const name = session?.user?.name || "Usuário";
   const email = session?.user?.email || "";
 
@@ -620,6 +635,28 @@ export default function SettingsPage() {
     return value.slice(0, 2).toUpperCase();
   };
 
+  const handleDeleteAccount = async () => {
+    try {
+      setIsDeleting(true);
+      const response = await fetch('/api/account/delete', {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        // Sign out and redirect to login
+        await signOut({ redirect: false });
+        router.push('/login');
+      } else {
+        const error = await response.json();
+        throw new Error(error.message || 'Erro ao excluir a conta');
+      }
+    } catch (error) {
+      console.error('Error deleting account:', error);
+      alert('Ocorreu um erro ao excluir sua conta. Por favor, tente novamente.');
+      setIsDeleting(false);
+    }
+  };
+
   const renderSection = () => {
     switch (activeSection) {
       case 'profile':
@@ -667,10 +704,38 @@ export default function SettingsPage() {
                 </div>
                 <div className="mt-6 flex gap-3">
                   <Button>Salvar alterações</Button>
-                  <Button variant="outline" className="text-red-600 hover:text-red-700">
-                    Desativar conta
+                  <Button 
+                    variant="outline" 
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
+                    onClick={() => setIsDeleteDialogOpen(true)}
+                  >
+                    Excluir conta
                   </Button>
                 </div>
+                
+                <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Tem certeza absoluta?</AlertDialogTitle>
+                      <AlertDialogDescription className="space-y-2">
+                        <p>Esta ação não pode ser desfeita. Isso excluirá permanentemente sua conta e removerá todos os dados associados.</p>
+                        <p className="font-medium text-red-600 dark:text-red-400">
+                          Todos os seus dados, incluindo projetos, tarefas e configurações, serão permanentemente removidos.
+                        </p>
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
+                      <AlertDialogAction 
+                        onClick={handleDeleteAccount}
+                        disabled={isDeleting}
+                        className="bg-red-600 hover:bg-red-700 focus:ring-red-500"
+                      >
+                        {isDeleting ? 'Excluindo...' : 'Sim, excluir minha conta'}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </CardContent>
             </Card>
           </div>
@@ -694,7 +759,7 @@ export default function SettingsPage() {
                   </div>
                   
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                    {mounted && ([
+                    {mounted && theme && ([
                       {
         				    value: 'light',
         				    label: 'Claro',
