@@ -9,9 +9,11 @@ datasource db {
 
 model User {
   id                   Int               @id @default(autoincrement())
-  name                 String
+  name                 String?
   email                String            @unique
-  password             String
+  emailVerified        DateTime?
+  image                String?
+  password             String?
   resetToken           String?           @unique
   resetTokenExpiry     DateTime?
   googleId             String?           @unique
@@ -26,6 +28,44 @@ model User {
   tasks                Task[]
   workspaces           Workspace[]
   workspaceMembers     WorkspaceMember[]
+  accounts             Account[]
+  
+  @@map("users")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            Int
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       Int
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
 }
 
 model Project {
@@ -97,14 +137,6 @@ model Notification {
   userId    Int
   createdAt DateTime @default(now())
   user      User     @relation(fields: [userId], references: [id])
-}
-
-model Session {
-  id        Int      @id @default(autoincrement())
-  token     String   @unique
-  userId    Int
-  createdAt DateTime @default(now())
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Workspace {
