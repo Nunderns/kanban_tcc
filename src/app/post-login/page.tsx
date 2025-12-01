@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/auth-options";
 
 export default async function PostLogin() {
   const session = await auth();
@@ -11,19 +11,30 @@ export default async function PostLogin() {
 
   const user = await prisma.user.findUnique({
     where: { email: session.user.email },
-    include: {
-      workspaceMembers: {
-        include: { workspace: true },
-        orderBy: { joinedAt: "asc" },
-        take: 1,
-      },
-    },
   });
 
-  const first = user?.workspaceMembers?.[0]?.workspace;
+  if (!user) {
+    redirect("/login");
+  }
 
-  if (first?.slug) {
-    redirect(`/${first.slug}`);
+  const ownedWorkspaces = await prisma.workspace.findMany({
+    where: { userId: user.id },
+    take: 1,
+  });
+
+  const memberWorkspaces = await prisma.workspace.findMany({
+    where: {
+      members: {
+        some: { userId: user.id }
+      }
+    },
+    take: 1,
+  });
+
+  const firstWorkspace = ownedWorkspaces[0] || memberWorkspaces[0];
+
+  if (firstWorkspace?.slug) {
+    redirect(`/${firstWorkspace.slug}`);
   }
   redirect("/create-workspace");
 }

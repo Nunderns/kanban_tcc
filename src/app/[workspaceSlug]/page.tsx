@@ -1,5 +1,5 @@
 import { getServerSession } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
+import { prisma } from '@/lib/auth-options';
 import { format, formatDistanceToNow } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
 import { ptBR } from 'date-fns/locale';
@@ -61,20 +61,37 @@ interface WorkspacePageProps {
   params: Promise<{ workspaceSlug: string }>;
 }
 
+function normalizeSlug(slug: string): string {
+  return slug
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/ç/g, 'c')
+    .replace(/Ç/g, 'C')
+    .toLowerCase();
+}
+
 export default async function WorkspacePage({ params }: WorkspacePageProps) {
   const { workspaceSlug } = await params;
+  const decodedSlug = decodeURIComponent(workspaceSlug);
+  const normalizedSlug = normalizeSlug(decodedSlug);
 
   const session = await getServerSession();
   const now = toZonedTime(new Date(), BRAZIL_TIMEZONE);
 
   if (!session) return redirect('/login');
 
-  const workspace = await prisma.workspace.findUnique({
-    where: { slug: workspaceSlug },
+  const workspace = await prisma.workspace.findFirst({
+    where: { 
+      slug: normalizedSlug,
+      OR: [
+        { userId: parseInt(session.user.id) },
+        { members: { some: { userId: parseInt(session.user.id) } } }
+      ]
+    },
     include: { user: true },
   });
 
-  if (!workspace) return redirect('/dashboard');
+  if (!workspace) return redirect('/create-workspace');
 
   const recentTasks = await prisma.task.findMany({
     where: { workspaceId: workspace.id },
@@ -93,7 +110,6 @@ export default async function WorkspacePage({ params }: WorkspacePageProps) {
 
   return (
   <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-    {/* Header */}
     <header className="flex flex-col items-center sm:items-start mb-10 text-center sm:text-left">
       <h1 className="text-2xl sm:text-3xl font-semibold text-gray-900 dark:text-white">
         {greeting}, {session.user?.name?.split(' ')[0] || 'Usuário'}
@@ -102,8 +118,6 @@ export default async function WorkspacePage({ params }: WorkspacePageProps) {
         {formattedDate} {now.getHours() >= 18 ? '🌙' : now.getHours() >= 12 ? '☀️' : '🌅'}
       </p>
     </header>
-
-    {/* Action Cards */}
     <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
       <ActionCard
         title="Criar um projeto"
@@ -124,8 +138,6 @@ export default async function WorkspacePage({ params }: WorkspacePageProps) {
         href={`/${workspaceSlug}/settings`}
       />
     </section>
-
-    {/* Tarefas Recentes */}
     <section>
       <h3 className="text-gray-500 dark:text-gray-400 uppercase tracking-wider text-xs mb-3 font-medium">
         Tarefas Recentes
