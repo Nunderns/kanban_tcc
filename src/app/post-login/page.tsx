@@ -2,6 +2,15 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/auth-options";
 
+function normalizeSlug(slug: string): string {
+  return slug
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/ç/g, 'c')
+    .replace(/Ç/g, 'C')
+    .toLowerCase();
+}
+
 export default async function PostLogin() {
   const session = await auth();
 
@@ -34,7 +43,8 @@ export default async function PostLogin() {
   const firstWorkspace = ownedWorkspaces[0] || memberWorkspaces[0];
 
   if (firstWorkspace?.slug) {
-    redirect(`/${firstWorkspace.slug}`);
+    const normalizedSlug = normalizeSlug(firstWorkspace.slug);
+    redirect(`/${normalizedSlug}`);
   }
   redirect("/create-workspace");
 }

@@ -1,11 +1,11 @@
 "use client";
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, useCallback, Suspense } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "react-hot-toast";
 import { Lock, Mail, User, ArrowRight } from "lucide-react";
 import Link from "next/link";
-import { FaTimes } from "react-icons/fa";
+import { FaTimes, FaGoogle } from "react-icons/fa";
 
 function RegisterPageContent() {
   const router = useRouter();
@@ -18,6 +18,58 @@ function RegisterPageContent() {
   const [workspace, setWorkspace] = useState<string | null>(null);
   const [showTerms, setShowTerms] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
+  const [processedCallback, setProcessedCallback] = useState(false);
+
+  const handleGoogleSuccess = useCallback(async (user: { email: string; name?: string; image?: string }) => {
+    try {
+      toast.success("Conta Google conectada com sucesso!");
+      if (invitationId) {
+        try {
+          const acceptRes = await fetch("/api/invitations/accept", {
+            method: "POST",
+            body: JSON.stringify({ 
+              token: invitationId, 
+              email: user.email, 
+              slug: workspace 
+            }),
+            headers: { "Content-Type": "application/json" },
+          });
+          
+          const acceptData = await acceptRes.json();
+          if (acceptRes.ok) {
+            toast.success("Você foi adicionado ao workspace com sucesso!");
+            if (acceptData?.redirectUrl) {
+              router.push(acceptData.redirectUrl);
+              return;
+            }
+          } else {
+            console.error("Failed to accept invitation:", acceptData);
+          }
+        } catch (error) {
+          console.error("Error accepting invitation:", error);
+        }
+      }
+      router.push("/post-login");
+    } catch (error) {
+      console.error("Error handling Google success:", error);
+      toast.error("Erro ao processar login com Google");
+    }
+  }, [invitationId, workspace, router]);
+
+  useEffect(() => {
+    const checkExistingAuth = async () => {
+      try {
+        const res = await fetch("/api/auth/session");
+        const session = await res.json();
+        if (session?.user && !processedCallback) {
+          router.push("/post-login");
+        }
+      } catch {
+      }
+    };
+
+    checkExistingAuth();
+  }, [router, processedCallback]);
 
   useEffect(() => {
     const emailParam = searchParams.get("email");
@@ -33,7 +85,24 @@ function RegisterPageContent() {
     if (workspaceParam) {
       setWorkspace(workspaceParam);
     }
-  }, [searchParams]);
+    if (!processedCallback) {
+      const checkGoogleCallback = async () => {
+        try {
+          const res = await fetch("/api/auth/session");
+          const session = await res.json();
+          
+          if (session?.user) {
+            setProcessedCallback(true);
+            handleGoogleSuccess(session.user);
+          }
+        } catch (error) {
+          console.error("Error checking session:", error);
+        }
+      };
+
+      checkGoogleCallback();
+    }
+  }, [searchParams, processedCallback, handleGoogleSuccess]);
 
   const validateFields = () => {
     const newErrors: { name: string; email: string; password: string } = {
@@ -124,6 +193,26 @@ function RegisterPageContent() {
     }
   };
 
+  const handleGoogleRegister = async () => {
+    try {
+      let callbackUrl = "/register";
+      if (invitationId || workspace) {
+        const params = new URLSearchParams();
+        if (invitationId) params.set("invitation_id", invitationId);
+        if (workspace) params.set("workspace", workspace);
+        callbackUrl += `?${params.toString()}`;
+      }
+
+      await signIn("google", { 
+        callbackUrl,
+        redirect: false 
+      });
+    } catch (error) {
+      toast.error("Erro ao fazer login com Google");
+      console.error("Google login error:", error);
+    }
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
@@ -163,6 +252,27 @@ function RegisterPageContent() {
         )}
         
         <form className="mt-8 space-y-6" onSubmit={handleRegister}>
+          <div className="space-y-3">
+            <button
+              type="button"
+              onClick={handleGoogleRegister}
+              className="w-full flex items-center justify-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-gray-900 transition-colors"
+            >
+              <FaGoogle className="w-5 h-5 mr-2" />
+              Continuar com Google
+            </button>
+            
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-300 dark:border-gray-600" />
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-gray-50 dark:bg-gray-900 text-gray-500 dark:text-gray-400">
+                  Ou continue com email
+                </span>
+              </div>
+            </div>
+          </div>
           <div className="space-y-4">
             <div>
               <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300">

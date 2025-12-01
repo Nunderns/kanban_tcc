@@ -5,6 +5,15 @@ import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { useSession } from "next-auth/react";
 
+function normalizeSlug(slug: string): string {
+  return slug
+    .normalize('NFD') // Remove acentos
+    .replace(/[\u0300-\u036f]/g, '') // Remove diacríticos
+    .replace(/ç/g, 'c') // Substitui ç por c
+    .replace(/Ç/g, 'C') // Substitui Ç por C
+    .toLowerCase();
+}
+
 export default function CriarEspacoTrabalho() {
   const [nomeEspaco, setNomeEspaco] = useState("");
   const [urlEspaco, setUrlEspaco] = useState("");
@@ -78,7 +87,8 @@ export default function CriarEspacoTrabalho() {
       );
 
       toast.success("Espaço criado com sucesso!");
-      router.push(`/${data.slug}/dashboard`);
+      const normalizedSlug = normalizeSlug(data.slug);
+      router.push(`/${normalizedSlug}`);
     } catch (error) {
       console.error(error);
       toast.error("Erro ao criar espaço de trabalho.");
