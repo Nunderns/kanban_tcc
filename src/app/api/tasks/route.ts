@@ -14,6 +14,7 @@ interface TaskWithIncludes {
   dueDate: Date | null;
   assignees: string[] | null;
   assignedUserId: number | null;
+  parentTaskId: number | null;
   assignedUser: {
     id: number;
     name: string | null;
@@ -27,6 +28,11 @@ interface TaskWithIncludes {
     name: string | null;
     email: string | null;
   };
+  subtasks: {
+    id: number;
+    title: string;
+    status: string;
+  }[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -121,6 +127,13 @@ export async function GET(req: NextRequest) {
             name: true,
             email: true
           }
+        },
+        subtasks: {
+          select: {
+            id: true,
+            title: true,
+            status: true
+          }
         }
       },
       orderBy: {
@@ -144,6 +157,8 @@ export async function GET(req: NextRequest) {
         module: task.module,
         cycle: task.cycle,
         labels: task.labels,
+        parentTaskId: task.parentTaskId?.toString(),
+        subtasks: task.subtasks?.map((subtask: { id: number; title: string; status: string }) => subtask.id.toString()) || [],
         creator: task.user?.name || "Desconhecido",
         createdAt: task.createdAt.toISOString(),
         updatedAt: task.updatedAt.toISOString()
@@ -179,6 +194,7 @@ export async function POST(req: NextRequest) {
         projectId: body.projectId ? Number(body.projectId) : null,
         workspaceId: body.workspaceId ? Number(body.workspaceId) : null,
         assignedUserId: body.assignedUserId ? Number(body.assignedUserId) : null,
+        parentTaskId: body.parentTaskId ? Number(body.parentTaskId) : null,
         assignees: body.assignees ?? [],
         labels: body.labels ?? [],
         startDate: body.startDate ? parseLocalDate(body.startDate) : null,
@@ -233,7 +249,7 @@ export async function PATCH(req: NextRequest) {
     }
     const updatableFields = [
       'title', 'description', 'status', 'priority',
-      'module', 'cycle', 'assignees', 'labels'
+      'module', 'cycle', 'assignees', 'labels', 'parentTaskId'
     ] as const;
     type UpdatableField = (typeof updatableFields)[number];
     if (body.startDate) {
@@ -255,7 +271,18 @@ export async function PATCH(req: NextRequest) {
 
     updatableFields.forEach((field: UpdatableField) => {
       if (field in safeBody && safeBody[field] !== undefined) {
-        (updateData as Record<string, unknown>)[field] = safeBody[field];
+        if (field === 'parentTaskId') {
+          const raw = safeBody[field];
+          if (raw === null || raw === '' || raw === undefined) {
+            updateData.parentTaskId = null;
+          } else {
+            const asString = String(raw);
+            const numeric = Number(asString.replace(/^PRIME-/i, ''));
+            updateData.parentTaskId = Number.isNaN(numeric) ? null : numeric;
+          }
+        } else {
+          (updateData as Record<string, unknown>)[field] = safeBody[field];
+        }
       }
     });
     updateData.updatedAt = new Date();

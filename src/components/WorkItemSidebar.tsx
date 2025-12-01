@@ -2,7 +2,11 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import type { WorkItem } from "@/app/[workspaceSlug]/dashboard/my-tasks/page";
+import type { WorkItemRelation, RelationType } from "@/types";
 import Link from "next/link";
+import CreateTaskModal from './CreateTaskModal';
+import AddExistingTaskModal from './AddExistingTaskModal';
+import SubtaskActionModal from './SubtaskActionModal';
 
 const formatUserName = (username: string): string => {
   if (!username) return 'Usuário';
@@ -38,7 +42,8 @@ import {
   ChatBubbleLeftRightIcon,
   PlusIcon,
   PencilIcon,
-  TrashIcon
+  TrashIcon,
+  MagnifyingGlassIcon
 } from '@heroicons/react/24/outline';
 import { priorityColors } from "@/lib/constants";
 
@@ -91,6 +96,16 @@ export default function WorkItemSidebar({ item, onClose, onUpdate, workspaceSlug
     url: '',
     displayName: ''
   });
+  const [showSubtaskActionModal, setShowSubtaskActionModal] = useState(false);
+  const [showCreateTaskModal, setShowCreateTaskModal] = useState(false);
+  const [showAddExistingTaskModal, setShowAddExistingTaskModal] = useState(false);
+  const [subtaskTitles, setSubtaskTitles] = useState<Record<string, string>>({});
+  const [showRelationModal, setShowRelationModal] = useState(false);
+  const [relationType, setRelationType] = useState<RelationType | null>(null);
+  const [availableTasks, setAvailableTasks] = useState<WorkItem[]>([]);
+  const [selectedTasks, setSelectedTasks] = useState<string[]>([]);
+  const [taskSearchQuery, setTaskSearchQuery] = useState('');
+  const [loadingTasks, setLoadingTasks] = useState(false);
 
   const formatDate = (dateString: string): string => {
     if (!dateString) return 'não definida';
@@ -243,14 +258,24 @@ export default function WorkItemSidebar({ item, onClose, onUpdate, workspaceSlug
       return;
     }
 
+    if (action === "Adicionar sub-item de trabalho") {
+      setShowSubtaskActionModal(true);
+      return;
+    }
+
+    if (action === "Adicionar relação") {
+      setShowRelationModal(true);
+      return;
+    }
+
     console.info(`Ação não implementada: ${action}`);
   };
 
-  const closeLinkModal = () => {
+  const closeLinkModal = useCallback(() => {
     setShowLinkModal(false);
     setLinkForm({ url: '', displayName: '' });
     setIsSubmittingLink(false);
-  };
+  }, []);
 
   const handleEditingLinkChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -298,33 +323,26 @@ export default function WorkItemSidebar({ item, onClose, onUpdate, workspaceSlug
     setEditingLinkForm({ url: '', displayName: '' });
   };
 
-  const handleAddLink = (e: React.FormEvent) => {
+  const handleAddLink = useCallback((e: React.FormEvent) => {
     e.preventDefault();
     if (!linkForm.url.trim()) return;
 
     setIsSubmittingLink(true);
     try {
-      // TODO: Integrate with backend API when available
       console.info("Adicionando link", {
         url: linkForm.url,
         displayName: linkForm.displayName || linkForm.url,
         taskId: localItem.id,
       });
-
-      // Create new link object
       const newLink = {
         id: `link-${Date.now()}`,
         url: linkForm.url.trim(),
         displayName: linkForm.displayName.trim() || linkForm.url.trim(),
         createdAt: new Date().toISOString(),
       };
-
-      // Update local state
       const updatedLinks = [...(localItem.links || []), newLink];
       const updatedItem = { ...localItem, links: updatedLinks };
       setLocalItem(updatedItem);
-      
-      // Notify parent component
       onUpdate(updatedItem);
 
       closeLinkModal();
@@ -333,7 +351,146 @@ export default function WorkItemSidebar({ item, onClose, onUpdate, workspaceSlug
     } finally {
       setIsSubmittingLink(false);
     }
+  }, [linkForm.url, linkForm.displayName, localItem, onUpdate, closeLinkModal]);
+
+  const handleCreateNewSubtask = useCallback(async (taskData: { title: string; description: string; assignedUserId?: string; projectId?: string }) => {
+    try {
+      const workspaceResponse = await fetch(`/api/workspaces/slug/${workspaceSlug}`);
+      if (!workspaceResponse.ok) {
+        throw new Error('Failed to get workspace info');
+      }
+      
+      const workspaceData = await workspaceResponse.json();
+      const workspaceId = workspaceData.id;
+      const response = await fetch('/api/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...taskData,
+          parentTaskId: String(localItem.id).replace(/^PRIME-/i, ""),
+          workspaceId: workspaceId,
+          status: 'BACKLOG',
+          priority: 'NONE'
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create subtask');
+      }
+
+      const newTask = await response.json();
+      const newTaskIdStr = String(newTask.id);
+      const updatedSubtasks = [...(localItem.subtasks || []), newTaskIdStr];
+      const updatedItem = { ...localItem, subtasks: updatedSubtasks };
+      setLocalItem(updatedItem);
+      onUpdate(updatedItem);
+      try {
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new Event('workspaceChanged'));
+        }
+      } catch (e) {
+        console.warn('Could not dispatch workspaceChanged event', e);
+      }
+      try {
+        onClose();
+      } catch (e) {
+        console.warn('onClose not available or failed', e);
+      }
+
+      await fetchActivities();
+    } catch (error) {
+      console.error('Error creating subtask:', error);
+      throw error;
+    }
+  }, [localItem, onUpdate, fetchActivities, workspaceSlug, onClose]);
+
+  const handleAddExistingSubtasks = useCallback(async (taskIds: string[]) => {
+    try {
+      await Promise.all(taskIds.map(async (taskId) => {
+        const response = await fetch(`/api/tasks?id=${taskId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ parentTaskId: localItem.id })
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed to update task ${taskId}`);
+        }
+      }));
+      const updatedSubtasks = [...(localItem.subtasks || []), ...taskIds];
+      const updatedItem = { ...localItem, subtasks: updatedSubtasks };
+      setLocalItem(updatedItem);
+      onUpdate(updatedItem);
+      
+      await fetchActivities();
+    } catch (error) {
+      console.error('Error adding existing subtasks:', error);
+      throw error;
+    }
+  }, [localItem, onUpdate, fetchActivities]);
+
+  const fetchAvailableTasks = useCallback(async () => {
+    if (!workspaceSlug) return;
+    
+    try {
+      setLoadingTasks(true);
+      const response = await fetch(`/api/workspaces/${workspaceSlug}/tasks`);
+      if (response.ok) {
+        const data = await response.json();
+        const filteredTasks = (data.tasks || []).filter((task: WorkItem) => 
+          task.id !== localItem.id && 
+          !(localItem.relations || []).some((rel: WorkItemRelation) => rel.relatedTaskId === task.id)
+        );
+        setAvailableTasks(filteredTasks);
+      }
+    } catch (error) {
+      console.error('Error fetching available tasks:', error);
+    } finally {
+      setLoadingTasks(false);
+    }
+  }, [workspaceSlug, localItem.id, localItem.relations]);
+
+  const getRelationLabel = (type: RelationType): string => {
+    const labels: Record<RelationType, string> = {
+      'RELATED_TO': 'Relacionado a',
+      'DUPLICATED_BY': 'Duplicado de',
+      'BLOCKED_BY': 'Bloqueado por',
+      'BLOCKING': 'Bloquando'
+    };
+    return labels[type];
   };
+
+  const handleAddRelations = useCallback(() => {
+    if (!relationType || selectedTasks.length === 0) return;
+
+    const newRelations: WorkItemRelation[] = selectedTasks.map(taskId => {
+      const task = availableTasks.find(t => t.id === taskId);
+      return {
+        id: `relation-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        type: relationType,
+        relatedTaskId: taskId,
+        relatedTaskTitle: task?.title || taskId,
+        createdAt: new Date().toISOString()
+      };
+    });
+
+    const updatedRelations = [...(localItem.relations || []), ...newRelations];
+    const updatedItem = { ...localItem, relations: updatedRelations };
+    setLocalItem(updatedItem);
+    onUpdate(updatedItem);
+    setShowRelationModal(false);
+    setRelationType(null);
+    setSelectedTasks([]);
+    setTaskSearchQuery('');
+    setAvailableTasks([]);
+  }, [relationType, selectedTasks, availableTasks, localItem, onUpdate]);
+
+  const handleDeleteRelation = useCallback((relationId: string) => {
+    const updatedRelations = (localItem.relations || []).filter((rel: WorkItemRelation) => rel.id !== relationId);
+    const updatedItem = { ...localItem, relations: updatedRelations };
+    setLocalItem(updatedItem);
+    onUpdate(updatedItem);
+  }, [localItem, onUpdate]);
 
   const renderLinkModal = useCallback(() => (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 px-4">
@@ -430,6 +587,47 @@ export default function WorkItemSidebar({ item, onClose, onUpdate, workspaceSlug
     fetchActivities();
     fetchWorkspaceMembers();
   }, [fetchActivities, fetchWorkspaceMembers, item.id]);
+
+  useEffect(() => {
+    if (showRelationModal) {
+      fetchAvailableTasks();
+    }
+  }, [showRelationModal, fetchAvailableTasks]);
+
+  // Fetch titles for subtasks (localItem.subtasks contains ids as strings)
+  useEffect(() => {
+    let mounted = true;
+    const fetchSubtasks = async () => {
+      try {
+        const ids = localItem.subtasks || [];
+        if (!ids.length) {
+          if (mounted) setSubtaskTitles({});
+          return;
+        }
+
+        const results = await Promise.all(ids.map(async (id) => {
+          try {
+            const res = await fetch(`/api/tasks/${id}`);
+            if (!res.ok) return { id, title: '' };
+            const data = await res.json();
+            return { id, title: data.title || '' };
+          } catch {
+            return { id, title: '' };
+          }
+        }));
+
+        if (!mounted) return;
+        const map: Record<string, string> = {};
+        results.forEach(r => { map[String(r.id)] = r.title || ''; });
+        setSubtaskTitles(map);
+      } catch (error) {
+        console.error('Error fetching subtask titles:', error);
+      }
+    };
+
+    fetchSubtasks();
+    return () => { mounted = false; };
+  }, [localItem.subtasks]);
 
   const handleSubmitComment = async () => {
     if (!comment.trim() || isSubmittingComment) return;
@@ -577,6 +775,217 @@ const panelClasses = `${isFullScreen ? "w-full max-w-5xl" : "h-full w-full max-w
 return (
   <>
     {showLinkModal && renderLinkModal()}
+    {showSubtaskActionModal && (
+      <SubtaskActionModal
+        isOpen={showSubtaskActionModal}
+        onClose={() => setShowSubtaskActionModal(false)}
+        onCreateNew={() => {
+          setShowSubtaskActionModal(false);
+          setShowCreateTaskModal(true);
+        }}
+        onAddExisting={() => {
+          setShowSubtaskActionModal(false);
+          setShowAddExistingTaskModal(true);
+        }}
+      />
+    )}
+    {showCreateTaskModal && workspaceSlug && (
+      <CreateTaskModal
+        isOpen={showCreateTaskModal}
+        onClose={() => setShowCreateTaskModal(false)}
+        onSubmit={handleCreateNewSubtask}
+        workspaceSlug={workspaceSlug}
+      />
+    )}
+    {showAddExistingTaskModal && (
+      <AddExistingTaskModal
+        isOpen={showAddExistingTaskModal}
+        onClose={() => setShowAddExistingTaskModal(false)}
+        onAddTasks={handleAddExistingSubtasks}
+        workspaceSlug={workspaceSlug}
+        currentTaskId={localItem.id}
+      />
+    )}
+    {showRelationModal && (
+      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 px-4">
+        <div className="w-full max-w-2xl rounded-2xl bg-white p-6 shadow-2xl dark:bg-[#0d0f14] max-h-[90vh] overflow-y-auto">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Adicionar relação</h3>
+            <button
+              type="button"
+              onClick={() => {
+                setShowRelationModal(false);
+                setRelationType(null);
+                setSelectedTasks([]);
+                setTaskSearchQuery('');
+                setAvailableTasks([]);
+              }}
+              className="text-gray-400 transition hover:text-gray-600 dark:text-white/60 dark:hover:text-white"
+              aria-label="Fechar modal"
+            >
+              <XMarkIcon className="h-5 w-5" />
+            </button>
+          </div>
+
+          <div className="mt-6 space-y-6">
+            <div>
+              <label className="text-sm font-medium text-gray-700 dark:text-white/80">
+                Tipo de relação <span className="text-red-500">*</span>
+              </label>
+              <div className="mt-2 grid grid-cols-2 gap-2">
+                {(['RELATED_TO', 'DUPLICATED_BY', 'BLOCKED_BY', 'BLOCKING'] as RelationType[]).map((type) => (
+                  <button
+                    key={type}
+                    type="button"
+                    onClick={() => setRelationType(type)}
+                    className={`rounded-lg border px-3 py-2 text-sm text-left transition ${
+                      relationType === type
+                        ? 'border-blue-500 bg-blue-50 text-blue-700 dark:border-blue-400 dark:bg-blue-500/20 dark:text-blue-300'
+                        : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400 dark:border-white/20 dark:bg-white/10 dark:text-white/80 dark:hover:border-white/40'
+                    }`}
+                  >
+                    {getRelationLabel(type)}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {relationType && (
+              <div>
+                <label className="text-sm font-medium text-gray-700 dark:text-white/80">
+                  Selecionar tarefas
+                </label>
+                <div className="mt-2 relative">
+                  <MagnifyingGlassIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-white/50" />
+                  <input
+                    type="text"
+                    value={taskSearchQuery}
+                    onChange={(e) => setTaskSearchQuery(e.target.value)}
+                    placeholder="Buscar tarefas..."
+                    className="w-full rounded-lg border border-gray-300 pl-10 pr-3 py-2 text-sm text-gray-900 placeholder-gray-500 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-white/20 dark:bg-white/10 dark:text-white dark:placeholder-white/50 dark:focus:border-blue-400"
+                  />
+                </div>
+              </div>
+            )}
+            {relationType && (
+              <div>
+                <div className="max-h-60 overflow-y-auto rounded-lg border border-gray-200 dark:border-white/10">
+                  {loadingTasks ? (
+                    <div className="p-4 text-center text-sm text-gray-500 dark:text-white/50">
+                      Carregando tarefas...
+                    </div>
+                  ) : availableTasks.length === 0 ? (
+                    <div className="p-4 text-center text-sm text-gray-500 dark:text-white/50">
+                      Nenhuma tarefa disponível
+                    </div>
+                  ) : (
+                    <div className="divide-y divide-gray-200 dark:divide-white/10">
+                      {availableTasks
+                        .filter(task => 
+                          task.title.toLowerCase().includes(taskSearchQuery.toLowerCase()) ||
+                          task.id.toLowerCase().includes(taskSearchQuery.toLowerCase())
+                        )
+                        .map((task) => (
+                          <label
+                            key={task.id}
+                            className="flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-white/5 cursor-pointer"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={selectedTasks.includes(task.id)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedTasks([...selectedTasks, task.id]);
+                                } else {
+                                  setSelectedTasks(selectedTasks.filter(id => id !== task.id));
+                                }
+                              }}
+                              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-white/20 dark:bg-white/10"
+                            />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                                {task.title}
+                              </p>
+                              <p className="text-xs text-gray-500 dark:text-white/50">
+                                {task.id.startsWith('PRIME-') ? task.id : `PRIME-${task.id}`}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
+                                task.status === 'DONE' ? 'bg-green-100 text-green-700 dark:bg-green-500/20 dark:text-green-300' :
+                                task.status === 'IN_PROGRESS' ? 'bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-300' :
+                                task.status === 'TODO' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-500/20 dark:text-yellow-300' :
+                                'bg-gray-100 text-gray-700 dark:bg-gray-500/20 dark:text-gray-300'
+                              }`}>
+                                {task.status === 'DONE' ? 'Concluído' :
+                                 task.status === 'IN_PROGRESS' ? 'Em Progresso' :
+                                 task.status === 'TODO' ? 'A Fazer' : 'Backlog'}
+                              </span>
+                            </div>
+                          </label>
+                        ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Tarefas selecionadas */}
+            {relationType && selectedTasks.length > 0 && (
+              <div>
+                <p className="text-sm font-medium text-gray-700 dark:text-white/80 mb-2">
+                  Tarefas selecionadas ({selectedTasks.length})
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {selectedTasks.map(taskId => {
+                    const task = availableTasks.find(t => t.id === taskId);
+                    return (
+                      <span
+                        key={taskId}
+                        className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2 py-1 text-xs font-medium text-blue-700 dark:bg-blue-500/20 dark:text-blue-300"
+                      >
+                        {task?.title || taskId}
+                        <button
+                          type="button"
+                          onClick={() => setSelectedTasks(selectedTasks.filter(id => id !== taskId))}
+                          className="text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300"
+                        >
+                          <XMarkIcon className="h-3 w-3" />
+                        </button>
+                      </span>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="mt-6 flex justify-end gap-3">
+            <button
+              type="button"
+              onClick={() => {
+                setShowRelationModal(false);
+                setRelationType(null);
+                setSelectedTasks([]);
+                setTaskSearchQuery('');
+                setAvailableTasks([]);
+              }}
+              className="rounded-full border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 dark:border-white/20 dark:text-white/80 dark:hover:bg-white/10"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              onClick={handleAddRelations}
+              disabled={!relationType || selectedTasks.length === 0}
+              className="inline-flex items-center gap-2 rounded-full bg-blue-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-blue-600/50"
+            >
+              <ArrowsRightLeftIcon className="h-4 w-4" />
+              Adicionar relação{selectedTasks.length > 1 ? 's' : ''}
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
     <div className={containerClasses}>
       <aside className={panelClasses}>
         <div className="flex flex-col gap-4 border-b border-gray-200 dark:border-white/5 p-4 sm:p-6 sm:flex-row sm:items-start sm:justify-between">
@@ -843,6 +1252,153 @@ return (
               </div>
             </div>
           </section>
+
+          {/* Subtasks Section */}
+          {(localItem.subtasks && localItem.subtasks.length > 0) && (
+            <section className="rounded-2xl border border-gray-200 bg-white p-4 dark:border-white/5 dark:bg-white/[0.02] sm:p-6">
+              <div className="flex items-center justify-between border-b border-gray-200 pb-4 dark:border-white/5">
+                <div className="flex items-center gap-3">
+                  <div className="rounded-full bg-purple-50 p-2 dark:bg-white/10">
+                    <SquaresPlusIcon className="h-5 w-5 text-purple-600 dark:text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-semibold uppercase tracking-widest text-gray-700 dark:text-white/70">Subtarefas</h3>
+                    <p className="text-xs text-gray-500 dark:text-white/40">
+                      {localItem.subtasks.length === 1 ? "1 subtarefa" : `${localItem.subtasks.length} subtarefas`}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-4 space-y-2">
+                {localItem.subtasks.map((subtaskId: string | number | null | undefined) => {
+                  const subtaskIdStr = subtaskId != null ? String(subtaskId) : "";
+                  const numericSubtaskId = subtaskIdStr.replace(/^PRIME-/i, "");
+
+                  return (
+                    <div
+                      key={subtaskIdStr}
+                      className="flex items-center gap-3 rounded-lg border border-gray-200 bg-gray-50 p-3 dark:border-white/10 dark:bg-white/5"
+                    >
+                      <div className="flex-shrink-0">
+                        <div className="h-2 w-2 rounded-full bg-purple-500"></div>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                          {subtaskTitles[subtaskIdStr] || subtaskIdStr}
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-white/60">
+                          Subtarefa
+                        </p>
+                      </div>
+                      <div className="flex-shrink-0">
+                        <Link
+                          href={workspaceSlug ? `/${workspaceSlug}/dashboard/my-tasks?task=${encodeURIComponent(numericSubtaskId)}` : "#"}
+                          className="text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+                        >
+                          Ver
+                        </Link>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+          )}
+
+          {/* Relations Section - Only show if there are relations or modal is open */}
+          {((localItem.relations && localItem.relations.length > 0) || showRelationModal) && (
+            <section className="rounded-2xl border border-gray-200 bg-white p-4 dark:border-white/5 dark:bg-white/[0.02] sm:p-6">
+              <div className="flex items-center justify-between border-b border-gray-200 pb-4 dark:border-white/5">
+                <div className="flex items-center gap-3">
+                  <div className="rounded-full bg-purple-50 p-2 dark:bg-white/10">
+                    <ArrowsRightLeftIcon className="h-5 w-5 text-purple-600 dark:text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-semibold uppercase tracking-widest text-gray-700 dark:text-white/70">Relações</h3>
+                    <p className="text-xs text-gray-500 dark:text-white/40">
+                      {localItem.relations && localItem.relations.length > 0 ? `${localItem.relations.length} relação${localItem.relations.length !== 1 ? 's' : ''}` : 'Nenhuma relação adicionada'}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowRelationModal(true)}
+                  className="inline-flex items-center gap-1 rounded-full bg-purple-600 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-purple-500"
+                >
+                  <PlusIcon className="h-3.5 w-3.5" />
+                  Adicionar relação
+                </button>
+              </div>
+
+              <div className="mt-4 space-y-2">
+                {localItem.relations && localItem.relations.length > 0 ? (
+                  <div className="space-y-2">
+                    {localItem.relations?.map((relation: WorkItemRelation) => (
+                      <div 
+                        key={relation.id} 
+                        className="group relative rounded-lg border border-gray-200 p-3 transition hover:border-purple-300 hover:bg-purple-50 dark:border-white/10 dark:hover:border-purple-500/40 dark:hover:bg-purple-500/10"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md bg-gray-100 group-hover:bg-purple-100 dark:bg-white/10 dark:group-hover:bg-purple-500/20">
+                            <ArrowsRightLeftIcon className="h-4 w-4 text-gray-500 group-hover:text-purple-600 dark:text-white/60 dark:group-hover:text-white" />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="inline-flex items-center rounded-full bg-purple-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-purple-700 dark:bg-purple-500/20 dark:text-purple-200">
+                                {getRelationLabel(relation.type)}
+                              </span>
+                            </div>
+                            <p className="truncate text-sm font-medium text-gray-900 group-hover:text-purple-600 dark:text-white">
+                              {relation.relatedTaskTitle}
+                            </p>
+                            <p className="truncate text-xs text-gray-500 group-hover:text-purple-500 dark:text-white/50">
+                              {relation.relatedTaskId.startsWith('PRIME-') ? relation.relatedTaskId : `PRIME-${relation.relatedTaskId}`}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Link
+                              href={workspaceSlug ? `/${workspaceSlug}/dashboard/my-tasks?task=${encodeURIComponent(relation.relatedTaskId)}` : "#"}
+                              className="text-xs text-purple-600 hover:text-purple-700 dark:text-purple-400 dark:hover:text-purple-300"
+                            >
+                              Ver
+                            </Link>
+                            <button
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleDeleteRelation(relation.id);
+                              }}
+                              className="rounded p-1 text-gray-500 hover:bg-red-100 hover:text-red-600 dark:text-white/60 dark:hover:bg-red-500/20 dark:hover:text-red-400 opacity-0 transition-opacity group-hover:opacity-100"
+                              title="Excluir relação"
+                            >
+                              <TrashIcon className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="rounded-lg border-2 border-dashed border-gray-300 p-6 text-center dark:border-white/10">
+                    <ArrowsRightLeftIcon className="mx-auto h-8 w-8 text-gray-400 dark:text-white/30" />
+                    <h4 className="mt-2 text-sm font-medium text-gray-700 dark:text-white/70">Nenhuma relação adicionada</h4>
+                    <p className="mt-1 text-xs text-gray-500 dark:text-white/50">
+                      Conecte esta tarefa a outras tarefas relacionadas
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setShowRelationModal(true)}
+                      className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-purple-600 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-purple-500"
+                    >
+                      <PlusIcon className="h-3.5 w-3.5" />
+                      Adicionar relação
+                    </button>
+                  </div>
+                )}
+              </div>
+            </section>
+          )}
 
           {/* Links Section - Only show if there are links or modal is open */}
           {((localItem.links && localItem.links.length > 0) || showLinkModal) && (

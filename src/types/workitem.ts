@@ -12,4 +12,15 @@ export type WorkItem = {
   module?: string;
   cycle?: string;
   labels?: string[];
+  subtasks?: string[];
+  parentTaskId?: string;
+  assignedUserId?: string;
+  assignedUserName?: string;
+  creator?: string;
+  links?: Array<{
+    id: string;
+    url: string;
+    displayName: string;
+    createdAt: string;
+  }>;
 };

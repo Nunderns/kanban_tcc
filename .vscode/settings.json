@@ -17,5 +17,6 @@
     "class=`([^`]*)`"
   ],
   "editor.quickSuggestions.strings": true,
-  "css.lint.unknownAtRules": "ignore"
+  "css.lint.unknownAtRules": "ignore",
+  "prisma.pinToPrisma6": true
 }
