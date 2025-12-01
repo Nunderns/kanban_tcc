@@ -1,12 +1,12 @@
 "use client";
 
-import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useState, useEffect } from "react";
 import { useTheme } from "next-themes";
 import Link from "next/link";
 import { Plus, X, Loader2 } from "lucide-react";
 import { toast } from 'react-hot-toast';
+import { useParams, usePathname } from "next/navigation";
 
 type InviteField = {
   email: string;
@@ -32,8 +32,8 @@ function InviteModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void
   const handleAdd = () => setFields([...fields, { email: "", role: "Membro" }]);
   const handleRemove = (index: number) => setFields(fields.filter((_, i) => i !== index));
 
-  const pathname = usePathname();
-  const workspaceSlug = pathname.split('/')[1];
+  const params = useParams();
+  const workspaceSlug = Array.isArray(params.workspaceSlug) ? params.workspaceSlug[0] : params.workspaceSlug || '';
 
   const handleSubmit = async () => {
     setIsLoading(true);
@@ -181,6 +181,7 @@ type Member = {
 
 export default function MembersPage() {
   const pathname = usePathname();
+  const params = useParams();
   const { data: session } = useSession();
   const { theme, systemTheme } = useTheme();
 
@@ -193,11 +194,12 @@ export default function MembersPage() {
   useEffect(() => {
   }, [theme, systemTheme]);
 
+  const workspaceSlug = Array.isArray(params.workspaceSlug) ? params.workspaceSlug[0] : params.workspaceSlug || '';
   const links = [
-    { href: "/dashboard/settings/general", label: "Geral" },
-    { href: "/dashboard/settings/members", label: "Membros" },
-    { href: "/dashboard/settings/imports", label: "Importações" },
-    { href: "/dashboard/settings/exports", label: "Exportações" }
+    { href: `/${workspaceSlug}/settings/general`, label: "Geral" },
+    { href: `/${workspaceSlug}/settings/members`, label: "Membros" },
+    { href: `/${workspaceSlug}/settings/imports`, label: "Importações" },
+    { href: `/${workspaceSlug}/settings/exports`, label: "Exportações" }
   ];
 
   useEffect(() => {
@@ -211,8 +213,13 @@ export default function MembersPage() {
   useEffect(() => {
     async function fetchMembers() {
       try {
-        const pathname = window.location.pathname;
-        const workspaceSlug = pathname.split('/')[1];
+        const workspaceSlug = Array.isArray(params.workspaceSlug) ? params.workspaceSlug[0] : params.workspaceSlug || '';
+        if (!workspaceSlug) {
+          console.error('Workspace slug não encontrado');
+          toast.error('Workspace não especificado', { position: 'bottom-center', duration: 5000 });
+          setIsLoading(false);
+          return;
+        }
         const response = await fetch(`/api/workspaces/${workspaceSlug}/members`);
         if (!response.ok) throw new Error('Erro ao carregar membros');
         const data = await response.json();
@@ -224,8 +231,8 @@ export default function MembersPage() {
         setIsLoading(false);
       }
     }
-    if (session) fetchMembers();
-  }, [session]);
+    if (session && params.workspaceSlug) fetchMembers();
+  }, [session, params.workspaceSlug]);
 
   if (isLoading) {
     return (
