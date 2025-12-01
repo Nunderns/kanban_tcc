@@ -1,13 +1,12 @@
 "use client";
 
-import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useState, useEffect } from "react";
 import { useTheme } from "next-themes";
 import Link from "next/link";
 import { Plus, X, Loader2 } from "lucide-react";
 import { toast } from 'react-hot-toast';
-import { useParams } from "next/navigation";
+import { useParams, usePathname } from "next/navigation";
 
 type InviteField = {
   email: string;
@@ -33,7 +32,6 @@ function InviteModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void
   const handleAdd = () => setFields([...fields, { email: "", role: "Membro" }]);
   const handleRemove = (index: number) => setFields(fields.filter((_, i) => i !== index));
 
-  const pathname = usePathname();
   const params = useParams();
   const workspaceSlug = Array.isArray(params.workspaceSlug) ? params.workspaceSlug[0] : params.workspaceSlug || '';
 
