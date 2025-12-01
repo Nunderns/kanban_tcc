@@ -48,6 +48,16 @@ export type WorkItemLink = {
   displayName: string;
 };
 
+export type WorkItemRelation = {
+  id: string;
+  type: RelationType;
+  relatedTaskId: string;
+  relatedTaskTitle: string;
+  createdAt: string;
+};
+
+export type RelationType = "RELATED_TO" | "DUPLICATED_BY" | "BLOCKED_BY" | "BLOCKING";
+
 export type WorkItem = {
   id: string;
   title: string;
@@ -64,6 +74,7 @@ export type WorkItem = {
   labels?: string[];
   creator?: string;
   links?: WorkItemLink[];
+  relations?: WorkItemRelation[];
   subtasks?: string[];
   parentTaskId?: string;
 };
