@@ -18,7 +18,11 @@ declare module "next-auth" {
   }
 }
 
-const prisma = new PrismaClient();
+const globalForPrisma = global as unknown as { prisma: typeof PrismaClient };
+
+export const prisma = globalForPrisma.prisma || new PrismaClient();
+
+if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
 
 export const authOptions: NextAuthConfig = {
   adapter: PrismaAdapter(prisma) as Adapter,
@@ -34,41 +38,26 @@ export const authOptions: NextAuthConfig = {
         password: { label: "Senha", type: "password" }
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
-          return null;
-        }
+        if (!credentials?.email || !credentials?.password) return null;
 
         const { email, password } = credentials as { email: string; password: string };
+
+        const user = await prisma.user.findUnique({
+          where: { email },
+          select: { id: true, email: true, name: true, password: true }
+        });
+
+        if (!user?.password) return null;
+
+        const isValid = await bcrypt.compare(password, String(user.password));
         
-        try {
-          await prisma.$connect();
-          
-          const user = await prisma.user.findUnique({
-            where: { email },
-            select: { id: true, email: true, name: true, password: true }
-          });
+        if (!isValid) return null;
 
-          if (!user?.password) {
-            return null;
-          }
-
-          const isValid = await bcrypt.compare(password, String(user.password));
-          
-          if (!isValid) {
-            return null;
-          }
-
-          return {
-            id: String(user.id),
-            email: user.email,
-            name: user.name,
-          };
-        } catch (error) {
-          console.error("Error during authentication:", error);
-          return null;
-        } finally {
-          await prisma.$disconnect();
-        }
+        return {
+          id: String(user.id),
+          email: user.email,
+          name: user.name,
+        };
       }
     })
   ],
@@ -79,6 +68,7 @@ export const authOptions: NextAuthConfig = {
     signIn: "/login",
     signOut: "/login",
     error: "/login",
+    newUser: "/post-login",
   },
   callbacks: {
     async session({ session, token }) {
@@ -106,6 +96,13 @@ export const authOptions: NextAuthConfig = {
         };
       }
       return token;
+    },
+    async redirect({ url, baseUrl }) {
+      if (url.startsWith("/")) return url;
+      if (url.startsWith(baseUrl)) {
+        return url.slice(baseUrl.length);
+      }
+      return "/post-login";
     },
   },
   secret: process.env.NEXTAUTH_SECRET,
