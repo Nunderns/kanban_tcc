@@ -659,11 +659,11 @@ function DashboardContent() {
                   </div>
                 </CardHeader>
                 <CardContent className="p-0">
-                  <div className="divide-y divide-gray-100">
+                  <div className="divide-y divide-gray-700">
                     {filteredTasks.slice(0, 5).map((task) => (
                       <motion.div 
                         key={task.id}
-                        className="p-4 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors duration-200 rounded-lg group cursor-pointer"
+                        className="p-4 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors duration-200 group cursor-pointer"
                         whileHover={{ scale: 1.01, boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' }}
                         onClick={() => {
                           router.push(`/${params.workspaceSlug}/dashboard/my-tasks?task=${task.id}`);
@@ -674,7 +674,7 @@ function DashboardContent() {
                             <p className="font-medium text-gray-900 dark:text-white group-hover:text-gray-900 dark:group-hover:text-white truncate">{task.title}</p>
                             <p className="text-sm text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-300 mt-1 line-clamp-2">{task.description}</p>
                             {task.remainingDays !== null && task.remainingDays !== undefined && (
-                              <div className="flex items-center mt-2 text-xs text-gray-500">
+                              <div className="flex items-center mt-2 text-xs text-gray-100">
                                 <FiClock className="mr-1" />
                                 <span>
                                   {task.remainingDays} {task.remainingDays === 1 ? 'dia restante' : 'dias restantes'}
