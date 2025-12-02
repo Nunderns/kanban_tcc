@@ -1,5 +1,5 @@
 import { getServerSession } from '@/lib/auth';
-import { prisma } from '@/lib/auth-options';
+import { prisma } from '@/lib/prisma';
 import { format, formatDistanceToNow } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
 import { ptBR } from 'date-fns/locale';
@@ -80,12 +80,15 @@ export default async function WorkspacePage({ params }: WorkspacePageProps) {
 
   if (!session) return redirect('/login');
 
+  // Debug logging to check session user ID type
+  console.log('Session user ID:', session.user.id, 'Type:', typeof session.user.id);
+
   const workspace = await prisma.workspace.findFirst({
     where: { 
       slug: normalizedSlug,
       OR: [
-        { userId: parseInt(session.user.id) },
-        { members: { some: { userId: parseInt(session.user.id) } } }
+        { userId: session.user.id },
+        { members: { some: { userId: session.user.id } } }
       ]
     },
     include: { user: true },

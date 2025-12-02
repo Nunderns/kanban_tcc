@@ -101,7 +101,7 @@ export async function POST(req: Request) {
     await prisma.$transaction([
       prisma.workspaceMember.create({
         data: {
-          userId: parseInt(session.user.id as string),
+          userId: session.user.id,
           workspaceId: invitation.workspaceId,
           role: invitation.role,
         },
