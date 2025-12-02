@@ -58,22 +58,45 @@ export async function GET(
       where: { slug },
       include: {
         members: {
-          where: { userId: user.id },
-          select: { role: true },
-        },
+          include: {
+            user: {
+              select: {
+                id: true,
+                email: true,
+                name: true
+              }
+            }
+          }
+        }
       },
     });
 
     if (!workspace) {
       return NextResponse.json({ error: "Workspace não encontrado" }, { status: 404 });
     }
-    const isMember = workspace.members.length > 0 || workspace.userId === user.id;
-    if (!isMember) {
+    interface WorkspaceMemberWithUser {
+      user: {
+        id: string;
+        email: string | null;
+        name: string | null;
+      };
+    }
+    
+    const isOwner = workspace.userId === user.id;
+    const isMember = workspace.members.some((member: WorkspaceMemberWithUser) => member.user.id === user.id);
+    
+    if (!isOwner && !isMember) {
       return NextResponse.json({ error: "Acesso negado ao workspace" }, { status: 403 });
     }
     const tasks = await prisma.task.findMany({
       where: {
         workspaceId: workspace.id,
+        ...(isOwner ? {} : {
+          OR: [
+            { assignedUserId: user.id },
+            { createdById: user.id }
+          ]
+        })
       },
       include: {
         assignedUser: {

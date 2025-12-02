@@ -91,12 +91,15 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
       return NextResponse.json({ error: "Task not found" }, { status: 404 });
     }
 
-    const displayUser = session.user.name || session.user.email || "Usuário";
+    const userIdentifier = session.user.name ||
+      session.user.email ||
+      session.user.id ||
+      "anonymous";
 
     const comment = await prisma.taskActivity.create({
       data: {
         taskId,
-        user: displayUser,
+        user: userIdentifier,
         action: "commented",
         field: "comment",
         oldValue: "",
