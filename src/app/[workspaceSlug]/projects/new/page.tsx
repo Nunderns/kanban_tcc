@@ -10,7 +10,7 @@ interface NewProjectPageProps {
 export default async function NewProjectPage({ params }: NewProjectPageProps) {
   const { workspaceSlug } = await params;
   const session = await auth();
-  
+
   if (!session?.user?.email) {
     return notFound();
   }

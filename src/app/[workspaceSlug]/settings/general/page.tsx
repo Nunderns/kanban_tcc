@@ -68,11 +68,10 @@ export default function WorkspaceSettings() {
           <Link
             key={href}
             href={href}
-            className={`block w-full text-left px-3 py-2 rounded-md transition ${
-              pathname === href
-                ? "bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 font-semibold"
-                : "hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-200"
-            }`}
+            className={`block w-full text-left px-3 py-2 rounded-md transition ${pathname === href
+              ? "bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 font-semibold"
+              : "hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-200"
+              }`}
           >
             {label}
           </Link>
@@ -80,9 +79,7 @@ export default function WorkspaceSettings() {
 
       </aside>
 
-      {/* Conteúdo */}
       <main className="flex-1 p-10">
-        {/* Breadcrumb */}
         <div className="mb-8 text-sm text-gray-600 dark:text-gray-300">
           <span className="text-gray-800 dark:text-gray-200 font-medium">
             {workspaceName}
@@ -90,17 +87,13 @@ export default function WorkspaceSettings() {
           &gt; Configurações
         </div>
 
-        {/* Header com ícone da letra inicial */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-4">
-            {/* Bloco com letra inicial */}
             <div className="w-10 h-10 bg-gray-800 dark:bg-gray-700 text-white flex items-center justify-center rounded-md text-lg font-semibold">
               {typeof workspaceName === "string" && workspaceName.length > 0
                 ? workspaceName.charAt(0).toUpperCase()
                 : ""}
             </div>
-
-            {/* Nome e URL */}
             <div>
               <div className="text-xl font-semibold">{workspaceName}</div>
               <div className="text-sm text-blue-600 dark:text-blue-400">{workspaceUrl}</div>
@@ -110,8 +103,6 @@ export default function WorkspaceSettings() {
             </div>
           </div>
         </div>
-
-        {/* Formulário */}
         <form className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
           <div className="col-span-1">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nome do workspace</label>
@@ -158,8 +149,6 @@ export default function WorkspaceSettings() {
             />
           </div>
         </form>
-
-        {/* Botão */}
         <div className="mt-6">
           <button
             onClick={async () => {
@@ -185,7 +174,7 @@ export default function WorkspaceSettings() {
                       companySize: companySize,
                     })
                   );
-                  
+
                   if (data.slug !== slug) {
                     window.location.href = `/${data.slug}/settings/general`;
                   } else {
@@ -224,11 +213,11 @@ export default function WorkspaceSettings() {
                     name: string;
                     slug: string;
                   }
-                  
+
                   const data = await workspacesRes.json();
                   const workspaces: Workspace[] = Array.isArray(data) ? data : data.workspaces || [];
                   const otherWorkspace = workspaces.find((ws) => ws.slug !== slug);
-                  
+
                   const deleteRes = await fetch(`/api/workspaces/${slug}`, {
                     method: 'DELETE',
                     credentials: 'include',

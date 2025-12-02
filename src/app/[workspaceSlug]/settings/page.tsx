@@ -41,12 +41,40 @@ export default function SettingsPage() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isDisconnectGoogleDialogOpen, setIsDisconnectGoogleDialogOpen] = useState(false);
+  const [isDisconnectingGoogle, setIsDisconnectingGoogle] = useState(false);
   const router = useRouter();
   const { data: session } = useSession();
   const params = useParams();
   const { theme, setTheme } = useTheme();
   const name = session?.user?.name || "Usuário";
   const email = session?.user?.email || "";
+
+  const handleDisconnectGoogle = async () => {
+    setIsDisconnectingGoogle(true);
+    try {
+      const response = await fetch("/api/disconnect-google", {
+        method: "POST",
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Erro ao desconectar Google");
+      }
+
+      const { getSession } = await import('next-auth/react');
+      await getSession();
+      window.location.reload();
+
+    } catch (e) {
+      console.error(e);
+      alert("Falha ao desconectar Google. Por favor, tente novamente.");
+    } finally {
+      setIsDisconnectingGoogle(false);
+      setIsDisconnectGoogleDialogOpen(false);
+    }
+  };
+
 
   const handleSectionChange = (section: Section) => {
     setActiveSection(section);
@@ -286,8 +314,8 @@ export default function SettingsPage() {
     const ValueChip = (value: string, tone: 'old' | 'new') => (
       <span
         className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold ${tone === 'old'
-            ? 'border-red-200 text-red-600 dark:border-red-500/30 dark:text-red-300'
-            : 'border-green-200 text-green-600 dark:border-green-500/30 dark:text-green-300'
+          ? 'border-red-200 text-red-600 dark:border-red-500/30 dark:text-red-300'
+          : 'border-green-200 text-green-600 dark:border-green-500/30 dark:text-green-300'
           }`}
       >
         {value}
@@ -643,7 +671,6 @@ export default function SettingsPage() {
       });
 
       if (response.ok) {
-        // Sign out and redirect to login
         await signOut({ redirect: false });
         router.push('/login');
       } else {
@@ -802,8 +829,8 @@ export default function SettingsPage() {
                         type="button"
                         onClick={() => setTheme(value)}
                         className={`relative flex flex-col items-center p-3 rounded-lg border-2 transition-all duration-200 ${theme === value
-                            ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                            : 'border-transparent hover:border-gray-200 dark:hover:border-gray-700'
+                          ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                          : 'border-transparent hover:border-gray-200 dark:hover:border-gray-700'
                           }`}
                         aria-pressed={theme === value}
                       >
@@ -867,8 +894,8 @@ export default function SettingsPage() {
           <div className="space-y-6">
             {saveStatus && (
               <div className={`p-3 rounded-md ${saveStatus.type === 'success'
-                  ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                  : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
                 }`}>
                 {saveStatus.message}
               </div>
@@ -1180,9 +1207,7 @@ export default function SettingsPage() {
                           Conectado
                         </span>
                         <button
-                          onClick={() => {
-                            alert('Funcionalidade de desconexão do Google será implementada em breve');
-                          }}
+                          onClick={() => setIsDisconnectGoogleDialogOpen(true)}
                           className="text-sm text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
                         >
                           Desconectar
@@ -1255,7 +1280,6 @@ export default function SettingsPage() {
 
   return (
     <div className="flex flex-col md:flex-row min-h-screen bg-white dark:bg-gray-900">
-      {/* Mobile menu button */}
       <div className="md:hidden flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
         <button
           onClick={() => setIsSidebarOpen(!isSidebarOpen)}
@@ -1271,10 +1295,8 @@ export default function SettingsPage() {
         <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
           {sections.find(s => s.id === activeSection)?.ptName}
         </h1>
-        <div className="w-6"></div> {/* Spacer for flex alignment */}
+        <div className="w-6"></div>
       </div>
-
-      {/* Sidebar */}
       <div
         className={`fixed inset-y-0 left-0 z-40 w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
           } transition-transform duration-200 ease-in-out md:translate-x-0 md:static md:inset-auto sidebar`}
@@ -1283,7 +1305,7 @@ export default function SettingsPage() {
           <div className="mb-8">
             <div className="flex items-center gap-3 mb-1 pr-2">
               <Avatar className="h-9 w-9 flex-shrink-0 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-100">
-                <AvatarImage src={session?.user?.image} />
+                <AvatarImage src={session?.user?.image || ''} />
                 <AvatarFallback>{getInitials(name)}</AvatarFallback>
               </Avatar>
               <div className="min-w-0">
@@ -1299,8 +1321,8 @@ export default function SettingsPage() {
                 key={section.id}
                 onClick={() => handleSectionChange(section.id)}
                 className={`w-full text-left px-3 py-2 rounded-md text-sm font-medium ${activeSection === section.id
-                    ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white'
-                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white'
+                  ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white'
+                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white'
                   }`}
               >
                 {section.ptName}
@@ -1329,6 +1351,26 @@ export default function SettingsPage() {
           {renderSection()}
         </div>
       </div>
+      <AlertDialog open={isDisconnectGoogleDialogOpen} onOpenChange={setIsDisconnectGoogleDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Desconectar conta Google</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja desconectar sua conta Google? Você precisará usar outro método de login na próxima vez.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDisconnectingGoogle}>Cancelar</AlertDialogCancel>
+            <Button
+              variant="destructive"
+              onClick={handleDisconnectGoogle}
+              disabled={isDisconnectingGoogle}
+            >
+              {isDisconnectingGoogle ? 'Desconectando...' : 'Desconectar'}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

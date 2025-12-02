@@ -1,13 +1,13 @@
-// src/lib/auth-options.ts
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@auth/prisma-adapter";
-import { prisma } from "@/lib/prisma"; // <-- IMPORTE O PRISMA CERTO
+import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import type { Account, User, Session } from "next-auth";
+import type { JWT } from "next-auth/jwt";
+import type { NextAuthConfig } from "next-auth";
 
-export const authOptions = {
+export const authOptions: NextAuthConfig = {
   adapter: PrismaAdapter(prisma),
 
   providers: [
@@ -23,26 +23,31 @@ export const authOptions = {
         email: { label: "E-mail", type: "email" },
         password: { label: "Senha", type: "password" },
       },
-      async authorize(credentials) {
+
+      async authorize(credentials): Promise<User | null> {
         if (!credentials?.email || !credentials?.password) return null;
 
         const user = await prisma.user.findUnique({
-          where: { email: credentials.email as string },
-          select: { id: true, email: true, name: true, password: true }
+          where: { email: credentials.email },
+          select: { id: true, email: true, name: true, password: true },
         });
 
         if (!user?.password) return null;
 
-        const isValid = await bcrypt.compare(credentials.password as string, user.password);
-        if (!isValid) return null;
+        const valid = await bcrypt.compare(
+          String(credentials.password),
+          String(user.password)
+        );
+
+        if (!valid) return null;
 
         return {
           id: user.id,
           email: user.email,
-          name: user.name,
+          name: user.name!,
         };
-      }
-    })
+      },
+    }),
   ],
 
   session: { strategy: "jwt" as const },
@@ -53,21 +58,42 @@ export const authOptions = {
   },
 
   callbacks: {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    async signIn({ user, account }: { user: User | any; account?: Account | null }) {
-      if (account?.provider === "google") return true;
+    async signIn() {
       return true;
     },
-
-    async jwt({ token, user }: { token: any; user: User }) {
-      if (user) token.id = String(user.id);
+    async jwt({
+      token,
+      user,
+    }: {
+      token: JWT;
+      user: User | undefined;
+    }) {
+      if (user) {
+        token.id = user.id;
+      }
       return token;
     },
-
-    async session({ session, token }: { session: Session; token: any }) {
+    async session({
+      session,
+      token,
+    }: {
+      session: Session;
+      token: JWT;
+    }) {
       if (session.user && token?.id) {
         session.user.id = String(token.id);
+
+        const accounts = await prisma.account.findMany({
+          where: { userId: String(token.id) },
+        });
+
+        const hasGoogle = accounts.some(
+          (acc: Account) => acc.provider === "google"
+        );
+
+        session.user.provider = hasGoogle ? "google" : "credentials";
       }
+
       return session;
     },
   },
