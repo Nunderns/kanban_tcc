@@ -195,8 +195,6 @@ export default function SettingsPage() {
     assigneduserid: 'responsável',
     title: 'título',
     description: 'descrição',
-    module: 'módulo',
-    cycle: 'ciclo',
     project: 'projeto',
     projectid: 'projeto',
     workspaceid: 'workspace',
@@ -360,7 +358,7 @@ export default function SettingsPage() {
 
     const normalizedField = normalizeFieldKey(field);
     const isAssignment = normalizedField === 'assignee' || normalizedField === 'assigneduserid' || normalizedField === 'assignedusername';
-    
+
     if (isAssignment) {
       if (hasNewValue && !hasOldValue) {
         return (

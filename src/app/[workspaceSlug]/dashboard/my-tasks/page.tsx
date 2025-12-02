@@ -101,7 +101,7 @@ function KanbanPage() {
   const [showFilter, setShowFilter] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
 
-  
+
   useEffect(() => {
     const taskId = searchParams?.get('task');
     if (taskId && workItems.length > 0) {
@@ -112,7 +112,7 @@ function KanbanPage() {
     }
   }, [searchParams, workItems]);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
-  
+
   const [filters, setFilters] = useState({
     priority: [] as string[],
     status: [] as string[],
@@ -122,23 +122,20 @@ function KanbanPage() {
     startDate: [] as string[],
     dueDate: [] as string[],
   });
-  
+
   const [displayOptions, setDisplayOptions] = useState<{
-    showSubtasks: boolean;
     visibleProperties: DisplayOption[];
   }>({
-    showSubtasks: true,
     visibleProperties: ["ID", "Responsável", "Data de início", "Prazo", "Prioridade", "Estado", "Etiquetas"],
   });
-  
+
   const [viewType, setViewType] = useState<"kanban" | "list" | "weekly" | "monthly" | "daily">("kanban");
-  
+
   const statusMap: Record<string, string> = {
     'Backlog': 'BACKLOG',
     'Não iniciado': 'TODO',
     'Iniciado': 'IN_PROGRESS',
     'Completado': 'DONE',
-    'Cancelado': 'CANCELLED'
   };
 
   const ColumnDroppable = ({ status, children }: { status: Status; children: React.ReactNode }) => {
@@ -157,50 +154,51 @@ function KanbanPage() {
     'Low': 'LOW',
     'None': 'NONE'
   };
-  
+
   const reverseStatusMap = Object.entries(statusMap).reduce((acc, [key, value]) => {
     acc[value] = key;
     return acc;
   }, {} as Record<string, string>);
-  
+
   const reversePriorityMap = Object.entries(priorityMap).reduce((acc, [key, value]) => {
     if (!acc[value]) {
       acc[value] = key;
     }
     return acc;
   }, {} as Record<string, string>);
-  
+
   const filteredTasks = useMemo(() => {
     if (!workItems.length) return [];
-    
+
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    
+
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
-    
+
     const endOfWeek = new Date(today);
     endOfWeek.setDate(endOfWeek.getDate() + (7 - endOfWeek.getDay()));
-    
+
     const nextWeekEnd = new Date(endOfWeek);
     nextWeekEnd.setDate(nextWeekEnd.getDate() + 7);
-    
+
     const nextMonth = new Date(today);
     nextMonth.setMonth(nextMonth.getMonth() + 1);
-    
+
     const isDateInRange = (date: Date | string | undefined, range: string): boolean => {
       if (!date) return false;
-
       const normalizeDate = (d: Date) => {
-        const normalized = new Date(d);
-        normalized.setHours(0, 0, 0, 0);
-        return normalized;
+        const localDate = new Date(d);
+        return new Date(localDate.getFullYear(), localDate.getMonth(), localDate.getDate());
       };
-      
+
       let taskDate: Date;
       if (typeof date === 'string') {
         if (date.includes('/')) {
           const [day, month, year] = date.split('/').map(Number);
+          taskDate = new Date(year, month - 1, day);
+        } else if (date.includes('-')) {
+          const [year, month, day] = date.split('-').map(Number);
           taskDate = new Date(year, month - 1, day);
         } else {
           taskDate = new Date(date);
@@ -208,26 +206,22 @@ function KanbanPage() {
       } else {
         taskDate = new Date(date);
       }
-      
+
       if (isNaN(taskDate.getTime())) return false;
-      
       taskDate = normalizeDate(taskDate);
-      
+
       switch (range) {
         case 'Hoje':
           return taskDate.getTime() === today.getTime();
         case 'Amanhã':
           return taskDate.getTime() === tomorrow.getTime();
         case 'Esta semana':
-          return taskDate >= today && taskDate <= endOfWeek;
-        case 'Próxima semana': {
-          const nextWeekStart = new Date(endOfWeek);
-          nextWeekStart.setDate(nextWeekStart.getDate() + 1);
-          return taskDate >= nextWeekStart && taskDate <= nextWeekEnd;
-        }
+          return taskDate >= today && taskDate <= new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
+        case 'Próxima semana':
+          return taskDate >= new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000) && taskDate <= new Date(today.getTime() + 14 * 24 * 60 * 60 * 1000);
         case 'Próximo mês':
-          return taskDate.getMonth() === nextMonth.getMonth() && 
-                 taskDate.getFullYear() === nextMonth.getFullYear();
+          return taskDate.getMonth() === new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000).getMonth() &&
+            taskDate.getFullYear() === new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000).getFullYear();
         default:
           if (range.startsWith('data:')) {
             try {
@@ -239,7 +233,7 @@ function KanbanPage() {
               } else {
                 filterDate = new Date(dateStr);
               }
-              
+
               filterDate = normalizeDate(filterDate);
               return taskDate.getTime() === filterDate.getTime();
             } catch (e) {
@@ -250,43 +244,46 @@ function KanbanPage() {
           return false;
       }
     };
-    
+
     const filtered = workItems.filter(task => {
-      
+      // Verifica filtro de prioridade
       if (filters.priority.length > 0) {
         const taskPriorityName = reversePriorityMap[task.priority] || '';
         if (!filters.priority.includes(taskPriorityName)) {
           return false;
         }
       }
-      
+
+      // Verifica filtro de status
       if (filters.status.length > 0) {
         const taskStatusName = reverseStatusMap[task.status] || '';
         if (!filters.status.includes(taskStatusName)) {
           return false;
         }
       }
-      
+
+      // Verifica filtro de data de início
       if (filters.startDate.length > 0) {
-        const hasMatchingStartDate = filters.startDate.some(range => 
-          isDateInRange(task.startDate, range)
-        );
+        const hasMatchingStartDate = filters.startDate.some(range => {
+          return isDateInRange(task.startDate, range);
+        });
         if (!hasMatchingStartDate) return false;
       }
-      
+
+      // Verifica filtro de data de entrega
       if (filters.dueDate.length > 0) {
-        const hasMatchingDueDate = filters.dueDate.some(range => 
-          isDateInRange(task.dueDate, range)
-        );
+        const hasMatchingDueDate = filters.dueDate.some(range => {
+          return isDateInRange(task.dueDate, range);
+        });
         if (!hasMatchingDueDate) return false;
       }
-      
+
       return true;
     });
-    
+
     return filtered;
   }, [workItems, filters, reverseStatusMap, reversePriorityMap]);
-  
+
   const handleFilterChange = (filterType: keyof typeof filters, value: string, checked: boolean) => {
     setFilters(prev => ({
       ...prev,
@@ -295,13 +292,13 @@ function KanbanPage() {
         : prev[filterType].filter((item: string) => item !== value)
     }));
   };
-  
+
   const handleDisplayOptionChange = (option: DisplayOption, checked: boolean) => {
     setDisplayOptions(prev => {
       const newProperties = checked
         ? Array.from(new Set([...prev.visibleProperties, option])) as DisplayOption[]
         : prev.visibleProperties.filter((item): item is DisplayOption => item !== option);
-      
+
       return {
         ...prev,
         visibleProperties: newProperties
@@ -364,7 +361,7 @@ function KanbanPage() {
     let destinationStatus: Status = sourceStatus;
     if (overId.startsWith("column-")) {
       const column = overId.replace("column-", "");
-      if (["BACKLOG","TODO","IN_PROGRESS","DONE"].includes(column)) {
+      if (["BACKLOG", "TODO", "IN_PROGRESS", "DONE"].includes(column)) {
         destinationStatus = column as Status;
       }
     } else if (overItem) {
@@ -559,18 +556,6 @@ function KanbanPage() {
               <span>{item.assignedUserName || 'Responsável'}</span>
             </div>
           ) : null;
-        case 'Módulo':
-          return item.module ? (
-            <div className="flex items-center gap-1 border border-gray-300 dark:border-gray-600 rounded-full px-2 py-1 text-gray-800 dark:text-gray-200">
-              <span>{item.module}</span>
-            </div>
-          ) : null;
-        case 'Ciclo':
-          return item.cycle ? (
-            <div className="flex items-center gap-1 border border-gray-300 dark:border-gray-600 rounded-full px-2 py-1 text-gray-800 dark:text-gray-200">
-              <span>{item.cycle}</span>
-            </div>
-          ) : null;
         case 'Etiquetas':
           return item.labels && item.labels.length > 0 ? (
             <div className="flex items-center gap-1 border border-gray-300 dark:border-gray-600 rounded-full px-2 py-1 text-gray-800 dark:text-gray-200">
@@ -610,7 +595,7 @@ function KanbanPage() {
               </span>
             </div>
           )}
-          {(['Estado', 'Data de início', 'Prazo', 'Responsável', 'Módulo', 'Ciclo', 'Etiquetas'] as const)
+          {(['Estado', 'Data de início', 'Prazo', 'Responsável', 'Etiquetas'] as const)
             .filter(prop => shouldShow(prop))
             .map(prop => (
               <div key={prop}>
@@ -651,9 +636,7 @@ function KanbanPage() {
 
             <DisplayDropdown
               visibleProperties={displayOptions.visibleProperties}
-              showSubtasks={displayOptions.showSubtasks}
               onDisplayOptionChange={handleDisplayOptionChange}
-              onToggleSubtasks={(checked) => setDisplayOptions(prev => ({ ...prev, showSubtasks: checked }))}
               viewType={viewType}
               onViewTypeChange={setViewType}
             />
@@ -665,185 +648,184 @@ function KanbanPage() {
             </button>
           </div>
         </div>
-      <div className="flex-1 overflow-y-auto overflow-x-hidden p-3 sm:p-4 sm:overflow-x-auto">
-        {viewType === "kanban" ? (
-          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={onDragStart} onDragCancel={onDragCancel} onDragEnd={onDragEnd}>
-            <div className="flex flex-col gap-4 sm:flex-row sm:min-w-max">
-              {Object.entries(collapsedColumns).map(([statusKey, isCollapsed]) => {
-              const typedStatus = statusKey as Status;
-              return (
-                <div
-                  key={typedStatus}
-                  className="w-full sm:w-72 sm:flex-shrink-0"
-                >
-                  <div
-                    className="flex justify-between items-center bg-gray-100 dark:bg-gray-800 p-2 rounded-t cursor-pointer"
-                    onClick={() => toggleColumnCollapse(typedStatus)}
-                  >
-                    <div className="flex items-center gap-2">
-                      <div className="transition-transform duration-300 ease-in-out">
-                        {isCollapsed ? <FaChevronRight /> : <FaChevronDown />}
-                      </div>
-                      <h2 className="font-semibold">
-                        {typedStatus.replace("_", " ")}
-                      </h2>
-                      <span className="text-gray-500 text-sm">
-                        {
-                          filteredTasks.filter((i) => i.status === typedStatus)
-                            .length
-                        }
-                      </span>
-                    </div>
-                    <button
-                      className="text-gray-500 hover:text-gray-700"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setIsCreateModalOpen(true);
-                      }}
-                    >
-                      <FaPlus />
-                    </button>
-                  </div>
-                  <ColumnDroppable status={typedStatus}>
+        <div className="flex-1 overflow-y-auto overflow-x-hidden p-3 sm:p-4 sm:overflow-x-auto">
+          {viewType === "kanban" ? (
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={onDragStart} onDragCancel={onDragCancel} onDragEnd={onDragEnd}>
+              <div className="flex flex-col gap-4 sm:flex-row sm:min-w-max">
+                {Object.entries(collapsedColumns).map(([statusKey, isCollapsed]) => {
+                  const typedStatus = statusKey as Status;
+                  return (
                     <div
-                      className={`bg-white dark:bg-gray-800 rounded-b overflow-hidden transition-all duration-300 ease-in-out ${
-                        isCollapsed
-                          ? "max-h-0 opacity-0"
-                          : "max-h-[999px] sm:max-h-[calc(100vh-220px)] opacity-100"
-                      }`}
+                      key={typedStatus}
+                      className="w-full sm:w-72 sm:flex-shrink-0"
                     >
-                      <div className="p-2 space-y-2 sm:h-[calc(100vh-280px)] sm:overflow-y-auto">
-                        {(() => {
-                          const columnItems = filteredTasks.filter(
-                            (item) => item.status === typedStatus
-                          );
-                          return (
-                            <SortableContext
-                              items={columnItems.map((i) => String(i.id))}
-                              strategy={verticalListSortingStrategy}
-                            >
-                              {columnItems.map((item) => (
-                                <SortableCard key={item.id} item={item} />
-                              ))}
-                            </SortableContext>
-                          );
-                        })()}
-                        {creatingTaskInColumn === typedStatus ? (
-                          <div className="w-full mt-2">
-                            <input
-                              type="text"
-                              value={newTaskTitle}
-                              autoFocus
-                              placeholder="Título da tarefa"
-                              className="w-full px-3 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded shadow-sm focus:outline-none focus:ring focus:border-blue-500"
-                              onChange={(e) => setNewTaskTitle(e.target.value)}
-                              onKeyDown={async (e) => {
-                                if (e.key === "Enter") {
-                                  if (!newTaskTitle.trim()) return;
-                                  if (isCreating) return;
-                                  setIsCreating(true);
-                                  try {
-                                    setTargetStatus(typedStatus);
-                                    await handleCreateTask({
-                                      title: newTaskTitle.trim(),
-                                      description: "",
-                                    });
-                                    setNewTaskTitle("");
-                                    setCreatingTaskInColumn(null);
-                                  } finally {
-                                    setIsCreating(false);
-                                  }
-                                }
-                                if (e.key === "Escape") {
-                                  setCreatingTaskInColumn(null);
-                                  setNewTaskTitle("");
-                                }
-                              }}
-                            />
-                            <p className="text-xs text-gray-500 mt-1 px-1 italic">
-                              Pressione &apos;Enter&apos; para adicionar um
-                              outro item de tarefa
-                            </p>
+                      <div
+                        className="flex justify-between items-center bg-gray-100 dark:bg-gray-800 p-2 rounded-t cursor-pointer"
+                        onClick={() => toggleColumnCollapse(typedStatus)}
+                      >
+                        <div className="flex items-center gap-2">
+                          <div className="transition-transform duration-300 ease-in-out">
+                            {isCollapsed ? <FaChevronRight /> : <FaChevronDown />}
                           </div>
-                        ) : (
-                          <button
-                            className="w-full mt-2 px-3 py-2 border border-dashed border-gray-400 rounded text-sm text-gray-500 hover:bg-gray-50"
-                            onClick={() => {
-                              setTargetStatus(typedStatus);
-                              setCreatingTaskInColumn(typedStatus);
-                            }}
-                          >
-                            + Criar tarefa
-                          </button>
-                        )}
+                          <h2 className="font-semibold">
+                            {typedStatus.replace("_", " ")}
+                          </h2>
+                          <span className="text-gray-500 text-sm">
+                            {
+                              filteredTasks.filter((i) => i.status === typedStatus)
+                                .length
+                            }
+                          </span>
+                        </div>
+                        <button
+                          className="text-gray-500 hover:text-gray-700"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setIsCreateModalOpen(true);
+                          }}
+                        >
+                          <FaPlus />
+                        </button>
                       </div>
+                      <ColumnDroppable status={typedStatus}>
+                        <div
+                          className={`bg-white dark:bg-gray-800 rounded-b overflow-hidden transition-all duration-300 ease-in-out ${isCollapsed
+                            ? "max-h-0 opacity-0"
+                            : "max-h-[999px] sm:max-h-[calc(100vh-220px)] opacity-100"
+                            }`}
+                        >
+                          <div className="p-2 space-y-2 sm:h-[calc(100vh-280px)] sm:overflow-y-auto">
+                            {(() => {
+                              const columnItems = filteredTasks.filter(
+                                (item) => item.status === typedStatus
+                              );
+                              return (
+                                <SortableContext
+                                  items={columnItems.map((i) => String(i.id))}
+                                  strategy={verticalListSortingStrategy}
+                                >
+                                  {columnItems.map((item) => (
+                                    <SortableCard key={item.id} item={item} />
+                                  ))}
+                                </SortableContext>
+                              );
+                            })()}
+                            {creatingTaskInColumn === typedStatus ? (
+                              <div className="w-full mt-2">
+                                <input
+                                  type="text"
+                                  value={newTaskTitle}
+                                  autoFocus
+                                  placeholder="Título da tarefa"
+                                  className="w-full px-3 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded shadow-sm focus:outline-none focus:ring focus:border-blue-500"
+                                  onChange={(e) => setNewTaskTitle(e.target.value)}
+                                  onKeyDown={async (e) => {
+                                    if (e.key === "Enter") {
+                                      if (!newTaskTitle.trim()) return;
+                                      if (isCreating) return;
+                                      setIsCreating(true);
+                                      try {
+                                        setTargetStatus(typedStatus);
+                                        await handleCreateTask({
+                                          title: newTaskTitle.trim(),
+                                          description: "",
+                                        });
+                                        setNewTaskTitle("");
+                                        setCreatingTaskInColumn(null);
+                                      } finally {
+                                        setIsCreating(false);
+                                      }
+                                    }
+                                    if (e.key === "Escape") {
+                                      setCreatingTaskInColumn(null);
+                                      setNewTaskTitle("");
+                                    }
+                                  }}
+                                />
+                                <p className="text-xs text-gray-500 mt-1 px-1 italic">
+                                  Pressione &apos;Enter&apos; para adicionar um
+                                  outro item de tarefa
+                                </p>
+                              </div>
+                            ) : (
+                              <button
+                                className="w-full mt-2 px-3 py-2 border border-dashed border-gray-400 rounded text-sm text-gray-500 hover:bg-gray-50"
+                                onClick={() => {
+                                  setTargetStatus(typedStatus);
+                                  setCreatingTaskInColumn(typedStatus);
+                                }}
+                              >
+                                + Criar tarefa
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </ColumnDroppable>
                     </div>
-                  </ColumnDroppable>
-                </div>
-              );
-          })}
-        </div>
-        <DragOverlay dropAnimation={{ duration: 180 }}>
-          {activeId ? (() => {
-            const item = workItems.find(i => String(i.id) === String(activeId));
-            if (!item) return null;
-            return (
-              <div className="bg-white dark:bg-gray-800 text-black dark:text-white p-4 rounded-lg border border-gray-300 dark:border-gray-700 shadow-lg w-72">
-                <div className="text-xs text-gray-500 dark:text-gray-400 mb-1 font-semibold">PRIME-{item.id}</div>
-                <h3 className="text-base font-semibold mb-3 text-gray-900 dark:text-white">{item.title}</h3>
+                  );
+                })}
               </div>
-            );
-          })() : null}
-        </DragOverlay>
-      </DndContext>
-        ) : viewType === "list" ? (
-          <TaskListView 
-            tasks={filteredTasks} 
-            onTaskClick={setSelectedItem} 
-            visibleProperties={displayOptions.visibleProperties}
-          />
-        ) : viewType === "weekly" ? (
-          <TaskWeeklyView 
-            tasks={filteredTasks} 
-            onTaskClick={setSelectedItem}
-          />
-        ) : viewType === "monthly" ? (
-          <TaskMonthlyView 
-            tasks={filteredTasks} 
-            onTaskClick={setSelectedItem}
-          />
-        ) : viewType === "daily" ? (
-          <TaskDailyView 
-            tasks={filteredTasks}
-            onTaskClick={setSelectedItem}
-          />
-        ) : null}
+              <DragOverlay dropAnimation={{ duration: 180 }}>
+                {activeId ? (() => {
+                  const item = workItems.find(i => String(i.id) === String(activeId));
+                  if (!item) return null;
+                  return (
+                    <div className="bg-white dark:bg-gray-800 text-black dark:text-white p-4 rounded-lg border border-gray-300 dark:border-gray-700 shadow-lg w-72">
+                      <div className="text-xs text-gray-500 dark:text-gray-400 mb-1 font-semibold">PRIME-{item.id}</div>
+                      <h3 className="text-base font-semibold mb-3 text-gray-900 dark:text-white">{item.title}</h3>
+                    </div>
+                  );
+                })() : null}
+              </DragOverlay>
+            </DndContext>
+          ) : viewType === "list" ? (
+            <TaskListView
+              tasks={filteredTasks}
+              onTaskClick={setSelectedItem}
+              visibleProperties={displayOptions.visibleProperties}
+            />
+          ) : viewType === "weekly" ? (
+            <TaskWeeklyView
+              tasks={filteredTasks}
+              onTaskClick={setSelectedItem}
+            />
+          ) : viewType === "monthly" ? (
+            <TaskMonthlyView
+              tasks={filteredTasks}
+              onTaskClick={setSelectedItem}
+            />
+          ) : viewType === "daily" ? (
+            <TaskDailyView
+              tasks={filteredTasks}
+              onTaskClick={setSelectedItem}
+            />
+          ) : null}
+        </div>
       </div>
-</div>
-{selectedItem && (
-  <WorkItemSidebar
-    item={selectedItem}
-    workspaceSlug={workspaceSlug}
-    onClose={() => {
-      setSelectedItem(null);
-      const searchParams = new URLSearchParams(window.location.search);
-      searchParams.delete('task');
-      const currentPath = window.location.pathname;
-      router.replace(`${currentPath}?${searchParams.toString()}`, { scroll: false });
-    }}
-    onUpdate={(updated) => {
-      setWorkItems(prev => prev.map(i => (i.id === updated.id ? updated : i)));
-      setSelectedItem(updated);
-    }}
-  />
-)}
-<CreateTaskModal
-  isOpen={isCreateModalOpen}
-  onClose={() => setIsCreateModalOpen(false)}
-  onSubmit={handleCreateTask}
-  workspaceSlug={workspaceSlug}
-/>
-      
+      {selectedItem && (
+        <WorkItemSidebar
+          item={selectedItem}
+          workspaceSlug={workspaceSlug}
+          onClose={() => {
+            setSelectedItem(null);
+            const searchParams = new URLSearchParams(window.location.search);
+            searchParams.delete('task');
+            const currentPath = window.location.pathname;
+            router.replace(`${currentPath}?${searchParams.toString()}`, { scroll: false });
+          }}
+          onUpdate={(updated) => {
+            setWorkItems(prev => prev.map(i => (i.id === updated.id ? updated : i)));
+            setSelectedItem(updated);
+          }}
+        />
+      )}
+      <CreateTaskModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onSubmit={handleCreateTask}
+        workspaceSlug={workspaceSlug}
+      />
+
       <style jsx global>{`
         .transition-transform {
           transition: transform 0.3s ease-in-out;

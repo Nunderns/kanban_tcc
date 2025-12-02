@@ -21,6 +21,7 @@ export function FormattedDateInput({
   className = '',
   fromDate
 }: FormattedDateInputProps) {
+
   const [open, setOpen] = useState(false);
   const minDate = useMemo(() => {
     const today = new Date();
@@ -63,6 +64,7 @@ export function FormattedDateInput({
     onChange(formattedDate);
     setOpen(false);
   };
+
 
   return (
     <Popover open={open} onOpenChange={setOpen}>

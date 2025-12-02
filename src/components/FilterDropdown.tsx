@@ -54,8 +54,8 @@ export default function FilterDropdown({ filters, onFilterChange }: FilterDropdo
       <Section title="Prioridade">
         {["Urgent", "High", "Medium", "Low", "None"].map((p) => (
           <label className="flex items-center gap-2" key={p}>
-            <input 
-              type="checkbox" 
+            <input
+              type="checkbox"
               className="form-checkbox text-blue-600 bg-[#2a2a2a] border-gray-600"
               checked={filters.priority.includes(p)}
               onChange={(e) => onFilterChange('priority', p, e.target.checked)}
@@ -66,10 +66,10 @@ export default function FilterDropdown({ filters, onFilterChange }: FilterDropdo
       </Section>
 
       <Section title="Status">
-        {["Backlog", "Não iniciado", "Iniciado", "Completado", "Cancelado"].map((s) => (
+        {["Backlog", "Não iniciado", "Iniciado", "Completado"].map((s) => (
           <label className="flex items-center gap-2" key={s}>
-            <input 
-              type="checkbox" 
+            <input
+              type="checkbox"
               className="form-checkbox text-blue-600 bg-[#2a2a2a] border-gray-600"
               checked={filters.status.includes(s)}
               onChange={(e) => onFilterChange('status', s, e.target.checked)}
@@ -98,19 +98,11 @@ export default function FilterDropdown({ filters, onFilterChange }: FilterDropdo
       <Section title="Etiqueta">
         <span className="text-gray-400 italic">Não encontrado</span>
       </Section>
-
-      <Section title="Projeto">
-        <label className="flex items-center gap-2">
-          <input type="checkbox" className="form-checkbox text-blue-600 bg-[#2a2a2a] border-gray-600" />
-          <span className="text-yellow-500">👌</span> Primeiro Projeto
-        </label>
-      </Section>
-
       <Section title="Data de início">
         {["Hoje", "Amanhã", "Esta semana", "Próxima semana", "Próximo mês"].map((option) => (
           <label className="flex items-center gap-2" key={`start-${option}`}>
-            <input 
-              type="checkbox" 
+            <input
+              type="checkbox"
               className="form-checkbox text-blue-600 bg-[#2a2a2a] border-gray-600"
               checked={filters.startDate.includes(option)}
               onChange={(e) => onFilterChange('startDate', option, e.target.checked)}
@@ -119,8 +111,8 @@ export default function FilterDropdown({ filters, onFilterChange }: FilterDropdo
           </label>
         ))}
         <div className="mt-2">
-          <input 
-            type="date" 
+          <input
+            type="date"
             className="w-full px-2 py-1 rounded bg-[#2a2a2a] border border-gray-600 text-white text-sm"
             onChange={(e) => {
               const date = e.target.value;
@@ -137,8 +129,8 @@ export default function FilterDropdown({ filters, onFilterChange }: FilterDropdo
       <Section title="Data de entrega">
         {["Hoje", "Amanhã", "Esta semana", "Próxima semana", "Próximo mês"].map((option) => (
           <label className="flex items-center gap-2" key={`due-${option}`}>
-            <input 
-              type="checkbox" 
+            <input
+              type="checkbox"
               className="form-checkbox text-blue-600 bg-[#2a2a2a] border-gray-600"
               checked={filters.dueDate.includes(option)}
               onChange={(e) => onFilterChange('dueDate', option, e.target.checked)}
@@ -147,8 +139,8 @@ export default function FilterDropdown({ filters, onFilterChange }: FilterDropdo
           </label>
         ))}
         <div className="mt-2">
-          <input 
-            type="date" 
+          <input
+            type="date"
             className="w-full px-2 py-1 rounded bg-[#2a2a2a] border border-gray-600 text-white text-sm"
             onChange={(e) => {
               const date = e.target.value;
@@ -161,7 +153,7 @@ export default function FilterDropdown({ filters, onFilterChange }: FilterDropdo
           />
         </div>
       </Section>
-      
+
       {hasActiveFilters && (
         <div className="mt-4 pt-3 border-t border-gray-700">
           <button
