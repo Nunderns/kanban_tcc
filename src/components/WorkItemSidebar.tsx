@@ -752,7 +752,7 @@ export default function WorkItemSidebar({ item, onClose, onUpdate, workspaceSlug
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            user: "henri.okayama",
+            user: session?.user?.name || session?.user?.email || 'Usuário',
             action: "updated field",
             field,
             oldValue: Array.isArray(oldValue) ? oldValue.join(", ") : (oldValue?.toString() || ""),
@@ -1032,7 +1032,7 @@ export default function WorkItemSidebar({ item, onClose, onUpdate, workspaceSlug
               />
               <p className="text-xs text-gray-500 dark:text-white/50 flex items-center gap-2">
                 <UserCircleIcon className="h-4 w-4 text-gray-500 dark:text-white/50" />
-                Criado por {formatUserName(item.creator || "henri.okayama")}
+                Criado por {formatUserName(item.creator || 'Usuário')}
               </p>
             </div>
             <div className="flex flex-col items-stretch gap-3 sm:items-end">
@@ -1100,7 +1100,7 @@ export default function WorkItemSidebar({ item, onClose, onUpdate, workspaceSlug
             <section className="rounded-2xl border border-gray-200 bg-white p-4 dark:border-white/5 dark:bg-white/[0.02] sm:p-6">
               <div className="flex flex-col gap-2 border-b border-gray-200 pb-4 dark:border-white/5 sm:flex-row sm:items-center sm:justify-between">
                 <h3 className="text-sm font-semibold uppercase tracking-widest text-gray-600 dark:text-white/60">Propriedades</h3>
-                <p className="text-xs text-gray-500 dark:text-white/40">Última edição por {formatUserName(item.creator || "henri.okayama")}</p>
+                <p className="text-xs text-gray-500 dark:text-white/40">Última edição por {formatUserName(session?.user?.name || session?.user?.email || 'Usuário')}</p>
               </div>
 
               <div className="mt-4 grid gap-4 sm:mt-6 sm:grid-cols-2">
@@ -1205,7 +1205,7 @@ export default function WorkItemSidebar({ item, onClose, onUpdate, workspaceSlug
                   <p className="text-[11px] uppercase tracking-wide text-gray-500 dark:text-white/40">Criado por</p>
                   <div className="mt-3 flex items-center gap-2 text-sm text-gray-700 dark:text-white/80">
                     <UserCircleIcon className="h-5 w-5 text-emerald-400" />
-                    {formatUserName(item.creator || "henri.okayama")}
+                    {formatUserName(item.creator || 'Usuário')}
                   </div>
                 </div>
 
