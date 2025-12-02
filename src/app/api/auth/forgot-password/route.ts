@@ -4,7 +4,7 @@ import { Resend } from 'resend';
 import { v4 as uuidv4 } from 'uuid';
 
 const prisma = new PrismaClient();
-const resend = new Resend(process.env.RESEND_API_KEY);
+const resend = new Resend(process.env.RESEND_API_KEY || '');
 
 export async function POST(request: Request) {
   try {
@@ -34,7 +34,8 @@ export async function POST(request: Request) {
 
     const resetUrl = `${process.env.NEXTAUTH_URL}/reset-password?token=${resetToken}`;
 
-    const { error } = await resend.sendEmail({
+    // @ts-expect-error - The Resend types might be outdated
+    const { error } = await resend.emails.send({
       from: 'TaskFlow <suporte@genovatranslations.com>',
       to: email,
       subject: 'Redefinição de Senha - TaskFlow',
@@ -52,11 +53,10 @@ export async function POST(request: Request) {
               Redefinir Senha
             </a>
           </div>
-          <p>Se você não solicitou esta alteração, pode ignorar este email com segurança.</p>
-          <p>Este link expirará em 1 hora.</p>
+          <p>Se você não solicitou esta redefinição, por favor ignore este email.</p>
           <p>Atenciosamente,<br>Equipe TaskFlow</p>
         </div>
-      `,
+      `
     });
 
     if (error) {

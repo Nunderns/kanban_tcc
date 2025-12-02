@@ -137,6 +137,70 @@ export async function PATCH(
       },
     });
 
+    const taskFromDB = await prisma.task.findUnique({
+      where: { id: taskId },
+      include: {
+        user: { select: { id: true, name: true, email: true } },
+        assignedUser: { select: { id: true, name: true, email: true } },
+        project: { select: { id: true, name: true } },
+        workspace: { select: { id: true, name: true, slug: true } },
+      },
+    });
+
+    const changedFields = Object.keys(cleanedData).filter(
+      key => JSON.stringify(taskFromDB[key as keyof typeof taskFromDB]) !== JSON.stringify(cleanedData[key as keyof typeof cleanedData])
+    );
+
+    const userName = session?.user?.name || session?.user?.email || 'Usuário';
+
+    await Promise.all(changedFields.map(async (field) => {
+      const oldValue = taskFromDB[field as keyof typeof taskFromDB];
+      const newValue = cleanedData[field as keyof typeof cleanedData];
+      if (field === 'assignedUserId' && !newValue) return;
+      const fieldDisplayNames: Record<string, string> = {
+        'assignedUserId': 'responsável',
+        'dueDate': 'prazo',
+        'status': 'status',
+        'priority': 'prioridade',
+        'title': 'título',
+        'description': 'descrição',
+        'module': 'módulo'
+      };
+
+      const displayField = fieldDisplayNames[field] || field;
+      let formattedOldValue = Array.isArray(oldValue) ? oldValue.join(", ") : (oldValue?.toString() || "não definido");
+      let formattedNewValue = Array.isArray(newValue) ? newValue.join(", ") : (newValue?.toString() || "não definido");
+      if (field === 'assignedUserId' && newValue) {
+        try {
+          const userResponse = await fetch(`/api/users/${newValue}`);
+          if (userResponse.ok) {
+            const userData = await userResponse.json();
+            formattedNewValue = userData.name || userData.email || `Usuário ${newValue}`;
+          }
+        } catch (error) {
+          console.error('Error fetching user data:', error);
+        }
+      }
+      if ((field === 'dueDate' || field === 'startDate') && newValue) {
+        formattedNewValue = new Date(newValue).toLocaleDateString('pt-BR');
+      }
+      if ((field === 'dueDate' || field === 'startDate') && oldValue) {
+        formattedOldValue = new Date(oldValue).toLocaleDateString('pt-BR');
+      }
+
+      await fetch(`/api/tasks/${taskFromDB.id}/activities`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          user: userName,
+          action: field === 'assignedUserId' ? 'assigned' : 'updated',
+          field: displayField,
+          oldValue: formattedOldValue,
+          newValue: formattedNewValue
+        })
+      });
+    }));
+
     return NextResponse.json(updatedTask);
   } catch (error) {
     console.error('Erro ao atualizar tarefa:', error);

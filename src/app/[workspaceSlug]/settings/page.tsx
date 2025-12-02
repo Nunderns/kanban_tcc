@@ -115,17 +115,16 @@ export default function SettingsPage() {
       setIsLoadingActivities(true);
       try {
         setError(null);
-        const response = await fetch('/api/activities', {
+        const response = await fetch(`/api/workspaces/activities?workspaceSlug=${params.workspaceSlug}`, {
           headers: {
             'Accept': 'application/json',
             'Cache-Control': 'no-cache'
-          }
+          },
+          cache: 'no-store'
         });
 
-        const contentType = response.headers.get('content-type');
-        if (!contentType || !contentType.includes('application/json')) {
-          const text = await response.text();
-          throw new Error(`Invalid content type: ${contentType}, Response: ${text}`);
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
         }
 
         const data = await response.json();
@@ -157,7 +156,7 @@ export default function SettingsPage() {
     };
 
     fetchActivities();
-  }, [activeSection]);
+  }, [activeSection, params.workspaceSlug]);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -359,24 +358,35 @@ export default function SettingsPage() {
       );
     }
 
-    const isAssignment = normalizeFieldKey(field) === 'assignee' || normalizeFieldKey(field) === 'assigneduserid';
-    if (isAssignment && hasNewValue && !hasOldValue) {
-      return (
-        <span>
-          <span className="text-purple-600 dark:text-purple-400 font-semibold">atribuiu</span>{' '}
-          a tarefa {renderTaskReference()} para{' '}
-          <span className="font-semibold text-blue-600 dark:text-blue-300">{newVal}</span>
-        </span>
-      );
-    }
-
-    if (isAssignment && hasOldValue && !hasNewValue) {
-      return (
-        <span>
-          <span className="text-orange-600 dark:text-orange-400 font-semibold">removeu a atribuição</span>{' '}
-          da tarefa {renderTaskReference()}
-        </span>
-      );
+    const normalizedField = normalizeFieldKey(field);
+    const isAssignment = normalizedField === 'assignee' || normalizedField === 'assigneduserid' || normalizedField === 'assignedusername';
+    
+    if (isAssignment) {
+      if (hasNewValue && !hasOldValue) {
+        return (
+          <span>
+            <span className="text-purple-600 dark:text-purple-400 font-semibold">atribuiu</span>{' '}
+            a tarefa {renderTaskReference()} para{' '}
+            <span className="font-semibold text-blue-600 dark:text-blue-300">{newVal}</span>
+          </span>
+        );
+      } else if (hasOldValue && !hasNewValue) {
+        return (
+          <span>
+            <span className="text-orange-600 dark:text-orange-400 font-semibold">removeu a atribuição</span>{' '}
+            da tarefa {renderTaskReference()}
+          </span>
+        );
+      } else if (hasOldValue && hasNewValue) {
+        return (
+          <span>
+            <span className="text-indigo-600 dark:text-indigo-400 font-semibold">alterou o responsável</span>{' '}
+            da tarefa {renderTaskReference()} de{' '}
+            <span className="font-medium text-red-600 dark:text-red-400">{oldVal}</span> para{' '}
+            <span className="font-medium text-green-600 dark:text-green-400">{newVal}</span>
+          </span>
+        );
+      }
     }
 
     return (
@@ -875,7 +885,7 @@ export default function SettingsPage() {
                 <div>
                   <h3 className="font-medium mb-2">Primeiro dia da semana</h3>
                   <p className="text-sm text-gray-700 mb-3">Isso alterará como todos os calendários no aplicativo são exibidos.</p>
-                  <select 
+                  <select
                     className="w-full rounded-md border border-gray-200 dark:border-gray-700 px-3 py-2 dark:bg-gray-800 dark:text-white"
                     value={firstDayOfWeek}
                     onChange={handleFirstDayOfWeekChange}
@@ -1291,8 +1301,7 @@ export default function SettingsPage() {
     { id: 'notifications', name: 'Notificações', ptName: 'Notificações' },
     { id: 'security', name: 'Segurança', ptName: 'Segurança' },
     { id: 'activity', name: 'Atividade', ptName: 'Atividade' },
-    { id: 'connections', name: 'Conexões', ptName: 'Conexões' },
-    { id: 'developer', name: 'Desenvolvedor', ptName: 'Desenvolvedor' },
+    { id: 'connections', name: 'Conexões', ptName: 'Conexões' }
   ];
 
   return (

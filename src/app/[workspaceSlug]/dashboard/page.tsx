@@ -74,7 +74,6 @@ function DashboardContent() {
   const { theme, setTheme } = useTheme();
   const [isLoading, setIsLoading] = useState(true);
   const [isClient, setIsClient] = useState(false);
-  const [activeTab, setActiveTab] = useState('overview');
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredTasks, setFilteredTasks] = useState<Task[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -550,24 +549,6 @@ function DashboardContent() {
             </div>
           </div>
         </header>
-        <div className="border-b border-gray-200 mb-8">
-          <nav className="flex space-x-8">
-            {['overview', 'projects', 'tasks', 'reports', 'team'].map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`py-3 px-1 font-medium text-sm border-b-2 transition-colors ${
-                  activeTab === tab 
-                    ? 'border-blue-500 text-blue-600' 
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                {tab.charAt(0).toUpperCase() + tab.slice(1)}
-              </button>
-            ))}
-          </nav>
-        </div>
-
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {isLoading ? (
             Array(4).fill(0).map((_, index) => (
@@ -678,11 +659,11 @@ function DashboardContent() {
                   </div>
                 </CardHeader>
                 <CardContent className="p-0">
-                  <div className="divide-y divide-gray-100">
+                  <div className="divide-y divide-gray-700">
                     {filteredTasks.slice(0, 5).map((task) => (
                       <motion.div 
                         key={task.id}
-                        className="p-4 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors duration-200 rounded-lg group cursor-pointer"
+                        className="p-4 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors duration-200 group cursor-pointer"
                         whileHover={{ scale: 1.01, boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' }}
                         onClick={() => {
                           router.push(`/${params.workspaceSlug}/dashboard/my-tasks?task=${task.id}`);
@@ -693,7 +674,7 @@ function DashboardContent() {
                             <p className="font-medium text-gray-900 dark:text-white group-hover:text-gray-900 dark:group-hover:text-white truncate">{task.title}</p>
                             <p className="text-sm text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-300 mt-1 line-clamp-2">{task.description}</p>
                             {task.remainingDays !== null && task.remainingDays !== undefined && (
-                              <div className="flex items-center mt-2 text-xs text-gray-500">
+                              <div className="flex items-center mt-2 text-xs text-gray-100">
                                 <FiClock className="mr-1" />
                                 <span>
                                   {task.remainingDays} {task.remainingDays === 1 ? 'dia restante' : 'dias restantes'}
@@ -926,12 +907,12 @@ function DashboardContent() {
                     <CardTitle className="dark:text-white">Membros da Equipe</CardTitle>
                     <CardDescription className="dark:text-gray-300">{stats.members.length} pessoas na equipe</CardDescription>
                   </div>
-                  <button 
-                    onClick={() => setActiveTab('team')}
+                  <Link 
+                    href={`/${workspaceSlug}/team`}
                     className="text-sm text-blue-600 hover:underline flex items-center"
                   >
                     Ver todos <FiUsers className="ml-1" />
-                  </button>
+                  </Link>
                 </div>
               </CardHeader>
               <CardContent>

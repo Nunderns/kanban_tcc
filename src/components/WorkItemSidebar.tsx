@@ -29,8 +29,6 @@ import {
   ClockIcon,
   CheckCircleIcon,
   FlagIcon,
-  CubeIcon,
-  ArrowsPointingOutIcon,
   ListBulletIcon,
   ArrowPathIcon,
   ChevronDownIcon,
@@ -39,7 +37,6 @@ import {
   SquaresPlusIcon,
   ArrowsRightLeftIcon,
   LinkIcon,
-  PaperClipIcon,
   ChatBubbleLeftRightIcon,
   PlusIcon,
   PencilIcon,
@@ -130,7 +127,9 @@ export default function WorkItemSidebar({ item, onClose, onUpdate, workspaceSlug
       'module': 'módulo',
       'cycle': 'ciclo',
       'assignees': 'responsáveis',
-      'labels': 'etiquetas'
+      'labels': 'etiquetas',
+      'assignedUserId': 'responsável',
+      'assignedUserName': 'responsável'
     };
 
     return fieldMap[field] || field;
@@ -169,8 +168,23 @@ export default function WorkItemSidebar({ item, onClose, onUpdate, workspaceSlug
       return newValue?.trim() || 'Comentou na tarefa';
     }
 
-    if (field === 'assignedUserName') {
-      return '';
+    // Special handling for assigned user changes
+    if (field === 'assignedUserId' || field === 'assignedUserName') {
+      if (newValue && (!oldValue || oldValue === 'null' || oldValue === 'undefined')) {
+        const assignedUser = workspaceMembers.find(member => member.id === newValue);
+        const userName = assignedUser?.displayName || assignedUser?.fullName || 'um usuário';
+        return `Atribuiu a tarefa para ${userName}`;
+      } else if (!newValue || newValue === 'null' || newValue === 'undefined') {
+        const previousUser = workspaceMembers.find(member => member.id === oldValue);
+        const userName = previousUser?.displayName || previousUser?.fullName || 'um usuário';
+        return `Removeu a atribuição de ${userName}`;
+      } else {
+        const oldUser = workspaceMembers.find(member => member.id === oldValue);
+        const newUser = workspaceMembers.find(member => member.id === newValue);
+        const oldUserName = oldUser?.displayName || oldUser?.fullName || 'um usuário';
+        const newUserName = newUser?.displayName || newUser?.fullName || 'um usuário';
+        return `Transferiu a tarefa de ${oldUserName} para ${newUserName}`;
+      }
     }
     if (action === 'updated field') {
       const isDateField = field.toLowerCase().includes('date');
@@ -193,7 +207,12 @@ export default function WorkItemSidebar({ item, onClose, onUpdate, workspaceSlug
         }
       }
 
-      const formatValue = (value: string) => {
+      const formatValue = (value: string, isUserField = false) => {
+        if (isUserField) {
+          if (!value || value === 'null' || value === 'undefined') return 'não definido';
+          const user = workspaceMembers.find(member => member.id === value);
+          return user?.displayName || user?.fullName || value;
+        }
         if (isDateField) return formatDate(value);
         if (!value || value === 'null' || value === 'undefined') return 'não definido';
         return value;
@@ -201,8 +220,6 @@ export default function WorkItemSidebar({ item, onClose, onUpdate, workspaceSlug
 
       const oldVal = formatValue(oldValue);
       const newVal = formatValue(newValue);
-
-      if (field === 'assignedUserId') return '';
 
       return `Alterou o campo ${fieldName} de "${oldVal}" para "${newVal}"`;
     }
@@ -250,8 +267,7 @@ export default function WorkItemSidebar({ item, onClose, onUpdate, workspaceSlug
   const actionButtons = [
     { label: "Adicionar sub-item de trabalho", icon: SquaresPlusIcon },
     { label: "Adicionar relação", icon: ArrowsRightLeftIcon },
-    { label: "Adicionar link", icon: LinkIcon },
-    { label: "Anexar", icon: PaperClipIcon }
+    { label: "Adicionar link", icon: LinkIcon }
   ];
 
   const handleActionClick = (action: string) => {
@@ -357,7 +373,7 @@ export default function WorkItemSidebar({ item, onClose, onUpdate, workspaceSlug
 
   const handleCreateNewSubtask = useCallback(async (taskData: { title: string; description: string; assignedUserId?: string; projectId?: string }) => {
     try {
-      const workspaceResponse = await fetch(`/api/workspaces/slug/${workspaceSlug}`);
+      const workspaceResponse = await fetch(`/api/workspaces/[slug]/${workspaceSlug}`);
       if (!workspaceResponse.ok) {
         throw new Error('Failed to get workspace info');
       }
@@ -1234,33 +1250,6 @@ export default function WorkItemSidebar({ item, onClose, onUpdate, workspaceSlug
                     />
                   </div>
                 </div>
-
-                <div className="rounded-2xl border border-gray-200 bg-white p-4 dark:border-white/10 dark:bg-black/20">
-                  <p className="text-[11px] uppercase tracking-wide text-gray-500 dark:text-white/40">Módulos</p>
-                  <div className="mt-3 flex items-center gap-3">
-                    <CubeIcon className="h-5 w-5 text-gray-500 dark:text-white/60" />
-                    <input
-                      value={localItem.module || ""}
-                      onChange={(e) => handleChange("module", e.target.value)}
-                      className="flex-1 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-gray-400 focus:outline-none dark:border-white/10 dark:bg-transparent dark:text-white dark:placeholder-white/40"
-                      placeholder="Nenhum módulo"
-                    />
-                  </div>
-                </div>
-
-                <div className="rounded-2xl border border-gray-200 bg-white p-4 dark:border-white/10 dark:bg-black/20">
-                  <p className="text-[11px] uppercase tracking-wide text-gray-500 dark:text-white/40">Ciclo</p>
-                  <div className="mt-3 flex items-center gap-3">
-                    <ArrowsPointingOutIcon className="h-5 w-5 text-gray-500 dark:text-white/60" />
-                    <input
-                      value={localItem.cycle || ""}
-                      onChange={(e) => handleChange("cycle", e.target.value)}
-                      className="flex-1 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-gray-400 focus:outline-none dark:border-white/10 dark:bg-transparent dark:text-white dark:placeholder-white/40"
-                      placeholder="Nenhum ciclo"
-                    />
-                  </div>
-                </div>
-
                 <div className="rounded-2xl border border-gray-200 bg-white p-4 dark:border-white/10 dark:bg-black/20 sm:col-span-2">
                   <p className="text-[11px] uppercase tracking-wide text-gray-500 dark:text-white/40">Etiquetas</p>
                   <div className="mt-3 flex items-center gap-3">
@@ -1275,8 +1264,6 @@ export default function WorkItemSidebar({ item, onClose, onUpdate, workspaceSlug
                 </div>
               </div>
             </section>
-
-            {/* Subtasks Section */}
             {(localItem.subtasks && localItem.subtasks.length > 0) && (
               <section className="rounded-2xl border border-gray-200 bg-white p-4 dark:border-white/5 dark:bg-white/[0.02] sm:p-6">
                 <div className="flex items-center justify-between border-b border-gray-200 pb-4 dark:border-white/5">

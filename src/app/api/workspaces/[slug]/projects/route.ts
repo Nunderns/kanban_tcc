@@ -2,17 +2,6 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-interface MemberWithUser {
-  userId: string;
-  role: string;
-  user: {
-    id: string;
-    name: string | null;
-    email: string;
-    image: string | null;
-  };
-}
-
 export async function GET(
   req: Request,
   { params }: { params: Promise<{ slug: string }> }
@@ -34,24 +23,16 @@ export async function GET(
       return NextResponse.json({ error: "Workspace não encontrada" }, { status: 404 });
     }
 
-    const members = await prisma.workspaceMember.findMany({
+    const projects = await prisma.project.findMany({
       where: { workspaceId: workspace.id },
-      include: {
-        user: { select: { id: true, name: true, email: true, image: true } }
-      },
-      orderBy: { role: "asc" }
+      select: { id: true, name: true },
+      orderBy: { name: "asc" }
     });
 
-    return NextResponse.json({
-      members: members.map((member: MemberWithUser) => ({
-        userId: member.userId,
-        role: member.role,
-        user: member.user
-      }))
-    });
+    return NextResponse.json({ projects });
 
   } catch (error) {
-    console.error("Erro ao buscar membros:", error);
+    console.error("Erro ao buscar projetos:", error);
     return NextResponse.json({ error: "Erro interno" }, { status: 500 });
   }
 }
