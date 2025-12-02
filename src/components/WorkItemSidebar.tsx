@@ -29,8 +29,6 @@ import {
   ClockIcon,
   CheckCircleIcon,
   FlagIcon,
-  CubeIcon,
-  ArrowsPointingOutIcon,
   ListBulletIcon,
   ArrowPathIcon,
   ChevronDownIcon,
@@ -39,7 +37,6 @@ import {
   SquaresPlusIcon,
   ArrowsRightLeftIcon,
   LinkIcon,
-  PaperClipIcon,
   ChatBubbleLeftRightIcon,
   PlusIcon,
   PencilIcon,
@@ -270,8 +267,7 @@ export default function WorkItemSidebar({ item, onClose, onUpdate, workspaceSlug
   const actionButtons = [
     { label: "Adicionar sub-item de trabalho", icon: SquaresPlusIcon },
     { label: "Adicionar relação", icon: ArrowsRightLeftIcon },
-    { label: "Adicionar link", icon: LinkIcon },
-    { label: "Anexar", icon: PaperClipIcon }
+    { label: "Adicionar link", icon: LinkIcon }
   ];
 
   const handleActionClick = (action: string) => {
@@ -377,7 +373,7 @@ export default function WorkItemSidebar({ item, onClose, onUpdate, workspaceSlug
 
   const handleCreateNewSubtask = useCallback(async (taskData: { title: string; description: string; assignedUserId?: string; projectId?: string }) => {
     try {
-      const workspaceResponse = await fetch(`/api/workspaces/slug/${workspaceSlug}`);
+      const workspaceResponse = await fetch(`/api/workspaces/[slug]/${workspaceSlug}`);
       if (!workspaceResponse.ok) {
         throw new Error('Failed to get workspace info');
       }
@@ -1254,33 +1250,6 @@ export default function WorkItemSidebar({ item, onClose, onUpdate, workspaceSlug
                     />
                   </div>
                 </div>
-
-                <div className="rounded-2xl border border-gray-200 bg-white p-4 dark:border-white/10 dark:bg-black/20">
-                  <p className="text-[11px] uppercase tracking-wide text-gray-500 dark:text-white/40">Módulos</p>
-                  <div className="mt-3 flex items-center gap-3">
-                    <CubeIcon className="h-5 w-5 text-gray-500 dark:text-white/60" />
-                    <input
-                      value={localItem.module || ""}
-                      onChange={(e) => handleChange("module", e.target.value)}
-                      className="flex-1 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-gray-400 focus:outline-none dark:border-white/10 dark:bg-transparent dark:text-white dark:placeholder-white/40"
-                      placeholder="Nenhum módulo"
-                    />
-                  </div>
-                </div>
-
-                <div className="rounded-2xl border border-gray-200 bg-white p-4 dark:border-white/10 dark:bg-black/20">
-                  <p className="text-[11px] uppercase tracking-wide text-gray-500 dark:text-white/40">Ciclo</p>
-                  <div className="mt-3 flex items-center gap-3">
-                    <ArrowsPointingOutIcon className="h-5 w-5 text-gray-500 dark:text-white/60" />
-                    <input
-                      value={localItem.cycle || ""}
-                      onChange={(e) => handleChange("cycle", e.target.value)}
-                      className="flex-1 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-gray-400 focus:outline-none dark:border-white/10 dark:bg-transparent dark:text-white dark:placeholder-white/40"
-                      placeholder="Nenhum ciclo"
-                    />
-                  </div>
-                </div>
-
                 <div className="rounded-2xl border border-gray-200 bg-white p-4 dark:border-white/10 dark:bg-black/20 sm:col-span-2">
                   <p className="text-[11px] uppercase tracking-wide text-gray-500 dark:text-white/40">Etiquetas</p>
                   <div className="mt-3 flex items-center gap-3">
@@ -1295,8 +1264,6 @@ export default function WorkItemSidebar({ item, onClose, onUpdate, workspaceSlug
                 </div>
               </div>
             </section>
-
-            {/* Subtasks Section */}
             {(localItem.subtasks && localItem.subtasks.length > 0) && (
               <section className="rounded-2xl border border-gray-200 bg-white p-4 dark:border-white/5 dark:bg-white/[0.02] sm:p-6">
                 <div className="flex items-center justify-between border-b border-gray-200 pb-4 dark:border-white/5">

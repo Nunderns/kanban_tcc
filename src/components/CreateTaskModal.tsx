@@ -52,27 +52,46 @@ function CreateTaskModal({
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
   const [isProjectDropdownOpen, setIsProjectDropdownOpen] = useState(false);
   const [loadingMembers, setLoadingMembers] = useState(false);
-  const [projects, setProjects] = useState<Array<{id: string, name: string}>>([]);
+  const [projects, setProjects] = useState<Array<{ id: string, name: string }>>([]);
   const [loadingProjects, setLoadingProjects] = useState(false);
 
   const fetchWorkspaceData = useCallback(async () => {
     try {
       setLoadingMembers(true);
       setLoadingProjects(true);
-      
-      const membersResponse = await fetch(`/api/workspaces/slug/${workspaceSlug}`);
+
+      const membersResponse = await fetch(`/api/workspaces/${workspaceSlug}/members`);
       if (membersResponse.ok) {
-        const workspaceData = await membersResponse.json();
-        setWorkspaceMembers(workspaceData.members || []);
+        const membersData = await membersResponse.json();
+        interface Member {
+          userId: string;
+          user: {
+            name: string | null;
+            email: string;
+          };
+          role: string;
+        }
+        
+        const formattedMembers = membersData.members?.map((member: Member) => ({
+          id: member.userId,
+          fullName: member.user.name || member.user.email,
+          displayName: member.user.name || member.user.email.split('@')[0],
+          email: member.user.email,
+          role: member.role
+        })) || [];
+        setWorkspaceMembers(formattedMembers);
+      } else {
+        console.error('Erro ao buscar membros:', await membersResponse.text());
       }
-      
-      const projectsResponse = await fetch(`/api/workspaces/slug/${workspaceSlug}/projects`);
+      const projectsResponse = await fetch(`/api/workspaces/${workspaceSlug}/projects`);
       if (projectsResponse.ok) {
         const projectsData = await projectsResponse.json();
         setProjects(projectsData.projects || []);
+      } else {
+        console.error('Erro ao buscar projetos:', await projectsResponse.text());
       }
     } catch (error) {
-      console.error('Error fetching workspace data:', error);
+      console.error('Erro ao buscar dados da workspace:', error);
     } finally {
       setLoadingMembers(false);
       setLoadingProjects(false);
@@ -107,8 +126,8 @@ function CreateTaskModal({
     if (!title.trim()) return;
     setIsSubmitting(true);
     try {
-      await onSubmit({ 
-        title, 
+      await onSubmit({
+        title,
         description,
         assignedUserId: selectedUser || undefined,
         projectId: selectedProject || undefined
@@ -123,16 +142,18 @@ function CreateTaskModal({
       setIsSubmitting(false);
     }
   };
-
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]">
+    <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-[9999]">
       <div
-        className="bg-white rounded-lg p-6 w-full max-w-md text-black"
+        className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md text-black dark:text-white shadow-xl"
         ref={modalRef}
       >
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold">Criar Tarefa</h2>
-          <button onClick={onClose} className="text-gray-500 hover:text-black">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white">Criar Tarefa</h2>
+          <button
+            onClick={onClose}
+            className="text-gray-500 hover:text-black dark:text-gray-400 dark:hover:text-white transition-colors"
+          >
             <FaTimes />
           </button>
         </div>
@@ -140,7 +161,7 @@ function CreateTaskModal({
         <form onSubmit={handleSubmit}>
           <input
             type="text"
-            className="w-full bg-white border border-gray-300 rounded p-2 text-sm mb-4"
+            className="w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded p-2 text-sm mb-4 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             placeholder="Título"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
@@ -149,7 +170,7 @@ function CreateTaskModal({
           />
 
           <textarea
-            className="w-full bg-white border border-gray-300 rounded p-2 text-sm h-24 mb-4"
+            className="w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded p-2 text-sm h-24 mb-4 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             placeholder="Descrição"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
@@ -157,110 +178,120 @@ function CreateTaskModal({
 
           {/* User Assignment */}
           <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Atribuir a usuário
             </label>
             <div className="relative">
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
-                  className="w-full bg-white border border-gray-300 rounded p-2 text-sm flex items-center justify-between hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <div className="flex items-center gap-2">
-                    <FaUser className="text-gray-500" />
-                    {selectedUser 
+              <button
+                type="button"
+                onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
+                className="w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded p-2 text-sm flex items-center justify-between hover:border-gray-400 dark:hover:border-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 text-left"
+              >
+                <div className="flex items-center gap-2">
+                  <FaUser className="text-gray-500 dark:text-gray-400" />
+                  <span className="text-gray-900 dark:text-white">
+                    {selectedUser
                       ? workspaceMembers.find(m => m.id === selectedUser)?.fullName || 'Usuário selecionado'
                       : 'Selecione um usuário (opcional)'
                     }
-                  </div>
-                  <FaChevronDown className="text-xs text-gray-500" />
-                </button>
-                {isUserDropdownOpen && (
-                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded shadow-lg">
-                    {loadingMembers ? (
-                      <div className="p-2 text-sm text-gray-500">Carregando...</div>
-                    ) : (
-                      workspaceMembers.map(member => (
-                        <div 
-                          key={member.id}
-                          className="p-2 hover:bg-gray-100 cursor-pointer flex items-center"
-                          onClick={() => {
-                            setSelectedUser(member.id);
-                            setIsUserDropdownOpen(false);
-                          }}
-                        >
-                          <FaUser className="mr-2 text-gray-500" />
-                          {member.displayName}
-                        </div>
-                      ))
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Projeto
-              </label>
-              <div className="relative">
-                <div 
-                  className="w-full bg-white border border-gray-300 rounded p-2 text-sm flex justify-between items-center cursor-pointer"
-                  onClick={() => setIsProjectDropdownOpen(!isProjectDropdownOpen)}
-                >
-                  {selectedProject ? 
-                    projects.find(p => p.id === selectedProject)?.name : 
-                    'Selecione um projeto (opcional)'}
-                  <FaChevronDown className="text-xs text-gray-500" />
+                  </span>
                 </div>
-                {isProjectDropdownOpen && (
-                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded shadow-lg">
-                    <div 
-                      className="p-2 hover:bg-gray-100 cursor-pointer"
-                      onClick={() => {
-                        setSelectedProject('');
-                        setIsProjectDropdownOpen(false);
-                      }}
-                    >
-                      Nenhum projeto
-                    </div>
-                    {loadingProjects ? (
-                      <div className="p-2 text-sm text-gray-500">Carregando projetos...</div>
-                    ) : (
-                      projects.map(project => (
-                        <div 
-                          key={project.id}
-                          className="p-2 hover:bg-gray-100 cursor-pointer"
-                          onClick={() => {
-                            setSelectedProject(project.id);
-                            setIsProjectDropdownOpen(false);
-                          }}
-                        >
-                          {project.name}
-                        </div>
-                      ))
-                    )}
-                  </div>
-                )}
-              </div>
+                <FaChevronDown className="text-xs text-gray-500 dark:text-gray-400" />
+              </button>
+              {isUserDropdownOpen && (
+                <div className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded shadow-lg max-h-60 overflow-y-auto">
+                  {loadingMembers ? (
+                    <div className="p-2 text-sm text-gray-500 dark:text-gray-400">Carregando...</div>
+                  ) : workspaceMembers.length > 0 ? (
+                    workspaceMembers.map(member => (
+                      <div
+                        key={member.id}
+                        className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer flex items-center text-gray-900 dark:text-white"
+                        onClick={() => {
+                          setSelectedUser(member.id);
+                          setIsUserDropdownOpen(false);
+                        }}
+                      >
+                        <FaUser className="mr-2 text-gray-500 dark:text-gray-400 flex-shrink-0" />
+                        <span className="truncate">{member.displayName || member.fullName || member.email}</span>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="p-2 text-sm text-gray-500 dark:text-gray-400">Nenhum membro encontrado</div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
-          <div className="flex justify-end gap-2 mt-4">
+          {/* Project Selection */}
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Projeto
+            </label>
+            <div className="relative">
+              <div
+                className="w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded p-2 text-sm flex justify-between items-center cursor-pointer text-gray-900 dark:text-white"
+                onClick={() => setIsProjectDropdownOpen(!isProjectDropdownOpen)}
+              >
+                <span>
+                  {selectedProject
+                    ? projects.find((p) => p.id === selectedProject)?.name || "Projeto selecionado"
+                    : "Selecione um projeto (opcional)"}
+                </span>
+                <FaChevronDown className="text-xs text-gray-500 dark:text-gray-400" />
+              </div>
+              {isProjectDropdownOpen && (
+                <div className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded shadow-lg max-h-60 overflow-y-auto">
+                  {loadingProjects ? (
+                    <div className="p-2 text-sm text-gray-500 dark:text-gray-400">
+                      Carregando...
+                    </div>
+                  ) : projects.length > 0 ? (
+                    projects.map((project) => (
+                      <div
+                        key={project.id}
+                        className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer text-gray-900 dark:text-white"
+                        onClick={() => {
+                          setSelectedProject(project.id);
+                          setIsProjectDropdownOpen(false);
+                        }}
+                      >
+                        {project.name}
+                      </div>
+                    ))
+                  ) : (
+                    <div className="p-2 text-sm text-gray-500 dark:text-gray-400">
+                      Nenhum projeto encontrado
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2 mt-6">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded text-sm border border-gray-300 text-gray-700 hover:bg-gray-100"
+              className="px-4 py-2 rounded text-sm border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
             >
               Cancelar
             </button>
             <button
               type="submit"
-              className="bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded text-sm text-white"
+              className="bg-blue-600 hover:bg-blue-500 dark:bg-blue-700 dark:hover:bg-blue-600 px-4 py-2 rounded text-sm text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               disabled={isSubmitting}
             >
-              {isSubmitting ? "Criando..." : "Criar Tarefa"}
+              {isSubmitting ? (
+                <span className="flex items-center justify-center">
+                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Criando...
+                </span>
+              ) : "Criar Tarefa"}
             </button>
           </div>
         </form>
