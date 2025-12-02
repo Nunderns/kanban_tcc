@@ -10,7 +10,7 @@ interface NewProjectPageProps {
 export default async function NewProjectPage({ params }: NewProjectPageProps) {
   const { workspaceSlug } = await params;
   const session = await auth();
-  
+
   if (!session?.user?.email) {
     return notFound();
   }
@@ -35,7 +35,9 @@ export default async function NewProjectPage({ params }: NewProjectPageProps) {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="max-w-2xl mx-auto">
-        <h1 className="text-2xl font-bold mb-6">Create New Project in {workspace.name}</h1>
+        <h1 className="text-2xl font-bold mb-6 text-gray-900 dark:text-gray-100">
+          Criar novo projeto em {workspace.name}
+        </h1>
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
           <CreateProjectForm workspaceSlug={workspaceSlug} />
         </div>

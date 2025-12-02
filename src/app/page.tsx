@@ -7,7 +7,6 @@ export default function HomePage() {
   const router = useRouter();
   return (
     <div className="flex flex-col items-center w-full transition-colors duration-200">
-      {/* Hero Section */}
       <section className="min-h-[90vh] md:min-h-[80vh] flex items-center justify-center w-full bg-gradient-to-br from-primary/95 via-primary/90 to-primary/80 dark:from-primary/90 dark:via-primary/80 dark:to-primary/70 transition-bg px-4 sm:px-6">
         <div className="absolute inset-0 bg-[url('/images/pattern.svg')] bg-center opacity-[0.03] dark:opacity-[0.05]" />
         <div className="container mx-auto px-2 sm:px-4 text-center relative z-10">

@@ -1,110 +1,103 @@
-import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
+import CredentialsProvider from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@auth/prisma-adapter";
-import { PrismaClient } from "@prisma/client";
-import type { Adapter } from "@auth/core/adapters";
-import type { DefaultSession } from "next-auth";
-import type { NextAuthConfig } from "next-auth";
+import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
-
-declare module "next-auth" {
-  interface Session extends DefaultSession {
-    user: {
-      id: string;
-      name?: string | null;
-      email?: string | null;
-      image?: string | null;
-    };
-  }
-}
-
-const globalForPrisma = global as unknown as { prisma: typeof PrismaClient };
-
-export const prisma = globalForPrisma.prisma || new PrismaClient();
-
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
+import type { Account, User, Session } from "next-auth";
+import type { JWT } from "next-auth/jwt";
+import type { NextAuthConfig } from "next-auth";
 
 export const authOptions: NextAuthConfig = {
-  adapter: PrismaAdapter(prisma) as Adapter,
+  adapter: PrismaAdapter(prisma),
+
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      allowDangerousEmailAccountLinking: true,
     }),
+
     CredentialsProvider({
       name: "Credentials",
       credentials: {
         email: { label: "E-mail", type: "email" },
-        password: { label: "Senha", type: "password" }
+        password: { label: "Senha", type: "password" },
       },
-      async authorize(credentials) {
+
+      async authorize(credentials): Promise<User | null> {
         if (!credentials?.email || !credentials?.password) return null;
 
-        const { email, password } = credentials as { email: string; password: string };
-
         const user = await prisma.user.findUnique({
-          where: { email },
-          select: { id: true, email: true, name: true, password: true }
+          where: { email: credentials.email },
+          select: { id: true, email: true, name: true, password: true },
         });
 
         if (!user?.password) return null;
 
-        const isValid = await bcrypt.compare(password, String(user.password));
-        
-        if (!isValid) return null;
+        const valid = await bcrypt.compare(
+          String(credentials.password),
+          String(user.password)
+        );
+
+        if (!valid) return null;
 
         return {
-          id: String(user.id),
+          id: user.id,
           email: user.email,
-          name: user.name,
+          name: user.name!,
         };
-      }
-    })
+      },
+    }),
   ],
-  session: {
-    strategy: "jwt" as const,
-  },
+
+  session: { strategy: "jwt" as const },
+
   pages: {
     signIn: "/login",
-    signOut: "/login",
     error: "/login",
-    newUser: "/post-login",
   },
+
   callbacks: {
-    async session({ session, token }) {
-      if (session.user) {
-        if (typeof token.id === "string") {
-          session.user.id = token.id;
-        }
-        if (typeof token.name === "string") {
-          session.user.name = token.name;
-        }
-        if (typeof token.email === "string") {
-          session.user.email = token.email;
-        }
-        if (typeof token.picture === "string") {
-          session.user.image = token.picture;
-        }
-      }
-      return session;
+    async signIn() {
+      return true;
     },
-    async jwt({ token, user }) {
+    async jwt({
+      token,
+      user,
+    }: {
+      token: JWT;
+      user: User | undefined;
+    }) {
       if (user) {
-        return {
-          ...token,
-          id: String(user.id),
-        };
+        token.id = user.id;
       }
       return token;
     },
-    async redirect({ url, baseUrl }) {
-      if (url.startsWith("/")) return url;
-      if (url.startsWith(baseUrl)) {
-        return url.slice(baseUrl.length);
+    async session({
+      session,
+      token,
+    }: {
+      session: Session;
+      token: JWT;
+    }) {
+      if (session.user && token?.id) {
+        session.user.id = String(token.id);
+
+        const accounts = await prisma.account.findMany({
+          where: { userId: String(token.id) },
+        });
+
+        const hasGoogle = accounts.some(
+          (acc: Account) => acc.provider === "google"
+        );
+
+        session.user.provider = hasGoogle ? "google" : "credentials";
       }
-      return "/post-login";
+
+      return session;
     },
   },
+
   secret: process.env.NEXTAUTH_SECRET,
   debug: process.env.NODE_ENV === "development",
 };

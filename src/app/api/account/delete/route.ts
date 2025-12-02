@@ -13,7 +13,7 @@ export async function DELETE() {
       );
     }
 
-    const userId = parseInt(session.user.id);
+    const userId = session.user.id;
     
     const user = await prisma.user.findUnique({
       where: { id: userId },

@@ -27,7 +27,7 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
     }
 
     const task = await prisma.task.findUnique({
-      where: { id: taskId, userId: Number(session.user.id) },
+      where: { id: taskId, userId: session.user.id },
     });
 
     if (!task) {
@@ -63,7 +63,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     const { user: userName, action, field, oldValue, newValue } = body;
 
     const task = await prisma.task.findUnique({
-      where: { id: taskId, userId: Number(session.user.id) },
+      where: { id: taskId, userId: session.user.id },
     });
 
     if (!task) {

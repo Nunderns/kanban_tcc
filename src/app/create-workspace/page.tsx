@@ -7,10 +7,10 @@ import { useSession } from "next-auth/react";
 
 function normalizeSlug(slug: string): string {
   return slug
-    .normalize('NFD') // Remove acentos
-    .replace(/[\u0300-\u036f]/g, '') // Remove diacríticos
-    .replace(/ç/g, 'c') // Substitui ç por c
-    .replace(/Ç/g, 'C') // Substitui Ç por C
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/ç/g, 'c')
+    .replace(/Ç/g, 'C')
     .toLowerCase();
 }
 

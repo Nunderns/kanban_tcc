@@ -76,7 +76,7 @@ export default function ProjectSettings() {
       if (!response.ok) {
         throw new Error(data.error || 'Falha ao atualizar projeto');
       }
-      
+
       toast.success('Projeto atualizado com sucesso!');
       setProject(prev => ({
         ...prev,
@@ -107,7 +107,7 @@ export default function ProjectSettings() {
         const error = await response.json();
         throw new Error(error.error || 'Falha ao excluir projeto');
       }
-      
+
       toast.success('Projeto excluído com sucesso!');
       router.push(`/${params.workspaceSlug}/projects`);
     } catch (error: unknown) {
@@ -130,11 +130,10 @@ export default function ProjectSettings() {
 
   return (
     <div className="max-w-4xl mx-auto p-6 animate-fade-in">
-      {/* Debug info - will be removed later */}
       <div className="fixed top-4 right-4 bg-yellow-100 text-yellow-800 p-2 rounded-md text-sm z-50">
         Debug: isEditing = {isEditing ? 'true' : 'false'}
       </div>
-      
+
       <div className="flex justify-between items-center mb-8 p-4 bg-gray-100 dark:bg-gray-800 rounded-lg relative">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Configurações do Projeto</h1>
         <div className="flex space-x-3 z-50">
@@ -248,8 +247,8 @@ export default function ProjectSettings() {
               </select>
             ) : (
               <p className="text-gray-700 dark:text-gray-300 capitalize">
-                {project.status.toLowerCase() === 'active' ? 'Ativo' : 
-                 project.status.toLowerCase() === 'archived' ? 'Arquivado' : 'Concluído'}
+                {project.status.toLowerCase() === 'active' ? 'Ativo' :
+                  project.status.toLowerCase() === 'archived' ? 'Arquivado' : 'Concluído'}
               </p>
             )}
           </div>

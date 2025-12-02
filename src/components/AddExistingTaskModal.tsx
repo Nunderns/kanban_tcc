@@ -33,7 +33,6 @@ export default function AddExistingTaskModal({ isOpen, onClose, onAddTasks, work
     
     try {
       setLoading(true);
-      // First get workspace info to get the workspace ID
       const workspaceResponse = await fetch(`/api/workspaces/slug/${workspaceSlug}`);
       if (!workspaceResponse.ok) {
         throw new Error('Failed to get workspace info');
@@ -41,12 +40,9 @@ export default function AddExistingTaskModal({ isOpen, onClose, onAddTasks, work
       
       const workspaceData = await workspaceResponse.json();
       const workspaceId = workspaceData.id;
-      
-      // Then get tasks for this workspace
       const tasksResponse = await fetch(`/api/tasks?workspaceId=${workspaceId}`);
       if (tasksResponse.ok) {
         const data = await tasksResponse.json();
-        // Filter out the current task to avoid circular relationships
         const filteredTasks = (data || []).filter((task: WorkItem) => task.id !== currentTaskId);
         setTasks(filteredTasks);
       }

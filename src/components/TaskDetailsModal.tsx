@@ -2,12 +2,12 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { 
-  ListBulletIcon, 
-  XMarkIcon, 
-  CheckIcon, 
-  ClockIcon, 
-  UserCircleIcon, 
+import {
+  ListBulletIcon,
+  XMarkIcon,
+  CheckIcon,
+  ClockIcon,
+  UserCircleIcon,
   ChatBubbleLeftRightIcon,
   CalendarIcon
 } from '@heroicons/react/24/outline';
@@ -58,7 +58,7 @@ function getActivityMessage(activity: Activity): string {
   if (activity.action === 'commented') {
     return 'comentou';
   }
-  
+
   if (activity.action === 'updated field') {
     if (activity.field === 'status') {
       return `alterou o status de "${activity.oldValue || 'não definido'}" para "${activity.newValue || 'não definido'}"`;
@@ -73,7 +73,7 @@ function getActivityMessage(activity: Activity): string {
     }
     return `atualizou ${activity.field} de "${activity.oldValue || 'vazio'}" para "${activity.newValue || 'vazio'}"`;
   }
-  
+
   return 'realizou uma ação';
 }
 
@@ -93,7 +93,7 @@ export default function TaskDetailsModal({ task: initialTask, onClose, onStatusC
       if (response.ok) {
         const data = await response.json();
         const activities = Array.isArray(data) ? data : data.activities || [];
-        activities.sort((a: Activity, b: Activity) => 
+        activities.sort((a: Activity, b: Activity) =>
           new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
         );
         setActivities(activities);
@@ -112,7 +112,7 @@ export default function TaskDetailsModal({ task: initialTask, onClose, onStatusC
 
   const fetchWorkspaceMembers = useCallback(async () => {
     if (!workspaceSlug) return;
-    
+
     try {
       const response = await fetch(`/api/workspaces/${workspaceSlug}/members`);
       if (response.ok) {
@@ -124,7 +124,7 @@ export default function TaskDetailsModal({ task: initialTask, onClose, onStatusC
           const nameB = (b.displayName || b.fullName || b.email).toLowerCase();
           return nameA.localeCompare(nameB);
         });
-        
+
         setWorkspaceMembers(members);
       } else {
         console.error('Failed to fetch workspace members:', await response.text());
@@ -139,7 +139,7 @@ export default function TaskDetailsModal({ task: initialTask, onClose, onStatusC
       fetchWorkspaceMembers();
     }
   }, [workspaceSlug, fetchWorkspaceMembers]);
-  
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (isUserDropdownOpen) {
@@ -160,19 +160,19 @@ export default function TaskDetailsModal({ task: initialTask, onClose, onStatusC
     if (!task) return;
     setTask(prev => {
       if (!prev) return prev;
-      
+
       if (field === 'priority') {
         const validPriorities = ['HIGH', 'MEDIUM', 'LOW', 'NONE'] as const;
         type Priority = typeof validPriorities[number];
-        const newValue = typeof value === 'string' && validPriorities.includes(value as Priority) 
-          ? value as Priority 
+        const newValue = typeof value === 'string' && validPriorities.includes(value as Priority)
+          ? value as Priority
           : 'NONE';
         return {
           ...prev,
           [field]: newValue as Task[K]
         };
       }
-      
+
       return {
         ...prev,
         [field]: value
@@ -182,14 +182,14 @@ export default function TaskDetailsModal({ task: initialTask, onClose, onStatusC
 
   const handleSave = async () => {
     if (!task) return;
-    
+
     try {
       setIsLoading(true);
-      
+
       const currentUserId = 'current-user-id';
-      
+
       const updates: Partial<Task> = {};
-      
+
       if (initialTask) {
         if (task.title !== initialTask.title) updates.title = task.title;
         if (task.description !== initialTask.description) updates.description = task.description || '';
@@ -197,27 +197,27 @@ export default function TaskDetailsModal({ task: initialTask, onClose, onStatusC
         if (task.priority !== initialTask.priority) updates.priority = task.priority || 'NONE';
         if (task.assignedTo !== initialTask.assignedTo) updates.assignedTo = task.assignedTo || null;
       }
-      
+
       if (Object.keys(updates).length === 0) {
         setIsEditing(false);
         return;
       }
-      
+
       await onStatusChange(task.id, updates);
-      
+
       if (initialTask) {
         await Promise.all(
           Object.entries(updates).map(async ([field, newValue]) => {
             try {
               const oldValue = initialTask[field as keyof Task];
-              
+
               if (!oldValue && !newValue) return;
-              
+
               if (oldValue === newValue) return;
 
               let displayOldValue = String(oldValue || '');
               let displayNewValue = String(newValue || '');
-              
+
               if (field === 'assignedTo') {
                 if (oldValue) {
                   const oldUser = workspaceMembers.find(m => m.id === oldValue);
@@ -225,7 +225,7 @@ export default function TaskDetailsModal({ task: initialTask, onClose, onStatusC
                 } else {
                   displayOldValue = 'Ninguém';
                 }
-                
+
                 if (newValue) {
                   const newUser = workspaceMembers.find(m => m.id === newValue);
                   displayNewValue = newUser ? (newUser.displayName || newUser.fullName || newUser.email) : 'Ninguém';
@@ -233,7 +233,7 @@ export default function TaskDetailsModal({ task: initialTask, onClose, onStatusC
                   displayNewValue = 'Ninguém';
                 }
               }
-              
+
               if (field === 'priority') {
                 const priorityMap: Record<string, string> = {
                   'HIGH': 'Alta',
@@ -244,7 +244,7 @@ export default function TaskDetailsModal({ task: initialTask, onClose, onStatusC
                 displayOldValue = priorityMap[displayOldValue] || displayOldValue;
                 displayNewValue = priorityMap[displayNewValue] || displayNewValue;
               }
-              
+
               await fetch(`/api/tasks/${task.id}/activities`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -263,7 +263,7 @@ export default function TaskDetailsModal({ task: initialTask, onClose, onStatusC
           })
         );
       }
-      
+
       await fetchActivities(task.id);
       setIsEditing(false);
     } catch (error) {
@@ -275,14 +275,14 @@ export default function TaskDetailsModal({ task: initialTask, onClose, onStatusC
 
   const handleAddComment = async () => {
     if (!task || !comment.trim()) return;
-    
+
     try {
       const response = await fetch(`/api/tasks/${task.id}/comments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content: comment })
       });
-      
+
       if (response.ok) {
         setComment('');
         await fetchActivities(task.id);
@@ -301,14 +301,13 @@ export default function TaskDetailsModal({ task: initialTask, onClose, onStatusC
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-start justify-end z-50">
-      <motion.div 
+      <motion.div
         className="bg-white dark:bg-gray-800 w-full max-w-2xl h-screen overflow-y-auto shadow-xl"
         initial={{ x: '100%' }}
         animate={{ x: 0 }}
         exit={{ x: '100%' }}
         transition={{ type: 'tween', duration: 0.3 }}
       >
-        {/* Header */}
         <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4 z-10">
           <div className="flex justify-between items-center">
             <div className="flex items-center space-x-2">
@@ -322,7 +321,7 @@ export default function TaskDetailsModal({ task: initialTask, onClose, onStatusC
                 {isEditing ? 'Editar Tarefa' : 'Detalhes da Tarefa'}
               </h2>
             </div>
-            
+
             <div className="flex space-x-2">
               {isEditing ? (
                 <>
@@ -352,10 +351,7 @@ export default function TaskDetailsModal({ task: initialTask, onClose, onStatusC
             </div>
           </div>
         </div>
-
-        {/* Main Content */}
         <div className="p-6">
-          {/* Task Title */}
           <div className="mb-6">
             {isEditing ? (
               <input
@@ -375,47 +371,41 @@ export default function TaskDetailsModal({ task: initialTask, onClose, onStatusC
             </div>
           </div>
 
-          {/* Tabs */}
           <div className="border-b border-gray-200 dark:border-gray-700 mb-6">
             <nav className="flex space-x-8">
               <button
                 onClick={() => setSelectedTab('detalhes')}
-                className={`py-3 px-1 border-b-2 font-medium text-sm ${
-                  selectedTab === 'detalhes'
-                    ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-200'
-                }`}
+                className={`py-3 px-1 border-b-2 font-medium text-sm ${selectedTab === 'detalhes'
+                  ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-200'
+                  }`}
               >
                 Detalhes
               </button>
               <button
                 onClick={() => setSelectedTab('comentarios')}
-                className={`py-3 px-1 border-b-2 font-medium text-sm ${
-                  selectedTab === 'comentarios'
-                    ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-200'
-                }`}
+                className={`py-3 px-1 border-b-2 font-medium text-sm ${selectedTab === 'comentarios'
+                  ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-200'
+                  }`}
               >
                 Comentários
               </button>
               <button
                 onClick={() => setSelectedTab('atividades')}
-                className={`py-3 px-1 border-b-2 font-medium text-sm ${
-                  selectedTab === 'atividades'
-                    ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-200'
-                }`}
+                className={`py-3 px-1 border-b-2 font-medium text-sm ${selectedTab === 'atividades'
+                  ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-200'
+                  }`}
               >
                 Atividades
               </button>
             </nav>
           </div>
 
-          {/* Tab Content */}
           <div className="space-y-6">
             {selectedTab === 'detalhes' && (
               <div className="space-y-6">
-                {/* Status */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Status
@@ -441,8 +431,6 @@ export default function TaskDetailsModal({ task: initialTask, onClose, onStatusC
                     </div>
                   )}
                 </div>
-
-                {/* Priority */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Prioridade
@@ -467,8 +455,6 @@ export default function TaskDetailsModal({ task: initialTask, onClose, onStatusC
                     </div>
                   )}
                 </div>
-
-                {/* Description */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Descrição
@@ -495,8 +481,6 @@ export default function TaskDetailsModal({ task: initialTask, onClose, onStatusC
                     </div>
                   )}
                 </div>
-
-                {/* Assignee */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Responsável
@@ -511,10 +495,10 @@ export default function TaskDetailsModal({ task: initialTask, onClose, onStatusC
                         <span className="flex items-center">
                           <UserCircleIcon className="flex-shrink-0 h-5 w-5 text-gray-400" />
                           <span className="ml-3 block truncate">
-                            {task.assignedTo ? 
-                              (workspaceMembers.find(m => m.id === task.assignedTo)?.displayName || 
-                               workspaceMembers.find(m => m.id === task.assignedTo)?.fullName || 
-                               task.assignedTo) : 
+                            {task.assignedTo ?
+                              (workspaceMembers.find(m => m.id === task.assignedTo)?.displayName ||
+                                workspaceMembers.find(m => m.id === task.assignedTo)?.fullName ||
+                                task.assignedTo) :
                               'Não atribuído'}
                           </span>
                         </span>
@@ -570,17 +554,15 @@ export default function TaskDetailsModal({ task: initialTask, onClose, onStatusC
                     <div className="flex items-center space-x-2 p-2 bg-gray-50 dark:bg-gray-700 rounded-md">
                       <UserCircleIcon className="h-5 w-5 text-gray-400" />
                       <span className="text-sm text-gray-900 dark:text-white">
-                        {task.assignedTo ? 
-                          (workspaceMembers.find(m => m.id === task.assignedTo)?.displayName || 
-                           workspaceMembers.find(m => m.id === task.assignedTo)?.fullName || 
-                           task.assignedTo) : 
+                        {task.assignedTo ?
+                          (workspaceMembers.find(m => m.id === task.assignedTo)?.displayName ||
+                            workspaceMembers.find(m => m.id === task.assignedTo)?.fullName ||
+                            task.assignedTo) :
                           'Não atribuído'}
                       </span>
                     </div>
                   )}
                 </div>
-
-                {/* Dates */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -638,7 +620,6 @@ export default function TaskDetailsModal({ task: initialTask, onClose, onStatusC
 
                       <div className="absolute inset-x-0 bottom-0 flex justify-between py-2 pl-3 pr-2">
                         <div className="flex items-center space-x-5">
-                          {/* Add your action buttons here */}
                         </div>
                         <div className="flex-shrink-0">
                           <button
@@ -700,9 +681,8 @@ export default function TaskDetailsModal({ task: initialTask, onClose, onStatusC
                         <div className="relative flex space-x-3">
                           <div>
                             <span
-                              className={`h-8 w-8 rounded-full flex items-center justify-center ring-8 ring-white dark:ring-gray-800 ${
-                                activity.action === 'commented' ? 'bg-blue-500' : 'bg-gray-400'
-                              }`}
+                              className={`h-8 w-8 rounded-full flex items-center justify-center ring-8 ring-white dark:ring-gray-800 ${activity.action === 'commented' ? 'bg-blue-500' : 'bg-gray-400'
+                                }`}
                             >
                               {activity.action === 'commented' ? (
                                 <ChatBubbleLeftRightIcon className="h-5 w-5 text-white" aria-hidden="true" />
@@ -744,7 +724,6 @@ export default function TaskDetailsModal({ task: initialTask, onClose, onStatusC
           </div>
         </div>
 
-        {/* Footer */}
         <div className="sticky bottom-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 px-4 py-3 sm:px-6 flex justify-end space-x-3">
           <button
             type="button"

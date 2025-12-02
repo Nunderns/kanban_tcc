@@ -665,8 +665,6 @@ function KanbanPage() {
             </button>
           </div>
         </div>
-
-      {/* Main content area with view switching */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden p-3 sm:p-4 sm:overflow-x-auto">
         {viewType === "kanban" ? (
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={onDragStart} onDragCancel={onDragCancel} onDragEnd={onDragEnd}>
@@ -683,7 +681,6 @@ function KanbanPage() {
                     onClick={() => toggleColumnCollapse(typedStatus)}
                   >
                     <div className="flex items-center gap-2">
-                      {/* Adicionando animação ao ícone de seta */}
                       <div className="transition-transform duration-300 ease-in-out">
                         {isCollapsed ? <FaChevronRight /> : <FaChevronDown />}
                       </div>
@@ -707,7 +704,6 @@ function KanbanPage() {
                       <FaPlus />
                     </button>
                   </div>
-                  {/* Conteúdo da coluna com animação */}
                   <ColumnDroppable status={typedStatus}>
                     <div
                       className={`bg-white dark:bg-gray-800 rounded-b overflow-hidden transition-all duration-300 ease-in-out ${
@@ -848,14 +844,11 @@ function KanbanPage() {
   workspaceSlug={workspaceSlug}
 />
       
-      {/* Estilos CSS para animações */}
       <style jsx global>{`
-        /* Animação suave para o ícone de seta */
         .transition-transform {
           transition: transform 0.3s ease-in-out;
         }
         
-        /* Animação para o conteúdo da coluna */
         .transition-all {
           transition: max-height 0.3s ease-in-out, opacity 0.3s ease-in-out;
         }

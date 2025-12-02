@@ -132,10 +132,10 @@ function DashboardContent() {
       try {
         setIsLoading(true);
         await new Promise(resolve => setTimeout(resolve, 1000));
-        const { data } = await axios.get("/api/dashboard");
+        const { data } = await axios.get(`/api/dashboard?workspaceSlug=${workspaceSlug}`);
         setStats(data);
-      } catch (error) {
-        console.error("Erro ao buscar dados do dashboard:", error);
+      } catch {
+        
       } finally {
         setIsLoading(false);
       }
@@ -144,7 +144,7 @@ function DashboardContent() {
     if (isClient) {
       fetchData();
     }
-  }, [isClient]);
+  }, [workspaceSlug, isClient]);
 
   useEffect(() => {
     if (searchQuery.trim() === '') {
@@ -212,7 +212,7 @@ function DashboardContent() {
       }
       
       try {
-        const { data } = await axios.get("/api/dashboard");
+        const { data } = await axios.get(`/api/dashboard?workspaceSlug=${workspaceSlug}`);
         setStats(data);
       } catch (refreshError) {
         console.error('Erro ao atualizar a lista de tarefas:', refreshError);
@@ -389,7 +389,6 @@ function DashboardContent() {
         />
       )}
       <div className="flex-1 p-4 md:p-6 lg:p-8 overflow-auto">
-        {/* Header */}
         <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
           <div>
             <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 dark:from-white dark:to-gray-200 bg-clip-text text-transparent">
@@ -415,8 +414,6 @@ function DashboardContent() {
                 }}
                 onBlur={handleSearchBlur}
               />
-              
-              {/* Search Suggestions Dropdown */}
               {showSuggestions && filteredTasks.length > 0 && (
                 <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto">
                   {filteredTasks.slice(0, 8).map((task, index) => (
@@ -553,7 +550,6 @@ function DashboardContent() {
             </div>
           </div>
         </header>
-        {/* Tabs */}
         <div className="border-b border-gray-200 mb-8">
           <nav className="flex space-x-8">
             {['overview', 'projects', 'tasks', 'reports', 'team'].map((tab) => (
@@ -748,8 +744,6 @@ function DashboardContent() {
               </>
             )}
           </Card>
-
-          {/* Lista de Projetos */}
           <Card>
             {isLoading ? (
               <div>
@@ -903,8 +897,6 @@ function DashboardContent() {
             )}
           </Card>
         </div>
-
-        {/* Team Members */}
         <Card className="mt-6">
           {isLoading ? (
             <div>
@@ -950,7 +942,7 @@ function DashboardContent() {
                       className="flex items-center p-4 rounded-lg border border-gray-100 hover:border-blue-200 hover:bg-blue-50 dark:border-gray-700 dark:hover:border-blue-600 dark:hover:bg-gray-800 transition-colors duration-200"
                     >
                       <div className="flex items-center justify-center w-10 h-10 rounded-full bg-blue-100 text-blue-600 font-semibold">
-                        {member.name[0].toUpperCase()}
+                        {member.name && member.name.trim() ? member.name[0].toUpperCase() : 'U'}
                       </div>
                       <div className="ml-4 overflow-hidden">
                         <p className="font-medium text-gray-900 dark:text-white">{member.name}</p>
@@ -991,8 +983,6 @@ function DashboardContent() {
           )}
         </Card>
       </div>
-
-      {/* Floating Action Button with Dropdown */}
       {isClient && !isLoading && (
         <div className="fixed bottom-8 right-8 z-10">
           <motion.div

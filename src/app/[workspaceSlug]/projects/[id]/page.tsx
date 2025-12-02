@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ProjectViewClient from "@/components/ProjectViewClient";
 import { ProjectSettings } from "@/components/ProjectSettings";
 
-type RouteParams = { 
+type RouteParams = {
   id: string;
   workspaceSlug: string;
 };
@@ -68,7 +68,6 @@ export default async function ProjectPage({
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Header */}
       <div className="bg-white dark:bg-gray-800 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center space-x-4">
@@ -86,7 +85,6 @@ export default async function ProjectPage({
         </div>
       </div>
 
-      {/* Progress Bar */}
       <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="py-4">
@@ -99,8 +97,8 @@ export default async function ProjectPage({
               </span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
-              <div 
-                className="bg-blue-600 h-2.5 rounded-full" 
+              <div
+                className="bg-blue-600 h-2.5 rounded-full"
                 style={{ width: `${progress}%` }}
               ></div>
             </div>
@@ -111,28 +109,26 @@ export default async function ProjectPage({
         </div>
       </div>
 
-      {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Tabs */}
         <Tabs defaultValue="overview" className="space-y-6">
           <div className="border-b border-gray-200 dark:border-gray-700">
             <TabsList className="bg-transparent p-0">
-              <TabsTrigger 
-                value="overview" 
+              <TabsTrigger
+                value="overview"
                 className="data-[state=active]:border-b-2 data-[state=active]:border-blue-500 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400"
               >
                 <LayoutGrid className="h-4 w-4 mr-2" />
                 Visão Geral
               </TabsTrigger>
-              <TabsTrigger 
-                value="tasks" 
+              <TabsTrigger
+                value="tasks"
                 className="data-[state=active]:border-b-2 data-[state=active]:border-blue-500 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400"
               >
                 <List className="h-4 w-4 mr-2" />
                 Tarefas
               </TabsTrigger>
-              <TabsTrigger 
-                value="settings" 
+              <TabsTrigger
+                value="settings"
                 className="data-[state=active]:border-b-2 data-[state=active]:border-blue-500 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400"
               >
                 <Settings className="h-4 w-4 mr-2" />
@@ -149,7 +145,7 @@ export default async function ProjectPage({
               ) : (
                 <p className="text-gray-400 italic">Nenhuma descrição fornecida</p>
               )}
-              
+
               <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
                   <h3 className="text-sm font-medium text-blue-800 dark:text-blue-200">Tarefas Totais</h3>
@@ -172,9 +168,9 @@ export default async function ProjectPage({
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-lg font-medium text-gray-900 dark:text-white">Tarefas do Projeto</h2>
               </div>
-              <ProjectViewClient 
-                projectId={project.id} 
-                projectName={project.name} 
+              <ProjectViewClient
+                projectId={project.id}
+                projectName={project.name}
                 workspaceSlug={workspaceSlug}
                 onTaskCreated={async () => {
                   'use server';
@@ -186,14 +182,14 @@ export default async function ProjectPage({
           <TabsContent value="settings">
             <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
               <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-6">Configurações do Projeto</h2>
-              <ProjectSettings 
+              <ProjectSettings
                 project={{
                   id: project.id,
                   name: project.name,
                   createdAt: project.createdAt,
                   updatedAt: project.updatedAt
-                }} 
-                workspaceSlug={workspaceSlug} 
+                }}
+                workspaceSlug={workspaceSlug}
               />
             </div>
           </TabsContent>

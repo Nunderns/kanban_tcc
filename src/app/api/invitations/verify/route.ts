@@ -91,17 +91,24 @@ export async function POST(req: Request) {
     });
 
     if (existingMember) {
+      const workspaceSlug = invitation.workspace.name
+        .toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '');
+      
       return NextResponse.json({
         message: 'Você já é membro deste workspace',
         workspaceName: invitation.workspace.name,
-        redirectUrl: `/dashboard/workspaces/${invitation.workspaceId}`,
+        redirectUrl: `/${workspaceSlug}/dashboard`,
       });
     }
 
     await prisma.$transaction([
       prisma.workspaceMember.create({
         data: {
-          userId: parseInt(session.user.id as string),
+          userId: session.user.id,
           workspaceId: invitation.workspaceId,
           role: invitation.role,
         },
@@ -112,10 +119,17 @@ export async function POST(req: Request) {
       }),
     ]);
 
+    const workspaceSlug = invitation.workspace.name
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '');
+
     return NextResponse.json({
       message: 'Convite aceito com sucesso',
       workspaceName: invitation.workspace.name,
-      redirectUrl: `/dashboard/workspaces/${invitation.workspaceId}`,
+      redirectUrl: `/${workspaceSlug}/dashboard`,
     });
   } catch {
     return NextResponse.json({ message: 'Internal server error' }, { status: 500 });

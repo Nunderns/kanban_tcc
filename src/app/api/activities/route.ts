@@ -4,7 +4,7 @@ import { auth } from '@/lib/auth';
 
 interface WorkspaceMember {
   id: number;
-  userId: number;
+  userId: string;
   workspaceId: number;
   role: string;
 }
@@ -36,15 +36,8 @@ export async function GET() {
       );
     }
     
-    const userId = Number(session.user.id);
-    if (Number.isNaN(userId)) {
-      return NextResponse.json(
-        { error: 'Invalid user ID' },
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
-      );
-    }
     const workspaces = await prisma.workspaceMember.findMany({
-      where: { userId },
+      where: { userId: session.user.id },
       select: { workspaceId: true }
     }).catch((err: unknown) => {
       console.error('Error fetching workspaces:', err);
