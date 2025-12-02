@@ -21,6 +21,7 @@ import { useParams } from "next/navigation";
 import { useTheme } from "next-themes";
 import { Menu, X } from "lucide-react";
 import { GoogleConnectButton } from "@/components/GoogleConnectButton";
+import { useUserPreferences } from "@/hooks/useUserPreferences";
 
 interface Activity {
   id: number;
@@ -49,6 +50,12 @@ export default function SettingsPage() {
   const { theme, setTheme } = useTheme();
   const name = session?.user?.name || "Usuário";
   const email = session?.user?.email || "";
+  const { firstDayOfWeek, setFirstDayOfWeek, isUpdating: isUpdatingPreference } = useUserPreferences();
+
+  const handleFirstDayOfWeekChange = async (event: React.ChangeEvent<HTMLSelectElement>) => {
+    const newValue = event.target.value as 'sunday' | 'monday';
+    await setFirstDayOfWeek(newValue);
+  };
 
   const handleDisconnectGoogle = async () => {
     setIsDisconnectingGoogle(true);
@@ -868,10 +875,20 @@ export default function SettingsPage() {
                 <div>
                   <h3 className="font-medium mb-2">Primeiro dia da semana</h3>
                   <p className="text-sm text-gray-700 mb-3">Isso alterará como todos os calendários no aplicativo são exibidos.</p>
-                  <select className="w-full rounded-md border border-gray-200 dark:border-gray-700 px-3 py-2 dark:bg-gray-800 dark:text-white">
+                  <select 
+                    className="w-full rounded-md border border-gray-200 dark:border-gray-700 px-3 py-2 dark:bg-gray-800 dark:text-white"
+                    value={firstDayOfWeek}
+                    onChange={handleFirstDayOfWeekChange}
+                    disabled={isUpdatingPreference}
+                  >
                     <option value="sunday">Domingo</option>
                     <option value="monday">Segunda-feira</option>
                   </select>
+                  {isUpdatingPreference && (
+                    <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                      Atualizando preferência...
+                    </p>
+                  )}
                 </div>
 
                 <div className="flex items-center justify-between">

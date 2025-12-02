@@ -2,8 +2,9 @@
 
 import { WorkItem, Priority, Status } from "@/app/[workspaceSlug]/dashboard/my-tasks/page";
 import { FaCircle, FaRegCircle } from "react-icons/fa";
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay } from "date-fns";
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, startOfWeek, endOfWeek } from "date-fns";
 import { parseLocalDate } from "@/lib/utils";
+import { useUserPreferences } from "@/hooks/useUserPreferences";
 
 interface TaskMonthlyViewProps {
   tasks: WorkItem[];
@@ -11,10 +12,27 @@ interface TaskMonthlyViewProps {
 }
 
 export default function TaskMonthlyView({ tasks, onTaskClick }: TaskMonthlyViewProps) {
+  const { firstDayOfWeek } = useUserPreferences();
+  const weekStartsOn = firstDayOfWeek === 'monday' ? 1 : 0;
+  
   const today = new Date();
   const monthStart = startOfMonth(today);
   const monthEnd = endOfMonth(today);
-  const monthDays = eachDayOfInterval({ start: monthStart, end: monthEnd });
+  
+  const startDate = startOfWeek(monthStart, { weekStartsOn });
+  const endDate = endOfWeek(monthEnd, { weekStartsOn });
+  
+  const allDays = eachDayOfInterval({ start: startDate, end: endDate });
+  const calendarDays = allDays.map(day => {
+    return isSameMonth(day, today) ? day : null;
+  });
+  const weekDays = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+  const orderedWeekDays = [];
+  
+  for (let i = 0; i < 7; i++) {
+    const dayIndex = (i + weekStartsOn) % 7;
+    orderedWeekDays.push(weekDays[dayIndex]);
+  }
 
   const getPriorityIcon = (priority: Priority) => {
     switch (priority) {
@@ -48,15 +66,6 @@ export default function TaskMonthlyView({ tasks, onTaskClick }: TaskMonthlyViewP
     }
   };
 
-  const firstDayOfMonth = monthStart.getDay();
-  const calendarDays = [];
-  
-  for (let i = 0; i < firstDayOfMonth; i++) {
-    calendarDays.push(null);
-  }
-  
-  calendarDays.push(...monthDays);
-
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-300 dark:border-gray-700 p-4">
       <div className="mb-4">
@@ -67,8 +76,8 @@ export default function TaskMonthlyView({ tasks, onTaskClick }: TaskMonthlyViewP
       
       {/* Day headers */}
       <div className="grid grid-cols-7 gap-1 mb-2">
-        {["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"].map((day) => (
-          <div key={day} className="text-center text-xs font-medium text-gray-500 dark:text-gray-400 py-2">
+        {orderedWeekDays.map((day, index) => (
+          <div key={index} className="text-center text-xs font-medium text-gray-500 dark:text-gray-400 py-2">
             {day}
           </div>
         ))}

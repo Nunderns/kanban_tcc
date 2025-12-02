@@ -79,8 +79,6 @@ export default async function WorkspacePage({ params }: WorkspacePageProps) {
   const now = toZonedTime(new Date(), BRAZIL_TIMEZONE);
 
   if (!session) return redirect('/login');
-
-  // Debug logging to check session user ID type
   console.log('Session user ID:', session.user.id, 'Type:', typeof session.user.id);
 
   const workspace = await prisma.workspace.findFirst({

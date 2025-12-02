@@ -46,8 +46,6 @@ export async function GET(
     }
 
     const { slug } = await context.params;
-
-    // Get user by email
     const user = await prisma.user.findUnique({
       where: { email: session.user.email },
       select: { id: true },
@@ -56,8 +54,6 @@ export async function GET(
     if (!user) {
       return NextResponse.json({ error: "Usuário não encontrado" }, { status: 404 });
     }
-
-    // Get workspace and verify user is a member
     const workspace = await prisma.workspace.findUnique({
       where: { slug },
       include: {
@@ -71,14 +67,10 @@ export async function GET(
     if (!workspace) {
       return NextResponse.json({ error: "Workspace não encontrado" }, { status: 404 });
     }
-
-    // Check if user is member or creator
     const isMember = workspace.members.length > 0 || workspace.userId === user.id;
     if (!isMember) {
       return NextResponse.json({ error: "Acesso negado ao workspace" }, { status: 403 });
     }
-
-    // Get all tasks for this workspace
     const tasks = await prisma.task.findMany({
       where: {
         workspaceId: workspace.id,

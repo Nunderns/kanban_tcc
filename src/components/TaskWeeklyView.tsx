@@ -4,6 +4,7 @@ import { WorkItem, Priority, Status } from "@/app/[workspaceSlug]/dashboard/my-t
 import { FaCircle, FaRegCircle, FaCalendarAlt } from "react-icons/fa";
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay } from "date-fns";
 import { parseLocalDate } from "@/lib/utils";
+import { useUserPreferences } from "@/hooks/useUserPreferences";
 
 interface TaskWeeklyViewProps {
   tasks: WorkItem[];
@@ -20,9 +21,11 @@ interface TaskPosition {
 }
 
 export default function TaskWeeklyView({ tasks, onTaskClick }: TaskWeeklyViewProps) {
+  const { firstDayOfWeek } = useUserPreferences();
   const today = new Date();
-  const weekStart = startOfWeek(today, { weekStartsOn: 0 });
-  const weekEnd = endOfWeek(today, { weekStartsOn: 0 });
+  const weekStartsOn = firstDayOfWeek === 'monday' ? 1 : 0;
+  const weekStart = startOfWeek(today, { weekStartsOn });
+  const weekEnd = endOfWeek(today, { weekStartsOn });
   const weekDays = eachDayOfInterval({ start: weekStart, end: weekEnd });
 
   const getDayName = (date: Date) => {

@@ -2,14 +2,18 @@ import * as React from "react"
 import { DayPicker } from "react-day-picker"
 import "react-day-picker/dist/style.css"
 import { cn } from "@/lib/utils"
+import { useUserPreferences } from "@/hooks/useUserPreferences"
 
 export type CalendarProps = React.ComponentProps<typeof DayPicker>
 
 function Calendar({ className, classNames, showOutsideDays = true, ...props }: CalendarProps) {
+  const { firstDayOfWeek } = useUserPreferences();
+  
   return (
     <DayPicker
       showOutsideDays={showOutsideDays}
       className={cn("p-3", className)}
+      weekStartsOn={firstDayOfWeek === 'monday' ? 1 : 0}
       classNames={{
         months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
         month: "space-y-4",
