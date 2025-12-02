@@ -1271,13 +1271,13 @@ return (
               </div>
 
               <div className="mt-4 space-y-2">
-                {localItem.subtasks.map((subtaskId: string | number | null | undefined) => {
+                {localItem.subtasks.map((subtaskId: string | number | null | undefined, index: number) => {
                   const subtaskIdStr = subtaskId != null ? String(subtaskId) : "";
                   const numericSubtaskId = subtaskIdStr.replace(/^PRIME-/i, "");
 
                   return (
                     <div
-                      key={subtaskIdStr}
+                      key={`${subtaskIdStr}-${index}`}
                       className="flex items-center gap-3 rounded-lg border border-gray-200 bg-gray-50 p-3 dark:border-white/10 dark:bg-white/5"
                     >
                       <div className="flex-shrink-0">

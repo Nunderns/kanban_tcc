@@ -132,10 +132,10 @@ function DashboardContent() {
       try {
         setIsLoading(true);
         await new Promise(resolve => setTimeout(resolve, 1000));
-        const { data } = await axios.get("/api/dashboard");
+        const { data } = await axios.get(`/api/dashboard?workspaceSlug=${workspaceSlug}`);
         setStats(data);
-      } catch (error) {
-        console.error("Erro ao buscar dados do dashboard:", error);
+      } catch {
+        
       } finally {
         setIsLoading(false);
       }
@@ -144,7 +144,7 @@ function DashboardContent() {
     if (isClient) {
       fetchData();
     }
-  }, [isClient]);
+  }, [workspaceSlug, isClient]);
 
   useEffect(() => {
     if (searchQuery.trim() === '') {
@@ -212,7 +212,7 @@ function DashboardContent() {
       }
       
       try {
-        const { data } = await axios.get("/api/dashboard");
+        const { data } = await axios.get(`/api/dashboard?workspaceSlug=${workspaceSlug}`);
         setStats(data);
       } catch (refreshError) {
         console.error('Erro ao atualizar a lista de tarefas:', refreshError);
@@ -950,7 +950,7 @@ function DashboardContent() {
                       className="flex items-center p-4 rounded-lg border border-gray-100 hover:border-blue-200 hover:bg-blue-50 dark:border-gray-700 dark:hover:border-blue-600 dark:hover:bg-gray-800 transition-colors duration-200"
                     >
                       <div className="flex items-center justify-center w-10 h-10 rounded-full bg-blue-100 text-blue-600 font-semibold">
-                        {member.name[0].toUpperCase()}
+                        {member.name && member.name.trim() ? member.name[0].toUpperCase() : 'U'}
                       </div>
                       <div className="ml-4 overflow-hidden">
                         <p className="font-medium text-gray-900 dark:text-white">{member.name}</p>

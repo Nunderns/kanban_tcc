@@ -25,7 +25,7 @@ export async function POST(req: Request) {
     const existingInvitation = await prisma.invitation.findFirst({
       where: {
         email: email.toLowerCase(),
-        userId: session.user.id,
+        inviterId: session.user.id,
         status: 'pending',
         expiresAt: { gt: new Date() },
       },
