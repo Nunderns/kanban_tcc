@@ -51,9 +51,9 @@ export async function GET(req: NextRequest) {
   try {
     const session = await auth();
     if (!session?.user?.id) {
-      return NextResponse.json({ 
+      return NextResponse.json({
         error: "Unauthorized",
-        details: "No active session or user ID found" 
+        details: "No active session or user ID found"
       }, { status: 401 });
     }
 
@@ -61,34 +61,45 @@ export async function GET(req: NextRequest) {
     const status = statusParam && ["BACKLOG", "TODO", "IN_PROGRESS", "DONE"].includes(statusParam)
       ? statusParam as "BACKLOG" | "TODO" | "IN_PROGRESS" | "DONE"
       : undefined;
-      
+
     const workspaceIdParam = req.nextUrl.searchParams.get("workspaceId");
     const workspaceId = workspaceIdParam ? parseInt(workspaceIdParam) : undefined;
     const projectIdParam = req.nextUrl.searchParams.get("projectId");
     const projectId = projectIdParam ? parseInt(projectIdParam) : undefined;
-    
+
     const userId = session.user.id;
-    
-    interface TaskWhere {
-      userId: string;
-      status?: "BACKLOG" | "TODO" | "IN_PROGRESS" | "DONE";
-      projectId?: number | null;
+    const userWorkspaces = await prisma.workspace.findMany({
+      where: {
+        OR: [
+          { userId: userId },
+          { members: { some: { userId: userId } } }
+        ]
+      },
+      select: { id: true }
+    });
+
+    const workspaceIds = userWorkspaces.map((ws: { id: number }) => ws.id);
+    if (workspaceId && !workspaceIds.includes(workspaceId)) {
+      return NextResponse.json({
+        error: "Forbidden",
+        details: "You don't have access to this workspace"
+      }, { status: 403 });
     }
-    
-    const where: TaskWhere = { userId };
-    
-    if (status) {
-      where.status = status;
-    }
-    if (typeof projectId === 'number' && !isNaN(projectId)) {
-      where.projectId = projectId;
-    }
-    
+
     const tasks = await prisma.task.findMany({
       where: {
-        userId,
+        OR: [
+          { userId },
+          { assignedUserId: userId },
+          {
+            workspaceId: workspaceId || { in: workspaceIds },
+            userId: { not: userId }
+          }
+        ],
         ...(status && { status }),
-        ...(workspaceId && { workspaceId }),
+        ...(workspaceId ? { workspaceId } : {
+          workspaceId: { in: workspaceIds }
+        }),
         ...(projectId && { projectId })
       },
       include: {
@@ -131,7 +142,7 @@ export async function GET(req: NextRequest) {
       },
       take: 100
     });
-    
+
     return NextResponse.json(
       tasks.map((task: TaskWithIncludes) => ({
         id: task.id.toString(),
@@ -205,10 +216,10 @@ export async function PATCH(req: NextRequest) {
     if (!session || !session.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    
+
     const searchParams = req.nextUrl.searchParams;
     const taskId = searchParams.get('id');
-    
+
     if (!taskId) {
       return NextResponse.json({ error: "Task ID is required" }, { status: 400 });
     }
@@ -226,7 +237,7 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
     const updateData: Record<string, unknown> = {};
-    
+
     if ('projectId' in body) {
       updateData.project = body.projectId
         ? { connect: { id: Number(body.projectId) } }
@@ -254,7 +265,7 @@ export async function PATCH(req: NextRequest) {
       updateData.dueDate = null;
     }
     const safeBody: Record<string, unknown> = body;
-    
+
     if (body.assignedUserId !== undefined) {
       updateData.assignedUserId = body.assignedUserId || null;
     }
@@ -276,7 +287,7 @@ export async function PATCH(req: NextRequest) {
       }
     });
     updateData.updatedAt = new Date();
-    
+
     const updatedTask = await prisma.task.update({
       where: { id: Number(taskId) },
       data: updateData,
@@ -292,11 +303,11 @@ export async function PATCH(req: NextRequest) {
       status: updatedTask.status,
       updatedAt: updatedTask.updatedAt
     });
-    
+
     return NextResponse.json(updatedTask);
   } catch (error) {
     console.error('Error in PATCH /api/tasks:', error);
-    
+
     const errorDetails: Record<string, unknown> = {
       message: error instanceof Error ? error.message : String(error),
       name: error instanceof Error ? error.name : 'UnknownError',
@@ -316,9 +327,9 @@ export async function PATCH(req: NextRequest) {
     }
 
     console.error('Full error details:', JSON.stringify(errorDetails, null, 2));
-    
+
     return NextResponse.json(
-      { 
+      {
         error: "Internal server error",
         details: errorDetails
       },
