@@ -18,40 +18,52 @@ export function FormattedDateInput({
   placeholder = 'dd/mm/yyyy',
   className = ''
 }: FormattedDateInputProps) {
+
   const [open, setOpen] = useState(false);
 
+  /** 🔥 FUNÇÃO FINAL — limpa, sem problemas de fuso horário */
   const handleDateChange = (date: Date | null) => {
     if (date && !isNaN(date.getTime())) {
-      const formattedDate = [
-        date.getFullYear(),
-        String(date.getMonth() + 1).padStart(2, '0'),
-        String(date.getDate()).padStart(2, '0')
-      ].join('-')
+      const year = date.getFullYear();
+      const month = date.getMonth() + 1;
+      const day = date.getDate();
+
+      const formattedDate = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+
       onChange(formattedDate);
     } else {
       onChange('');
     }
+
     setOpen(false);
   };
 
+  /** 🔥 Função segura que converte tanto ISO (YYYY-MM-DD) quanto DD/MM/YYYY */
   const selectedDate = (() => {
     try {
       if (!value) return null;
-      
+
+      // Quando já está no formato YYYY-MM-DD
       if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
         const [year, month, day] = value.split('-').map(Number);
         return new Date(year, month - 1, day);
       }
+
+      // Quando está no formato DD/MM/YYYY
       if (/^\d{2}\/\d{2}\/\d{4}$/.test(value)) {
         const [day, month, year] = value.split('/').map(Number);
         return new Date(year, month - 1, day);
       }
-      return new Date(value);
-    } catch (e) {
-      console.error('Error parsing date:', e);
+
+      // Qualquer outro formato
+      const parsed = new Date(value);
+      return isNaN(parsed.getTime()) ? null : parsed;
+
+    } catch {
       return null;
     }
   })();
+
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -69,6 +81,7 @@ export function FormattedDateInput({
           )}
         </Button>
       </PopoverTrigger>
+
       <PopoverContent className="w-auto p-0" align="center">
         <Calendar
           mode="single"
@@ -76,6 +89,7 @@ export function FormattedDateInput({
           onSelect={(d) => handleDateChange(d ?? null)}
           initialFocus
           locale={ptBR}
+          fixedWeeks
         />
       </PopoverContent>
     </Popover>

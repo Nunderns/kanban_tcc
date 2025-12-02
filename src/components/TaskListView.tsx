@@ -63,9 +63,9 @@ export default function TaskListView({ tasks, onTaskClick, visibleProperties }: 
           <div className="flex items-center gap-2">
             {getPriorityIcon(task.priority)}
             <span className="text-sm text-gray-800 dark:text-gray-200 capitalize">
-              {task.priority === "HIGH" ? "Alta" : 
-               task.priority === "MEDIUM" ? "Média" : 
-               task.priority === "LOW" ? "Baixa" : "Não definida"}
+              {task.priority === "HIGH" ? "Alta" :
+                task.priority === "MEDIUM" ? "Média" :
+                  task.priority === "LOW" ? "Baixa" : "Não definida"}
             </span>
           </div>
         );
@@ -89,12 +89,11 @@ export default function TaskListView({ tasks, onTaskClick, visibleProperties }: 
         );
       case "Estado":
         return (
-          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-            task.status === "DONE" ? "bg-green-100 text-green-800" :
-            task.status === "IN_PROGRESS" ? "bg-blue-100 text-blue-800" :
-            task.status === "TODO" ? "bg-yellow-100 text-yellow-800" :
-            "bg-gray-100 text-gray-800"
-          }`}>
+          <span className={`px-2 py-1 rounded-full text-xs font-medium ${task.status === "DONE" ? "bg-green-100 text-green-800" :
+              task.status === "IN_PROGRESS" ? "bg-blue-100 text-blue-800" :
+                task.status === "TODO" ? "bg-yellow-100 text-yellow-800" :
+                  "bg-gray-100 text-gray-800"
+            }`}>
             {task.status.replace("_", " ")}
           </span>
         );
@@ -105,10 +104,6 @@ export default function TaskListView({ tasks, onTaskClick, visibleProperties }: 
             <span className="text-sm">{task.labels.join(", ")}</span>
           </div>
         ) : "-";
-      case "Módulo":
-        return task.module || "-";
-      case "Ciclo":
-        return task.cycle || "-";
       default:
         return "-";
     }
@@ -160,7 +155,7 @@ export default function TaskListView({ tasks, onTaskClick, visibleProperties }: 
           </tbody>
         </table>
       </div>
-      
+
       {tasks.length === 0 && (
         <div className="text-center py-8 text-gray-500 dark:text-gray-400">
           Nenhuma tarefa encontrada

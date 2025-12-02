@@ -54,7 +54,6 @@ export default function WorkspaceSettings() {
   const links = [
     { href: `/${slug}/settings/general`, label: "Geral" },
     { href: `/${slug}/settings/members`, label: "Membros" },
-    { href: `/${slug}/settings/imports`, label: "Importações" },
     { href: `/${slug}/settings/exports`, label: "Exportações" }
   ];
 

@@ -2,22 +2,18 @@
 import { useState, useRef, useEffect } from "react";
 import { IoMdOptions } from "react-icons/io";
 
-export type DisplayOption = 'ID' | 'Estado' | 'Prioridade' | 'Data de início' | 'Prazo' | 'Responsável' | 'Módulo' | 'Ciclo' | 'Etiquetas';
+export type DisplayOption = 'ID' | 'Estado' | 'Prioridade' | 'Data de início' | 'Prazo' | 'Responsável' | 'Etiquetas';
 
 interface DisplayDropdownProps {
   visibleProperties: DisplayOption[];
-  showSubtasks: boolean;
   onDisplayOptionChange: (option: DisplayOption, checked: boolean) => void;
-  onToggleSubtasks: (checked: boolean) => void;
   viewType: "kanban" | "list" | "weekly" | "monthly" | "daily";
   onViewTypeChange: (viewType: "kanban" | "list" | "weekly" | "monthly" | "daily") => void;
 }
 
-function DisplayDropdown({ 
-  visibleProperties, 
-  showSubtasks, 
-  onDisplayOptionChange, 
-  onToggleSubtasks,
+function DisplayDropdown({
+  visibleProperties,
+  onDisplayOptionChange,
   viewType,
   onViewTypeChange
 }: DisplayDropdownProps) {
@@ -30,8 +26,6 @@ function DisplayDropdown({
     "Data de início",
     "Prazo",
     "Responsável",
-    "Módulo",
-    "Ciclo",
     "Etiquetas"
   ] as const;
 
@@ -77,23 +71,22 @@ function DisplayDropdown({
       {isOpen && (
         <div className="absolute left-0 mt-2 w-full max-w-[90vw] bg-[#1f1f1f] text-white border border-gray-700 rounded-md shadow-lg p-4 z-50 sm:left-auto sm:right-0 sm:w-72">
           <div className="text-sm font-semibold text-gray-400 mb-2">Tipo de exibição</div>
-          
+
           <div className="flex flex-wrap gap-2 mb-4">
             {viewTypeOptions.map((option) => (
               <button
                 key={option.id}
                 onClick={() => onViewTypeChange(option.id as "kanban" | "list" | "weekly" | "monthly" | "daily")}
-                className={`px-3 py-1 rounded-md text-sm font-medium transition ${
-                  viewType === option.id
+                className={`px-3 py-1 rounded-md text-sm font-medium transition ${viewType === option.id
                     ? "bg-blue-600 text-white"
                     : "bg-[#2a2a2a] text-white hover:bg-[#333]"
-                }`}
+                  }`}
               >
                 {option.label}
               </button>
             ))}
           </div>
-          
+
           <div className="text-sm font-semibold text-gray-400 mb-2">Propriedades visíveis</div>
 
           <div className="flex flex-wrap gap-2">
@@ -101,27 +94,14 @@ function DisplayDropdown({
               <button
                 key={option}
                 onClick={() => onDisplayOptionChange(option, !visibleProperties.includes(option))}
-                className={`px-2 py-1 rounded-md text-sm font-medium transition ${
-                  visibleProperties.includes(option)
+                className={`px-2 py-1 rounded-md text-sm font-medium transition ${visibleProperties.includes(option)
                     ? "bg-blue-600 text-white"
                     : "bg-[#2a2a2a] text-white hover:bg-[#333]"
-                }`}
+                  }`}
               >
                 {option}
               </button>
             ))}
-          </div>
-
-          <div className="mt-4 pt-3 border-t border-gray-700">
-            <label className="flex items-center gap-2 text-sm text-white">
-              <input 
-              type="checkbox" 
-              className="form-checkbox text-blue-600 bg-[#2a2a2a] border-gray-600" 
-              checked={showSubtasks}
-              onChange={(e) => onToggleSubtasks(e.target.checked)}
-            />
-            Mostrar subtarefas
-            </label>
           </div>
         </div>
       )}

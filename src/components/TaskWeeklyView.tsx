@@ -44,11 +44,16 @@ export default function TaskWeeklyView({ tasks, onTaskClick }: TaskWeeklyViewPro
 
   const getStatusColor = (status: Status) => {
     switch (status) {
-      case "DONE": return "bg-green-100 text-green-800 border-green-200";
-      case "IN_PROGRESS": return "bg-blue-100 text-blue-800 border-blue-200";
-      case "TODO": return "bg-yellow-100 text-yellow-800 border-yellow-200";
-      case "BACKLOG": return "bg-gray-100 text-gray-800 border-gray-200";
-      default: return "bg-gray-100 text-gray-800 border-gray-200";
+      case "DONE": 
+        return "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200 border-green-200 dark:border-green-800";
+      case "IN_PROGRESS": 
+        return "bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 border-blue-200 dark:border-blue-800";
+      case "TODO": 
+        return "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200 border-yellow-200 dark:border-yellow-800";
+      case "BACKLOG": 
+        return "bg-gray-100 dark:bg-gray-700/50 text-gray-800 dark:text-gray-200 border-gray-200 dark:border-gray-600";
+      default: 
+        return "bg-gray-100 dark:bg-gray-700/50 text-gray-800 dark:text-gray-200 border-gray-200 dark:border-gray-600";
     }
   };
 
@@ -141,7 +146,7 @@ export default function TaskWeeklyView({ tasks, onTaskClick }: TaskWeeklyViewPro
     
     return (
       <div
-        className={`absolute h-12 ${getStatusColor(task.status)} border-2 rounded-lg cursor-pointer hover:shadow-lg transition-all hover:scale-[1.02] hover:z-20 z-10 shadow-sm`}
+        className={`absolute h-12 ${getStatusColor(task.status)} border-2 rounded-lg cursor-pointer hover:shadow-lg transition-all hover:scale-[1.02] hover:z-20 z-10 shadow-sm hover:ring-2 hover:ring-offset-2 hover:ring-opacity-50 dark:hover:ring-opacity-30 hover:ring-blue-200 dark:hover:ring-blue-900`}
         style={{
           top: `${rowIndex * 56 + 8}px`,
           left: `calc(${(startDayIndex / 7) * 100}% + 4px)`,
@@ -164,18 +169,18 @@ export default function TaskWeeklyView({ tasks, onTaskClick }: TaskWeeklyViewPro
               </div>
             </div>
             <div className="flex-1 min-w-0">
-              <h4 className="text-xs font-bold text-gray-900 dark:text-white truncate mb-1">
+              <h4 className="text-xs font-bold text-gray-900 dark:text-gray-100 truncate mb-1">
                 {task.title}
               </h4>
               <div className="flex items-center gap-2 text-xs">
-                <span className={`px-2 py-1 rounded-full text-xs font-semibold ${getStatusColor(task.status)}`}>
+                <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(task.status)}`}>
                   {task.status === "IN_PROGRESS" ? "Em Progresso" : 
                    task.status === "TODO" ? "A Fazer" :
                    task.status === "DONE" ? "Concluído" :
                    task.status === "BACKLOG" ? "Backlog" : task.status}
                 </span>
                 {task.creator && (
-                  <span className="text-gray-600 dark:text-gray-400 truncate text-xs">
+                  <span className="text-gray-600 dark:text-gray-300 truncate text-xs">
                     {task.creator}
                   </span>
                 )}
@@ -183,7 +188,7 @@ export default function TaskWeeklyView({ tasks, onTaskClick }: TaskWeeklyViewPro
             </div>
           </div>
           
-          <div className="flex items-center gap-1 text-xs font-medium text-gray-600 dark:text-gray-400 ml-2">
+          <div className="flex items-center gap-1 text-xs font-medium text-gray-600 dark:text-gray-300 ml-2">
             {isPartialStart && (
               <span className="text-blue-600 dark:text-blue-400" title="Começou antes">«</span>
             )}
@@ -200,9 +205,9 @@ export default function TaskWeeklyView({ tasks, onTaskClick }: TaskWeeklyViewPro
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-300 dark:border-gray-700 p-4">
+    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 shadow-sm dark:shadow-none">
       <div className="mb-4">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
           Semana de {format(weekStart, "dd/MM")} - {format(weekEnd, "dd/MM/yyyy")}
         </h2>
       </div>
@@ -226,7 +231,7 @@ export default function TaskWeeklyView({ tasks, onTaskClick }: TaskWeeklyViewPro
             );
           })}
         </div>
-        <div className="relative min-h-[500px] border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-900/20 overflow-hidden">
+        <div className="relative min-h-[500px] border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800/50 overflow-hidden">
           <div className="absolute inset-0 grid grid-cols-7 gap-2">
             {weekDays.map((_, index) => (
               <div 
@@ -252,8 +257,8 @@ export default function TaskWeeklyView({ tasks, onTaskClick }: TaskWeeklyViewPro
           {taskRows.length === 0 && (
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="text-center text-gray-500 dark:text-gray-400">
-                <FaCalendarAlt className="mx-auto text-3xl mb-2" />
-                <p className="text-sm">Nenhuma tarefa para esta semana</p>
+                <FaCalendarAlt className="mx-auto text-3xl mb-2 text-gray-300 dark:text-gray-600" />
+                <p className="text-sm text-gray-400 dark:text-gray-500">Nenhuma tarefa para esta semana</p>
               </div>
             </div>
           )}
