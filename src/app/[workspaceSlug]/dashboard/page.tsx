@@ -74,7 +74,6 @@ function DashboardContent() {
   const { theme, setTheme } = useTheme();
   const [isLoading, setIsLoading] = useState(true);
   const [isClient, setIsClient] = useState(false);
-  const [activeTab, setActiveTab] = useState('overview');
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredTasks, setFilteredTasks] = useState<Task[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -550,24 +549,6 @@ function DashboardContent() {
             </div>
           </div>
         </header>
-        <div className="border-b border-gray-200 mb-8">
-          <nav className="flex space-x-8">
-            {['overview', 'projects', 'tasks', 'reports', 'team'].map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`py-3 px-1 font-medium text-sm border-b-2 transition-colors ${
-                  activeTab === tab 
-                    ? 'border-blue-500 text-blue-600' 
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                {tab.charAt(0).toUpperCase() + tab.slice(1)}
-              </button>
-            ))}
-          </nav>
-        </div>
-
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {isLoading ? (
             Array(4).fill(0).map((_, index) => (
@@ -926,12 +907,12 @@ function DashboardContent() {
                     <CardTitle className="dark:text-white">Membros da Equipe</CardTitle>
                     <CardDescription className="dark:text-gray-300">{stats.members.length} pessoas na equipe</CardDescription>
                   </div>
-                  <button 
-                    onClick={() => setActiveTab('team')}
+                  <Link 
+                    href={`/${workspaceSlug}/team`}
                     className="text-sm text-blue-600 hover:underline flex items-center"
                   >
                     Ver todos <FiUsers className="ml-1" />
-                  </button>
+                  </Link>
                 </div>
               </CardHeader>
               <CardContent>
