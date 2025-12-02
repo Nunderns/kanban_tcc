@@ -593,8 +593,6 @@ export default function WorkItemSidebar({ item, onClose, onUpdate, workspaceSlug
       fetchAvailableTasks();
     }
   }, [showRelationModal, fetchAvailableTasks]);
-
-  // Fetch titles for subtasks (localItem.subtasks contains ids as strings)
   useEffect(() => {
     let mounted = true;
     const fetchSubtasks = async () => {
