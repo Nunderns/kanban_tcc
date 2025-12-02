@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/auth-options";
+import { prisma } from "@/lib/prisma";
 
 function normalizeSlug(slug: string): string {
   return slug

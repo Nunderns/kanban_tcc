@@ -104,16 +104,7 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const userId = typeof session.user.id === 'string' 
-      ? parseInt(session.user.id, 10) 
-      : session.user.id;
-      
-    if (isNaN(userId)) {
-      return NextResponse.json(
-        { error: "Invalid user ID format" },
-        { status: 500 }
-      );
-    }
+    const userId = session.user.id;
 
     const tasks = await prisma.task.findMany({
       where: { userId },
@@ -190,7 +181,7 @@ export async function GET() {
       workspaces: formattedWorkspaces,
       exportDate: new Date().toISOString(),
       user: {
-        id: userId,
+        id: parseInt(userId),
         name: session.user.name || null,
         email: session.user.email || null
       }

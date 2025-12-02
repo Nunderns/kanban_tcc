@@ -8,7 +8,7 @@ datasource db {
 }
 
 model User {
-  id                   Int               @id @default(autoincrement())
+  id                   String            @id @default(cuid())
   name                 String?
   email                String            @unique
   emailVerified        DateTime?
@@ -29,13 +29,12 @@ model User {
   workspaces           Workspace[]
   workspaceMembers     WorkspaceMember[]
   accounts             Account[]
-  
   @@map("users")
 }
 
 model Account {
   id                String  @id @default(cuid())
-  userId            Int
+  userId            String
   type              String
   provider          String
   providerAccountId String
@@ -55,7 +54,7 @@ model Account {
 model Session {
   id           String   @id @default(cuid())
   sessionToken String   @unique
-  userId       Int
+  userId       String
   expires      DateTime
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
@@ -75,7 +74,7 @@ model Project {
   color       String?   @default("#3b82f6")
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
-  ownerId     Int
+  ownerId     String
   workspaceId Int
   owner       User      @relation(fields: [ownerId], references: [id])
   workspace   Workspace @relation(fields: [workspaceId], references: [id])
@@ -88,7 +87,7 @@ model Invitation {
   role        String    @default("Membro")
   token       String    @unique
   workspaceId Int
-  inviterId   Int
+  inviterId   String
   expiresAt   DateTime
   status      String    @default("pending")
   createdAt   DateTime  @default(now())
@@ -111,10 +110,10 @@ model Task {
   labels         String[]       @default([])
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
-  userId         Int
+  userId         String
   projectId      Int?
   workspaceId    Int?
-  assignedUserId Int?
+  assignedUserId String?
   parentTaskId   Int?
   assignedUser   User?          @relation("TaskAssignedUser", fields: [assignedUserId], references: [id])
   project        Project?       @relation(fields: [projectId], references: [id])
@@ -134,7 +133,7 @@ model Task {
 model Notification {
   id        Int      @id @default(autoincrement())
   message   String
-  userId    Int
+  userId    String
   createdAt DateTime @default(now())
   user      User     @relation(fields: [userId], references: [id])
 }
@@ -144,7 +143,7 @@ model Workspace {
   name        String
   companySize Int
   slug        String            @unique
-  userId      Int
+  userId      String
   createdAt   DateTime          @default(now())
   updatedAt   DateTime          @updatedAt
   invitations Invitation[]
@@ -156,7 +155,7 @@ model Workspace {
 
 model WorkspaceMember {
   id          Int       @id @default(autoincrement())
-  userId      Int
+  userId      String
   workspaceId Int
   role        String    @default("Membro")
   joinedAt    DateTime  @default(now())

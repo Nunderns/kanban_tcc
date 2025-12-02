@@ -36,10 +36,7 @@ export async function GET(
       return NextResponse.json({ error: 'ID da tarefa inválido' }, { status: 400 });
     }
 
-    const sessionUserId =
-      typeof session.user.id === 'string'
-        ? parseInt(session.user.id, 10)
-        : session.user.id;
+    const sessionUserId = session.user.id;
 
     const task = await prisma.task.findUnique({
       where: { id: taskId },
@@ -83,10 +80,7 @@ export async function PATCH(
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
     }
 
-    const sessionUserId =
-      typeof session.user.id === 'string'
-        ? parseInt(session.user.id, 10)
-        : session.user.id;
+    const sessionUserId = session.user.id;
 
     const { id } = await context.params;
     const taskId = parseInt(id);
@@ -160,10 +154,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
     }
 
-    const sessionUserId =
-      typeof session.user.id === 'string'
-        ? parseInt(session.user.id, 10)
-        : session.user.id;
+    const sessionUserId = session.user.id;
 
     const { id } = await context.params;
     const taskId = parseInt(id);

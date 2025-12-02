@@ -20,6 +20,7 @@ import { useSession } from "next-auth/react";
 import { useParams } from "next/navigation";
 import { useTheme } from "next-themes";
 import { Menu, X } from "lucide-react";
+import { GoogleConnectButton } from "@/components/GoogleConnectButton";
 
 interface Activity {
   id: number;
@@ -74,7 +75,7 @@ export default function SettingsPage() {
   useEffect(() => {
     const fetchActivities = async () => {
       if (activeSection !== 'activity') return;
-      
+
       console.log('Fetching activities...');
       setIsLoadingActivities(true);
       try {
@@ -85,19 +86,19 @@ export default function SettingsPage() {
             'Cache-Control': 'no-cache'
           }
         });
-        
+
         const contentType = response.headers.get('content-type');
         if (!contentType || !contentType.includes('application/json')) {
           const text = await response.text();
           throw new Error(`Invalid content type: ${contentType}, Response: ${text}`);
         }
-        
+
         const data = await response.json();
-        
+
         if (!response.ok) {
           throw new Error(data.error || 'Failed to fetch activities');
         }
-        
+
         console.log('Activities fetched successfully:', data);
         setActivities(Array.isArray(data) ? data : []);
       } catch (err) {
@@ -127,7 +128,7 @@ export default function SettingsPage() {
     const date = new Date(dateString);
     const now = new Date();
     const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-    
+
     if (diffInSeconds < 60) return 'agora mesmo';
     if (diffInSeconds < 3600) {
       const minutes = Math.floor(diffInSeconds / 60);
@@ -141,7 +142,7 @@ export default function SettingsPage() {
       const days = Math.floor(diffInSeconds / 86400);
       return `há ${days} dia${days > 1 ? 's' : ''}`;
     }
-    
+
     return date.toLocaleDateString('pt-BR', {
       year: 'numeric',
       month: 'short',
@@ -273,7 +274,7 @@ export default function SettingsPage() {
     const normalized = action?.toLowerCase() ?? 'default';
     return ACTION_TONES[normalized as keyof typeof ACTION_TONES] ?? ACTION_TONES.default;
   };
-  
+
   const formatActivityMessage = (activity: Activity) => {
     const { action, field, taskTitle, oldValue, newValue } = activity;
     const normalizedAction = action?.toLowerCase?.() ?? '';
@@ -284,11 +285,10 @@ export default function SettingsPage() {
     const hasNewValue = newValue !== undefined;
     const ValueChip = (value: string, tone: 'old' | 'new') => (
       <span
-        className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold ${
-          tone === 'old'
+        className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold ${tone === 'old'
             ? 'border-red-200 text-red-600 dark:border-red-500/30 dark:text-red-300'
             : 'border-green-200 text-green-600 dark:border-green-500/30 dark:text-green-300'
-        }`}
+          }`}
       >
         {value}
       </span>
@@ -377,7 +377,7 @@ export default function SettingsPage() {
       </div>
     );
   };
-  
+
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -418,7 +418,7 @@ export default function SettingsPage() {
 
   const handleNotificationChange = (key: keyof typeof notificationSettings) => {
     const newValue = !notificationSettings[key];
-    
+
     if (key === 'emailNotifications' && !newValue) {
       setNotificationSettings(prev => ({
         ...prev,
@@ -450,9 +450,9 @@ export default function SettingsPage() {
         },
         credentials: 'include'
       });
-      
+
       console.log('Response status:', response.status);
-      
+
       if (!response.ok) {
         const errorText = await response.text();
         console.error('Failed to load settings:', {
@@ -462,14 +462,14 @@ export default function SettingsPage() {
         });
         throw new Error(`Falha ao carregar configurações: ${response.status} ${response.statusText}`);
       }
-      
+
       const responseData = await response.json().catch(error => {
         console.error('Error parsing JSON response:', error);
         throw new Error('Resposta inválida do servidor');
       });
-      
+
       console.log('Received notification settings:', responseData);
-      
+
       if (responseData && typeof responseData === 'object') {
         setNotificationSettings({
           emailNotifications: responseData.emailNotifications ?? true,
@@ -492,12 +492,12 @@ export default function SettingsPage() {
         notifyComments: true,
         notifyMentions: true
       });
-      
+
       setSaveStatus({
         type: 'error',
         message: 'Erro ao carregar configurações. Usando configurações padrão.'
       });
-      
+
       const timer = setTimeout(() => setSaveStatus(null), 5000);
       return () => clearTimeout(timer);
     }
@@ -511,10 +511,10 @@ export default function SettingsPage() {
 
   const saveNotificationSettings = async () => {
     if (isSaving) return;
-    
+
     setIsSaving(true);
     setSaveStatus(null);
-    
+
     try {
       const response = await fetch('/api/user/notifications', {
         method: 'POST',
@@ -532,13 +532,13 @@ export default function SettingsPage() {
       });
 
       const responseData = await response.json();
-      
+
       if (!response.ok) {
         const errorMessage = responseData.error || 'Falha ao salvar configurações';
         console.error('API Error:', errorMessage, responseData);
         throw new Error(errorMessage);
       }
-      
+
       if (responseData.success && typeof responseData === 'object') {
         const {
           emailNotifications,
@@ -558,16 +558,16 @@ export default function SettingsPage() {
           notifyMentions: Boolean(notifyMentions ?? true)
         });
       }
-      
-      setSaveStatus({ 
-        type: 'success', 
-        message: 'Configurações salvas com sucesso!' 
+
+      setSaveStatus({
+        type: 'success',
+        message: 'Configurações salvas com sucesso!'
       });
     } catch (error) {
       console.error('Error saving notification settings:', error);
-      setSaveStatus({ 
-        type: 'error', 
-        message: error instanceof Error ? error.message : 'Erro ao salvar configurações' 
+      setSaveStatus({
+        type: 'error',
+        message: error instanceof Error ? error.message : 'Erro ao salvar configurações'
       });
     } finally {
       setIsSaving(false);
@@ -575,10 +575,10 @@ export default function SettingsPage() {
       return () => clearTimeout(timer);
     }
   };
-  
+
   const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (newPassword !== confirmPassword) {
       setMessage({ type: 'error', text: 'As senhas não coincidem' });
       return;
@@ -625,7 +625,7 @@ export default function SettingsPage() {
   useEffect(() => {
     setMounted(true);
   }, []);
-  
+
   const getInitials = (value?: string | null) => {
     if (!value) return "US";
     const parts = value.trim().split(/\s+/);
@@ -704,15 +704,15 @@ export default function SettingsPage() {
                 </div>
                 <div className="mt-6 flex gap-3">
                   <Button>Salvar alterações</Button>
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
                     onClick={() => setIsDeleteDialogOpen(true)}
                   >
                     Excluir conta
                   </Button>
                 </div>
-                
+
                 <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
                   <AlertDialogContent>
                     <AlertDialogHeader>
@@ -726,7 +726,7 @@ export default function SettingsPage() {
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                       <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
-                      <AlertDialogAction 
+                      <AlertDialogAction
                         onClick={handleDeleteAccount}
                         disabled={isDeleting}
                         className="bg-red-600 hover:bg-red-700 focus:ring-red-500"
@@ -740,7 +740,7 @@ export default function SettingsPage() {
             </Card>
           </div>
         );
-      
+
       case 'preferences':
         return (
           <div className="space-y-6">
@@ -757,55 +757,54 @@ export default function SettingsPage() {
                       Escolha como o Kanban TCC é exibido para você
                     </p>
                   </div>
-                  
+
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                     {mounted && theme && ([
                       {
-        				    value: 'light',
-        				    label: 'Claro',
-        				    icon: (
-        				      <div className="w-full h-full rounded-lg bg-white border border-gray-200 p-4 flex flex-col items-center justify-center">
-        				        <div className="w-6 h-6 rounded-full bg-yellow-300 mb-2" />
-        				        <div className="w-full h-1 bg-gray-200 my-1" />
-        				        <div className="w-full h-1 bg-gray-200 my-1" />
-        				        <div className="w-3/4 h-1 bg-gray-200 mt-1" />
-        				      </div>
-        				    ),
-        				  },
-        				  {
-        				    value: 'dark',
-        				    label: 'Escuro',
-        				    icon: (
-        				      <div className="w-full h-full rounded-lg bg-gray-900 border border-gray-700 p-4 flex flex-col items-center justify-center">
-        				        <div className="w-6 h-6 rounded-full bg-blue-500 mb-2" />
-        				        <div className="w-full h-1 bg-gray-700 my-1" />
-        				        <div className="w-full h-1 bg-gray-700 my-1" />
-        				        <div className="w-3/4 h-1 bg-gray-700 mt-1" />
-        				      </div>
-        				    ),
-        				  },
-        				  {
-        				    value: 'system',
-        				    label: 'Sistema',
-        				    icon: (
-        				      <div className="w-full h-full rounded-lg bg-gradient-to-br from-white to-gray-900 border border-gray-200 dark:border-gray-700 p-4 flex flex-col items-center justify-center">
-        				        <div className="w-6 h-6 rounded-full bg-gradient-to-r from-yellow-300 to-blue-500 mb-2" />
-        				        <div className="w-full h-1 bg-gray-200 dark:bg-gray-700 my-1" />
-        				        <div className="w-full h-1 bg-gray-200 dark:bg-gray-700 my-1" />
-        				        <div className="w-3/4 h-1 bg-gray-200 dark:bg-gray-700 mt-1" />
-        				      </div>
-        				    ),
-        				  },
-        				] as const).map(({ value, label, icon }) => (
+                        value: 'light',
+                        label: 'Claro',
+                        icon: (
+                          <div className="w-full h-full rounded-lg bg-white border border-gray-200 p-4 flex flex-col items-center justify-center">
+                            <div className="w-6 h-6 rounded-full bg-yellow-300 mb-2" />
+                            <div className="w-full h-1 bg-gray-200 my-1" />
+                            <div className="w-full h-1 bg-gray-200 my-1" />
+                            <div className="w-3/4 h-1 bg-gray-200 mt-1" />
+                          </div>
+                        ),
+                      },
+                      {
+                        value: 'dark',
+                        label: 'Escuro',
+                        icon: (
+                          <div className="w-full h-full rounded-lg bg-gray-900 border border-gray-700 p-4 flex flex-col items-center justify-center">
+                            <div className="w-6 h-6 rounded-full bg-blue-500 mb-2" />
+                            <div className="w-full h-1 bg-gray-700 my-1" />
+                            <div className="w-full h-1 bg-gray-700 my-1" />
+                            <div className="w-3/4 h-1 bg-gray-700 mt-1" />
+                          </div>
+                        ),
+                      },
+                      {
+                        value: 'system',
+                        label: 'Sistema',
+                        icon: (
+                          <div className="w-full h-full rounded-lg bg-gradient-to-br from-white to-gray-900 border border-gray-200 dark:border-gray-700 p-4 flex flex-col items-center justify-center">
+                            <div className="w-6 h-6 rounded-full bg-gradient-to-r from-yellow-300 to-blue-500 mb-2" />
+                            <div className="w-full h-1 bg-gray-200 dark:bg-gray-700 my-1" />
+                            <div className="w-full h-1 bg-gray-200 dark:bg-gray-700 my-1" />
+                            <div className="w-3/4 h-1 bg-gray-200 dark:bg-gray-700 mt-1" />
+                          </div>
+                        ),
+                      },
+                    ] as const).map(({ value, label, icon }) => (
                       <button
                         key={value}
                         type="button"
                         onClick={() => setTheme(value)}
-                        className={`relative flex flex-col items-center p-3 rounded-lg border-2 transition-all duration-200 ${
-                          theme === value
+                        className={`relative flex flex-col items-center p-3 rounded-lg border-2 transition-all duration-200 ${theme === value
                             ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
                             : 'border-transparent hover:border-gray-200 dark:hover:border-gray-700'
-                        }`}
+                          }`}
                         aria-pressed={theme === value}
                       >
                         <div className="w-full aspect-square max-h-24 mb-2">
@@ -833,7 +832,7 @@ export default function SettingsPage() {
                       </button>
                     ))}
                   </div>
-                  
+
                   <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">
                     A configuração do tema será aplicada a todo o site.
                   </p>
@@ -867,15 +866,14 @@ export default function SettingsPage() {
         return (
           <div className="space-y-6">
             {saveStatus && (
-              <div className={`p-3 rounded-md ${
-                saveStatus.type === 'success' 
-                  ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' 
+              <div className={`p-3 rounded-md ${saveStatus.type === 'success'
+                  ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
                   : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-              }`}>
+                }`}>
                 {saveStatus.message}
               </div>
             )}
-            
+
             <Card>
               <CardHeader>
                 <CardTitle>Notificações por e-mail</CardTitle>
@@ -984,9 +982,9 @@ export default function SettingsPage() {
                 </div>
 
                 <div className="pt-2">
-                  <Button 
-                    type="button" 
-                    variant="outline" 
+                  <Button
+                    type="button"
+                    variant="outline"
                     onClick={saveNotificationSettings}
                     disabled={isSaving}
                   >
@@ -1010,9 +1008,8 @@ export default function SettingsPage() {
                 <div>
                   <h3 className="text-lg font-medium mb-4">Alterar senha</h3>
                   {message && (
-                    <div className={`mb-4 p-3 rounded-md ${
-                      message.type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                    }`}>
+                    <div className={`mb-4 p-3 rounded-md ${message.type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                      }`}>
                       {message.text}
                     </div>
                   )}
@@ -1031,7 +1028,7 @@ export default function SettingsPage() {
                         required
                       />
                     </div>
-                    
+
                     <div>
                       <label htmlFor="new-password" className="block text-sm font-medium text-gray-700 mb-1">
                         Nova senha
@@ -1050,7 +1047,7 @@ export default function SettingsPage() {
                         A senha deve ter pelo menos 8 caracteres
                       </p>
                     </div>
-                    
+
                     <div>
                       <label htmlFor="confirm-password" className="block text-sm font-medium text-gray-700 mb-1">
                         Confirmar nova senha
@@ -1065,7 +1062,7 @@ export default function SettingsPage() {
                         required
                       />
                     </div>
-                    
+
                     <div className="pt-2">
                       <button
                         type="submit"
@@ -1095,7 +1092,7 @@ export default function SettingsPage() {
                   <div className="text-center p-6 bg-red-50 rounded-lg border border-red-200">
                     <div className="text-red-600 font-medium mb-2">Erro ao carregar atividades</div>
                     <p className="text-sm text-red-500">{error}</p>
-                    <button 
+                    <button
                       onClick={() => window.location.reload()}
                       className="mt-3 px-4 py-2 text-sm bg-white border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
                     >
@@ -1192,17 +1189,7 @@ export default function SettingsPage() {
                         </button>
                       </div>
                     ) : (
-                      <button
-                        onClick={() => {
-                          window.location.href = '/api/auth/signin/google';
-                        }}
-                        className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:hover:bg-gray-600"
-                      >
-                        <svg className="w-5 h-5 mr-2 -ml-1 text-red-500" viewBox="0 0 24 24" fill="currentColor">
-                          <path d="M12.545 10.239v3.821h5.445c-0.712 2.315-2.647 3.972-5.445 3.972-3.332 0-6.033-2.701-6.033-6.032s2.701-6.032 6.033-6.032c1.498 0 2.866 0.549 3.921 1.453l2.814-2.814c-1.88-1.757-4.382-2.832-6.735-2.832-5.522 0-10 4.479-10 10s4.478 10 10 10c8.396 0 10-7.496 10-9.634 0-0.996-0.102-1.277-0.201-1.491h-9.8z" />
-                        </svg>
-                        Conectar com Google
-                      </button>
+                      <GoogleConnectButton />
                     )}
                   </div>
                   <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
@@ -1288,10 +1275,9 @@ export default function SettingsPage() {
       </div>
 
       {/* Sidebar */}
-      <div 
-        className={`fixed inset-y-0 left-0 z-40 w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 transform ${
-          isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        } transition-transform duration-200 ease-in-out md:translate-x-0 md:static md:inset-auto sidebar`}
+      <div
+        className={`fixed inset-y-0 left-0 z-40 w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+          } transition-transform duration-200 ease-in-out md:translate-x-0 md:static md:inset-auto sidebar`}
       >
         <div className="p-6 pr-4 h-full flex flex-col">
           <div className="mb-8">
@@ -1312,11 +1298,10 @@ export default function SettingsPage() {
               <button
                 key={section.id}
                 onClick={() => handleSectionChange(section.id)}
-                className={`w-full text-left px-3 py-2 rounded-md text-sm font-medium ${
-                  activeSection === section.id
+                className={`w-full text-left px-3 py-2 rounded-md text-sm font-medium ${activeSection === section.id
                     ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white'
                     : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white'
-                }`}
+                  }`}
               >
                 {section.ptName}
               </button>
@@ -1331,8 +1316,8 @@ export default function SettingsPage() {
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
               {sections.find(s => s.id === activeSection)?.ptName}
             </h1>
-            <a 
-              href={`/${params.workspaceSlug}/dashboard`} 
+            <a
+              href={`/${params.workspaceSlug}/dashboard`}
               className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
             >
               <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">

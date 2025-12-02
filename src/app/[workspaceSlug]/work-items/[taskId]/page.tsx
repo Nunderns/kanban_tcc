@@ -21,9 +21,7 @@ export default async function WorkItemFullScreenPage({ params }: WorkItemPagePro
     notFound();
   }
 
-  const userId = typeof session.user.id === "string"
-    ? parseInt(session.user.id, 10)
-    : session.user.id;
+  const userId = session.user.id;
 
   const workspace = await prisma.workspace.findUnique({
     where: { slug: workspaceSlug },

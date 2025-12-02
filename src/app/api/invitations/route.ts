@@ -25,7 +25,7 @@ export async function POST(req: Request) {
     const existingInvitation = await prisma.invitation.findFirst({
       where: {
         email: email.toLowerCase(),
-        workspaceId: parseInt(workspaceId as string),
+        userId: session.user.id,
         status: 'pending',
         expiresAt: { gt: new Date() },
       },
@@ -48,7 +48,7 @@ export async function POST(req: Request) {
         role,
         token,
         workspaceId: wsId,
-        inviterId: parseInt(session.user.id as string),
+        inviterId: session.user.id,
         expiresAt,
         status: 'pending',
       },
@@ -56,7 +56,7 @@ export async function POST(req: Request) {
 
     try {
       const inviter = await prisma.user.findUnique({
-        where: { id: parseInt(session.user.id as string) },
+        where: { id: session.user.id },
         select: { name: true, email: true }
       });
 

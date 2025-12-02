@@ -13,10 +13,10 @@ interface TaskWithIncludes {
   startDate: Date | null;
   dueDate: Date | null;
   assignees: string[] | null;
-  assignedUserId: number | null;
+  assignedUserId: string | null;
   parentTaskId: number | null;
   assignedUser: {
-    id: number;
+    id: string;
     name: string | null;
     email: string | null;
   } | null;
@@ -24,7 +24,7 @@ interface TaskWithIncludes {
   cycle: string | null;
   labels: string[] | null;
   user: {
-    id: number;
+    id: string;
     name: string | null;
     email: string | null;
   };
@@ -67,20 +67,10 @@ export async function GET(req: NextRequest) {
     const projectIdParam = req.nextUrl.searchParams.get("projectId");
     const projectId = projectIdParam ? parseInt(projectIdParam) : undefined;
     
-    const userId = typeof session.user.id === 'string' 
-      ? parseInt(session.user.id, 10) 
-      : session.user.id;
-      
-    if (isNaN(userId)) {
-      console.error('Invalid user ID:', session.user.id);
-      return NextResponse.json(
-        { error: "Internal server error", details: "Invalid user ID format" },
-        { status: 500 }
-      );
-    }
+    const userId = session.user.id;
     
     interface TaskWhere {
-      userId: number;
+      userId: string;
       status?: "BACKLOG" | "TODO" | "IN_PROGRESS" | "DONE";
       projectId?: number | null;
     }
@@ -152,7 +142,7 @@ export async function GET(req: NextRequest) {
         startDate: task.startDate?.toISOString(),
         dueDate: task.dueDate?.toISOString(),
         assignees: task.assignees,
-        assignedUserId: task.assignedUserId?.toString(),
+        assignedUserId: task.assignedUserId,
         assignedUserName: task.assignedUser?.name || null,
         module: task.module,
         cycle: task.cycle,
@@ -190,10 +180,10 @@ export async function POST(req: NextRequest) {
         description: body.description || null,
         status: body.status || "BACKLOG",
         priority: body.priority || "NONE",
-        userId: typeof session.user.id === 'string' ? parseInt(session.user.id, 10) : session.user.id,
+        userId: session.user.id,
         projectId: body.projectId ? Number(body.projectId) : null,
         workspaceId: body.workspaceId ? Number(body.workspaceId) : null,
-        assignedUserId: body.assignedUserId ? Number(body.assignedUserId) : null,
+        assignedUserId: body.assignedUserId || null,
         parentTaskId: body.parentTaskId ? Number(body.parentTaskId) : null,
         assignees: body.assignees ?? [],
         labels: body.labels ?? [],
@@ -232,7 +222,7 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: "Task not found" }, { status: 404 });
     }
 
-    if (existingTask.userId !== Number(session.user.id)) {
+    if (existingTask.userId !== session.user.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
     const updateData: Record<string, unknown> = {};
@@ -266,7 +256,7 @@ export async function PATCH(req: NextRequest) {
     const safeBody: Record<string, unknown> = body;
     
     if (body.assignedUserId !== undefined) {
-      updateData.assignedUserId = body.assignedUserId ? Number(body.assignedUserId) : null;
+      updateData.assignedUserId = body.assignedUserId || null;
     }
 
     updatableFields.forEach((field: UpdatableField) => {
