@@ -68,8 +68,15 @@ export const authOptions: NextAuthConfig = {
       token: JWT;
       user: User | undefined;
     }) {
-      if (user) {
-        token.id = user.id;
+      const tokenUserId = user?.id || token.sub;
+      if (tokenUserId) {
+        token.id = tokenUserId;
+
+        // Ensure token always carries email information for OAuth flows
+        // where the user object might not be sent in subsequent requests.
+        if (!token.email && user?.email) {
+          token.email = user.email;
+        }
       }
       return token;
     },
@@ -80,11 +87,25 @@ export const authOptions: NextAuthConfig = {
       session: Session;
       token: JWT;
     }) {
-      if (session.user && token?.id) {
-        session.user.id = String(token.id);
+      if (session.user && (token?.id || token?.sub || session.user.email)) {
+        const userId = String(token.id || token.sub || session.user.id);
+        session.user.id = userId;
+
+        const dbUser = await prisma.user.findUnique({
+          where: {
+            id: userId,
+          },
+          select: {
+            email: true,
+            name: true,
+          },
+        });
+
+        session.user.email = session.user.email || dbUser?.email || null;
+        session.user.name = session.user.name || dbUser?.name || null;
 
         const accounts = await prisma.account.findMany({
-          where: { userId: String(token.id) },
+          where: { userId },
         });
 
         const hasGoogle = accounts.some(
