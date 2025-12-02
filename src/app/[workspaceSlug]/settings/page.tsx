@@ -1301,8 +1301,7 @@ export default function SettingsPage() {
     { id: 'notifications', name: 'Notificações', ptName: 'Notificações' },
     { id: 'security', name: 'Segurança', ptName: 'Segurança' },
     { id: 'activity', name: 'Atividade', ptName: 'Atividade' },
-    { id: 'connections', name: 'Conexões', ptName: 'Conexões' },
-    { id: 'developer', name: 'Desenvolvedor', ptName: 'Desenvolvedor' },
+    { id: 'connections', name: 'Conexões', ptName: 'Conexões' }
   ];
 
   return (
