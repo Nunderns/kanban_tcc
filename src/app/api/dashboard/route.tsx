@@ -9,30 +9,44 @@ interface Task {
   dueDate: Date | null;
 }
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
     const session = await auth();
 
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+    const url = new URL(req.url);
+    const workspaceSlug = url.searchParams.get('workspaceSlug');
 
+    if (!workspaceSlug) {
+      return NextResponse.json({ error: "Workspace slug required" }, { status: 400 });
+    }
+    const workspace = await prisma.workspace.findUnique({
+      where: { slug: workspaceSlug },
+    });
+
+    if (!workspace) {
+      return NextResponse.json({ error: "Workspace not found" }, { status: 404 });
+    }
     const membership = await prisma.workspaceMember.findFirst({
-      where: { userId: Number(session.user.id) },
+      where: {
+        userId: session.user.id,
+        workspaceId: workspace.id
+      },
     });
 
     if (!membership) {
-      return NextResponse.json({ error: "Workspace not found" }, { status: 404 });
+      return NextResponse.json({ error: "Access denied" }, { status: 403 });
     }
-
     const membersData = await prisma.workspaceMember.findMany({
-      where: { workspaceId: membership.workspaceId },
+      where: { workspaceId: workspace.id },
       include: { user: { select: { id: true, name: true, email: true } } },
     });
 
     type MemberWithUser = {
-      userId: number;
-      user: { id: number; name: string | null; email: string | null };
+      userId: string;
+      user: { id: string; name: string | null; email: string | null };
     };
 
     const memberIds = (membersData as MemberWithUser[]).map((m) => m.userId);
@@ -63,25 +77,25 @@ export async function GET() {
 
     const tasks = await prisma.task.findMany({
       where: { userId: { in: memberIds } },
-      select: { 
-        id: true, 
-        title: true, 
+      select: {
+        id: true,
+        title: true,
         description: true,
-        dueDate: true 
+        dueDate: true
       },
     });
 
     const tasksWithRemainingDays = tasks.map((task: Task) => ({
       ...task,
-      remainingDays: task.dueDate ? 
+      remainingDays: task.dueDate ?
         Math.ceil((new Date(task.dueDate).getTime() - today.getTime()) / (1000 * 60 * 60 * 24)) :
         null
     }));
 
     const members = (membersData as MemberWithUser[]).map((m) => ({
       id: m.user.id,
-      name: m.user.name,
-      email: m.user.email,
+      name: m.user.name || "Usuário Sem Nome",
+      email: m.user.email || "email@nao.informado",
     }));
 
     return NextResponse.json({

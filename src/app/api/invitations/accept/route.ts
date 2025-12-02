@@ -236,8 +236,20 @@ export async function POST(req: Request) {
     });
 
     if (existingMember) {
+      const workspace = await prisma.workspace.findUnique({
+        where: { id: invitation.workspaceId },
+        select: { name: true }
+      });
+      
+      const workspaceSlug = workspace?.name
+        ?.toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '') || 'workspace';
+      
       const message = 'Você já é membro deste workspace';
-      const redirectUrl = '[workspaceSlug]/dashboard/my-tasks';
+      const redirectUrl = `/${workspaceSlug}/dashboard/my-tasks`;
       log(`[${requestId}] ${message}`, { 
         redirectUrl,
         existingMembership: existingMember
@@ -375,10 +387,8 @@ export async function POST(req: Request) {
         log('Transaction failed:', errorMessage);
         throw transactionError; 
       }
-      const redirectUrl = '/dashboard/my-tasks'; 
-      log('Success! Redirecting to:', redirectUrl);
       
-      const updatedWorkspace = await prisma.workspace.findUnique({
+      const workspace = await prisma.workspace.findUnique({
         where: { id: invitation.workspaceId },
         select: {
           id: true,
@@ -391,7 +401,7 @@ export async function POST(req: Request) {
         }
       });
       
-      if (!updatedWorkspace) {
+      if (!workspace) {
         const error = 'Workspace não encontrado após aceitação do convite';
         log(`[${requestId}] ${error}`);
         return NextResponse.json(
@@ -404,6 +414,16 @@ export async function POST(req: Request) {
           { status: 404 }
         );
       }
+      
+      const workspaceSlug = workspace.name
+        .toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '');
+      
+      const redirectUrl = `/${workspaceSlug}/dashboard/my-tasks`; 
+      log('Success! Redirecting to:', redirectUrl);
       
       const isMember = await prisma.workspaceMember.findFirst({
         where: {
@@ -443,7 +463,13 @@ export async function POST(req: Request) {
         code: string;
         requestId: string;
         data: {
-          workspace: typeof updatedWorkspace;
+          workspace: {
+            id: string | number;
+            name: string;
+            _count: {
+              members: number;
+            };
+          };
           user: {
             id: string | number;
             email: string | null;
@@ -470,7 +496,7 @@ export async function POST(req: Request) {
         code: 'SUCCESS',
         requestId,
         data: {
-          workspace: updatedWorkspace,
+          workspace: workspace,
           user: {
             id: user.id,
             email: user.email,

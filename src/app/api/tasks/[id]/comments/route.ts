@@ -38,10 +38,8 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
       return NextResponse.json({ error: "Invalid task ID" }, { status: 400 });
     }
 
-    const userId = Number(session.user.id);
-
     const task = await prisma.task.findUnique({
-      where: { id: taskId, userId },
+      where: { id: taskId, userId: session.user.id },
     });
 
     if (!task) {
@@ -85,9 +83,8 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
       return NextResponse.json({ error: "Content is required" }, { status: 400 });
     }
 
-    const userId = Number(session.user.id);
     const task = await prisma.task.findUnique({
-      where: { id: taskId, userId },
+      where: { id: taskId, userId: session.user.id },
     });
 
     if (!task) {
