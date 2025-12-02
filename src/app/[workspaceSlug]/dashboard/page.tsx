@@ -74,7 +74,6 @@ function DashboardContent() {
   const { theme, setTheme } = useTheme();
   const [isLoading, setIsLoading] = useState(true);
   const [isClient, setIsClient] = useState(false);
-  const [activeTab, setActiveTab] = useState('overview');
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredTasks, setFilteredTasks] = useState<Task[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -908,12 +907,12 @@ function DashboardContent() {
                     <CardTitle className="dark:text-white">Membros da Equipe</CardTitle>
                     <CardDescription className="dark:text-gray-300">{stats.members.length} pessoas na equipe</CardDescription>
                   </div>
-                  <button 
-                    onClick={() => setActiveTab('team')}
+                  <Link 
+                    href={`/${workspaceSlug}/team`}
                     className="text-sm text-blue-600 hover:underline flex items-center"
                   >
                     Ver todos <FiUsers className="ml-1" />
-                  </button>
+                  </Link>
                 </div>
               </CardHeader>
               <CardContent>
