@@ -130,7 +130,9 @@ export default function WorkItemSidebar({ item, onClose, onUpdate, workspaceSlug
       'module': 'módulo',
       'cycle': 'ciclo',
       'assignees': 'responsáveis',
-      'labels': 'etiquetas'
+      'labels': 'etiquetas',
+      'assignedUserId': 'responsável',
+      'assignedUserName': 'responsável'
     };
 
     return fieldMap[field] || field;
@@ -169,8 +171,23 @@ export default function WorkItemSidebar({ item, onClose, onUpdate, workspaceSlug
       return newValue?.trim() || 'Comentou na tarefa';
     }
 
-    if (field === 'assignedUserName') {
-      return '';
+    // Special handling for assigned user changes
+    if (field === 'assignedUserId' || field === 'assignedUserName') {
+      if (newValue && (!oldValue || oldValue === 'null' || oldValue === 'undefined')) {
+        const assignedUser = workspaceMembers.find(member => member.id === newValue);
+        const userName = assignedUser?.displayName || assignedUser?.fullName || 'um usuário';
+        return `Atribuiu a tarefa para ${userName}`;
+      } else if (!newValue || newValue === 'null' || newValue === 'undefined') {
+        const previousUser = workspaceMembers.find(member => member.id === oldValue);
+        const userName = previousUser?.displayName || previousUser?.fullName || 'um usuário';
+        return `Removeu a atribuição de ${userName}`;
+      } else {
+        const oldUser = workspaceMembers.find(member => member.id === oldValue);
+        const newUser = workspaceMembers.find(member => member.id === newValue);
+        const oldUserName = oldUser?.displayName || oldUser?.fullName || 'um usuário';
+        const newUserName = newUser?.displayName || newUser?.fullName || 'um usuário';
+        return `Transferiu a tarefa de ${oldUserName} para ${newUserName}`;
+      }
     }
     if (action === 'updated field') {
       const isDateField = field.toLowerCase().includes('date');
@@ -193,7 +210,12 @@ export default function WorkItemSidebar({ item, onClose, onUpdate, workspaceSlug
         }
       }
 
-      const formatValue = (value: string) => {
+      const formatValue = (value: string, isUserField = false) => {
+        if (isUserField) {
+          if (!value || value === 'null' || value === 'undefined') return 'não definido';
+          const user = workspaceMembers.find(member => member.id === value);
+          return user?.displayName || user?.fullName || value;
+        }
         if (isDateField) return formatDate(value);
         if (!value || value === 'null' || value === 'undefined') return 'não definido';
         return value;
@@ -201,8 +223,6 @@ export default function WorkItemSidebar({ item, onClose, onUpdate, workspaceSlug
 
       const oldVal = formatValue(oldValue);
       const newVal = formatValue(newValue);
-
-      if (field === 'assignedUserId') return '';
 
       return `Alterou o campo ${fieldName} de "${oldVal}" para "${newVal}"`;
     }
