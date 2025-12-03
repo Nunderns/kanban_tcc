@@ -36,29 +36,28 @@ function CreateTaskModal({
   isOpen,
   onClose,
   onSubmit,
-  workspaceSlug
+  workspaceSlug,
+  defaultProjectId
 }: {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (task: { title: string; description: string; assignedUserId?: string; projectId?: string }) => Promise<void>;
-  workspaceSlug: string
+  workspaceSlug: string;
+  defaultProjectId?: string;
 }) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [workspaceMembers, setWorkspaceMembers] = useState<WorkspaceMember[]>([]);
   const [selectedUser, setSelectedUser] = useState<string>("");
-  const [selectedProject, setSelectedProject] = useState<string>("");
+  const [selectedProject, setSelectedProject] = useState<string>(defaultProjectId || "");
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
-  const [isProjectDropdownOpen, setIsProjectDropdownOpen] = useState(false);
   const [loadingMembers, setLoadingMembers] = useState(false);
-  const [projects, setProjects] = useState<Array<{ id: string, name: string }>>([]);
-  const [loadingProjects, setLoadingProjects] = useState(false);
+  const [, setProjects] = useState<Array<{ id: string, name: string }>>([]);
 
   const fetchWorkspaceData = useCallback(async () => {
     try {
       setLoadingMembers(true);
-      setLoadingProjects(true);
 
       const membersResponse = await fetch(`/api/workspaces/${workspaceSlug}/members`);
       if (membersResponse.ok) {
@@ -71,7 +70,7 @@ function CreateTaskModal({
           };
           role: string;
         }
-        
+
         const formattedMembers = membersData.members?.map((member: Member) => ({
           id: member.userId,
           fullName: member.user.name || member.user.email,
@@ -94,15 +93,17 @@ function CreateTaskModal({
       console.error('Erro ao buscar dados da workspace:', error);
     } finally {
       setLoadingMembers(false);
-      setLoadingProjects(false);
     }
-  }, [workspaceSlug]);
+  }, [workspaceSlug, setProjects]);
 
   useEffect(() => {
     if (isOpen) {
       fetchWorkspaceData();
+      if (defaultProjectId) {
+        setSelectedProject(defaultProjectId);
+      }
     }
-  }, [isOpen, fetchWorkspaceData]);
+  }, [isOpen, fetchWorkspaceData, defaultProjectId]);
 
   const modalRef = useRef<HTMLDivElement>(null);
 
@@ -223,53 +224,6 @@ function CreateTaskModal({
               )}
             </div>
           </div>
-
-          {/* Project Selection */}
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Projeto
-            </label>
-            <div className="relative">
-              <div
-                className="w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded p-2 text-sm flex justify-between items-center cursor-pointer text-gray-900 dark:text-white"
-                onClick={() => setIsProjectDropdownOpen(!isProjectDropdownOpen)}
-              >
-                <span>
-                  {selectedProject
-                    ? projects.find((p) => p.id === selectedProject)?.name || "Projeto selecionado"
-                    : "Selecione um projeto (opcional)"}
-                </span>
-                <FaChevronDown className="text-xs text-gray-500 dark:text-gray-400" />
-              </div>
-              {isProjectDropdownOpen && (
-                <div className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded shadow-lg max-h-60 overflow-y-auto">
-                  {loadingProjects ? (
-                    <div className="p-2 text-sm text-gray-500 dark:text-gray-400">
-                      Carregando...
-                    </div>
-                  ) : projects.length > 0 ? (
-                    projects.map((project) => (
-                      <div
-                        key={project.id}
-                        className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer text-gray-900 dark:text-white"
-                        onClick={() => {
-                          setSelectedProject(project.id);
-                          setIsProjectDropdownOpen(false);
-                        }}
-                      >
-                        {project.name}
-                      </div>
-                    ))
-                  ) : (
-                    <div className="p-2 text-sm text-gray-500 dark:text-gray-400">
-                      Nenhum projeto encontrado
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-
           <div className="flex justify-end gap-2 mt-6">
             <button
               type="button"

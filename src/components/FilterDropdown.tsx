@@ -94,10 +94,6 @@ export default function FilterDropdown({ filters, onFilterChange }: FilterDropdo
           Você
         </label>
       </Section>
-
-      <Section title="Etiqueta">
-        <span className="text-gray-400 italic">Não encontrado</span>
-      </Section>
       <Section title="Data de início">
         {["Hoje", "Amanhã", "Esta semana", "Próxima semana", "Próximo mês"].map((option) => (
           <label className="flex items-center gap-2" key={`start-${option}`}>

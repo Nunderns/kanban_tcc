@@ -4,20 +4,21 @@ import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
-import { 
-  LayoutGrid, 
-  Users, 
-  ChevronDown, 
-  Check, 
-  LogOut, 
+import {
+  LayoutGrid,
+  Users,
+  ChevronDown,
+  Check,
+  LogOut,
   Settings,
   Plus,
   Home,
   Star,
-  FolderPlus,
   Menu,
+  FolderPlus,
   X
 } from 'lucide-react';
+import { AddProjectModal } from './modals/AddProjectModal';
 
 interface SidebarProps {
   workspaceSlug?: string;
@@ -40,34 +41,7 @@ interface Workspace {
   membros: number;
 }
 
-const AddProjectModal = ({
-  isOpen,
-  onClose
-}: {
-  isOpen: boolean;
-  onClose: () => void;
-}) => {
-  if (!isOpen) return null;
-  
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white dark:bg-gray-800 p-6 rounded-lg w-full max-w-md">
-        <h2 className="text-xl font-bold mb-4">Adicionar Projeto</h2>
-        <p className="text-gray-600 dark:text-gray-300 mb-4">
-          Funcionalidade de adicionar projeto será implementada em breve.
-        </p>
-        <div className="flex justify-end space-x-3">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
-          >
-            Fechar
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
+// AddProjectModal is now imported from './modals/AddProjectModal'
 
 const Sidebar = ({ workspaceSlug = '' }: SidebarProps) => {
   const { data: session } = useSession();
@@ -81,12 +55,11 @@ const Sidebar = ({ workspaceSlug = '' }: SidebarProps) => {
   const [mounted, setMounted] = useState(false);
   const [loading, setLoading] = useState(true);
   const [showPopover, setShowPopover] = useState(false);
-  const [showAddProjectModal, setShowAddProjectModal] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLDivElement>(null);
-  
+
   const settingsHref = workspaceSlug ? `/${workspaceSlug}/settings/general` : '/dashboard/settings/general';
   const tasksHref = workspaceSlug ? `/${workspaceSlug}/dashboard/my-tasks` : '/dashboard/my-tasks';
   const overviewHref = workspaceSlug ? `/${workspaceSlug}/dashboard` : '/dashboard';
@@ -143,7 +116,7 @@ const Sidebar = ({ workspaceSlug = '' }: SidebarProps) => {
     setWorkspace(ws);
     setFuncao(ws.funcao);
     setMembros(ws.membros);
-    
+
     if (typeof window !== 'undefined') {
       localStorage.setItem(
         "workspaceSelecionado",
@@ -154,13 +127,13 @@ const Sidebar = ({ workspaceSlug = '' }: SidebarProps) => {
           companySize: ws.tamanhoEmpresa,
         })
       );
-      
+
       const newPath = `/${ws.slug}/dashboard`;
       window.location.href = newPath;
-      
+
       window.dispatchEvent(new Event('workspaceChanged'));
     }
-    
+
     setShowPopover(false);
     closeMobileMenu();
   };
@@ -169,12 +142,12 @@ const Sidebar = ({ workspaceSlug = '' }: SidebarProps) => {
     const fetchWorkspaces = async () => {
       try {
         setLoading(true);
-        
+
         const response = await fetch('/api/workspaces?scope=all');
         if (!response.ok) {
           throw new Error('Failed to fetch workspaces');
         }
-        
+
         const data = await response.json();
         const workspaces: Workspace[] = Array.isArray(data)
           ? data
@@ -184,15 +157,15 @@ const Sidebar = ({ workspaceSlug = '' }: SidebarProps) => {
               ? [data]
               : [];
         setWorkspacesList(workspaces);
-        
+
         let currentWorkspace: Workspace | null = null;
-        
+
         if (workspaceSlug) {
           currentWorkspace = workspaces.find(ws => ws.slug === workspaceSlug) || null;
         } else if (workspaces.length > 0) {
           currentWorkspace = workspaces[0];
         }
-        
+
         if (currentWorkspace) {
           setWorkspace(currentWorkspace);
           setFuncao(currentWorkspace.funcao);
@@ -207,7 +180,7 @@ const Sidebar = ({ workspaceSlug = '' }: SidebarProps) => {
             })
           );
         }
-        
+
       } catch (error) {
         console.error('Error fetching workspaces:', error);
         setError('Falha ao carregar os workspaces');
@@ -230,23 +203,23 @@ const Sidebar = ({ workspaceSlug = '' }: SidebarProps) => {
     try {
       setLoading(true);
       setError(null);
-      
+
       const response = await fetch('/api/projects', {
         headers: {
           'Content-Type': 'application/json'
         }
       });
-      
+
       if (!response.ok) {
         const text = await response.text();
         let message = 'Failed to fetch projects';
         try {
           const json = JSON.parse(text);
           message = json.message || message;
-        } catch {}
+        } catch { }
         throw new Error(message + (text && typeof text === 'string' ? ` (${text})` : ''));
       }
-      
+
       const data = await response.json();
       setUserProjects(data);
     } catch (error) {
@@ -309,9 +282,8 @@ const Sidebar = ({ workspaceSlug = '' }: SidebarProps) => {
 
       <aside
         id="sidebar-navigation"
-        className={`fixed inset-y-0 left-0 z-40 w-64 transform transition-transform duration-200 lg:static lg:inset-auto lg:translate-x-0 lg:bg-transparent ${
-          isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
-        }`}
+        className={`fixed inset-y-0 left-0 z-40 w-64 transform transition-transform duration-200 lg:static lg:inset-auto lg:translate-x-0 lg:bg-transparent ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+          }`}
       >
         <div className="flex h-full w-64 flex-col border-r border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-900 lg:h-full">
           {/* Logo */}
@@ -378,11 +350,10 @@ const Sidebar = ({ workspaceSlug = '' }: SidebarProps) => {
                       setShowPopover(false);
                       closeMobileMenu();
                     }}
-                    className={`flex items-center space-x-2 rounded-lg px-4 py-2 ${
-                      pathname?.startsWith(settingsHref)
+                    className={`flex items-center space-x-2 rounded-lg px-4 py-2 ${pathname?.startsWith(settingsHref)
                         ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300'
                         : 'text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700/50'
-                    }`}
+                      }`}
                   >
                     <Settings size={18} className="flex-shrink-0" />
                     <span>Configurações</span>
@@ -394,11 +365,10 @@ const Sidebar = ({ workspaceSlug = '' }: SidebarProps) => {
                       setShowPopover(false);
                       closeMobileMenu();
                     }}
-                    className={`flex items-center space-x-2 rounded-lg px-4 py-2 ${
-                      pathname?.startsWith(tasksHref)
+                    className={`flex items-center space-x-2 rounded-lg px-4 py-2 ${pathname?.startsWith(tasksHref)
                         ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300'
                         : 'text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700/50'
-                    }`}
+                      }`}
                   >
                     <Check size={18} className="flex-shrink-0" />
                     <span>Minhas Tarefas</span>
@@ -410,11 +380,10 @@ const Sidebar = ({ workspaceSlug = '' }: SidebarProps) => {
                       setShowPopover(false);
                       closeMobileMenu();
                     }}
-                    className={`flex items-center space-x-2 rounded-lg px-4 py-2 ${
-                      pathname === overviewHref || pathname?.startsWith(`${overviewHref}`)
+                    className={`flex items-center space-x-2 rounded-lg px-4 py-2 ${pathname === overviewHref || pathname?.startsWith(`${overviewHref}`)
                         ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300'
                         : 'text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700/50'
-                    }`}
+                      }`}
                   >
                     <LayoutGrid size={18} className="flex-shrink-0" />
                     <span>Visão Geral</span>
@@ -435,11 +404,10 @@ const Sidebar = ({ workspaceSlug = '' }: SidebarProps) => {
                             selectWorkspace(ws);
                             setShowPopover(false);
                           }}
-                          className={`flex cursor-pointer items-center rounded-lg p-2 text-sm ${
-                            workspace?.id === ws.id
+                          className={`flex cursor-pointer items-center rounded-lg p-2 text-sm ${workspace?.id === ws.id
                               ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300 font-medium'
                               : 'text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700/50'
-                          }`}
+                            }`}
                         >
                           <div className="mr-2 flex h-6 w-6 items-center justify-center rounded-md bg-indigo-100 dark:bg-indigo-900/30">
                             <Users size={12} className="text-indigo-600 dark:text-indigo-300" />
@@ -491,11 +459,10 @@ const Sidebar = ({ workspaceSlug = '' }: SidebarProps) => {
                 <Link
                   href={`/${workspaceSlug}/`}
                   onClick={closeMobileMenu}
-                  className={`flex items-center rounded-md px-3 py-2 text-sm ${
-                    pathname === `/${workspaceSlug}/`
+                  className={`flex items-center rounded-md px-3 py-2 text-sm ${pathname === `/${workspaceSlug}/`
                       ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-900/20 dark:text-indigo-300'
                       : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'
-                  }`}
+                    }`}
                 >
                   <Home size={18} className="mr-3" />
                   Início
@@ -503,11 +470,10 @@ const Sidebar = ({ workspaceSlug = '' }: SidebarProps) => {
                 <Link
                   href={overviewHref}
                   onClick={closeMobileMenu}
-                  className={`flex items-center rounded-md px-3 py-2 text-sm ${
-                    pathname === overviewHref
+                  className={`flex items-center rounded-md px-3 py-2 text-sm ${pathname === overviewHref
                       ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-900/20 dark:text-indigo-300'
                       : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'
-                  }`}
+                    }`}
                 >
                   <LayoutGrid size={18} className="mr-3" />
                   Visão Geral
@@ -515,11 +481,10 @@ const Sidebar = ({ workspaceSlug = '' }: SidebarProps) => {
                 <Link
                   href={tasksHref}
                   onClick={closeMobileMenu}
-                  className={`flex items-center rounded-md px-3 py-2 text-sm ${
-                    pathname === tasksHref
+                  className={`flex items-center rounded-md px-3 py-2 text-sm ${pathname === tasksHref
                       ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-900/20 dark:text-indigo-300'
                       : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'
-                  }`}
+                    }`}
                 >
                   <Check size={18} className="mr-3" />
                   Minhas Tarefas
@@ -551,88 +516,88 @@ const Sidebar = ({ workspaceSlug = '' }: SidebarProps) => {
               ) : userProjects.length === 0 ? (
                 <div className="py-2 text-center">
                   <p className="mb-2 text-sm text-gray-500">Nenhum projeto encontrado</p>
-                  <button
-                    onClick={() => setShowAddProjectModal(true)}
-                    className="text-xs font-medium text-indigo-600 hover:text-indigo-700"
-                  >
-                    Criar seu primeiro projeto
-                  </button>
+                  <AddProjectModal
+                    workspaceSlug={workspaceSlug}
+                    onProjectCreated={fetchProjects}
+                    trigger={
+                      <button className="text-xs font-medium text-indigo-600 hover:text-indigo-700">
+                        Criar seu primeiro projeto
+                      </button>
+                    }
+                  />
                 </div>
               ) : (
                 <>
-                  {userProjects.map((project) => {
-                    const isActive = pathname === `/${workspaceSlug}/projects/${project.id}`;
-                    return (
-                      <Link
-                        key={project.id}
-                        href={`/${workspaceSlug}/projects/${project.id}`}
-                        onClick={closeMobileMenu}
-                        className={`group flex w-full items-center rounded-lg border px-2 py-1.5 text-left transition-colors ${
-                          isActive
-                            ? 'border-indigo-200 bg-indigo-50 dark:border-gray-700 dark:bg-gray-800'
-                            : 'border-transparent hover:bg-gray-50 dark:hover:bg-gray-800'
-                        }`}
-                      >
-                        <div
-                          className={`mr-3 h-2 w-2 flex-shrink-0 rounded-full ${isActive ? 'ring-2 ring-indigo-400' : ''}`}
-                          style={{ backgroundColor: project.color || '#3b82f6' }}
-                        ></div>
-                        <span
-                          className={`truncate ${
-                            isActive
-                              ? 'font-medium text-indigo-700 dark:text-indigo-300'
-                              : 'text-gray-700 dark:text-gray-200'
-                          }`}
+                  <div className="space-y-1">
+                    <AddProjectModal
+                      workspaceSlug={workspaceSlug}
+                      onProjectCreated={fetchProjects}
+                      trigger={
+                        <button
+                          className="group flex w-full items-center rounded-lg px-3 py-2 text-sm text-indigo-600 transition-colors hover:bg-indigo-50 dark:text-indigo-400 dark:hover:bg-gray-800"
                         >
-                          {project.name}
-                        </span>
-                        <div className="ml-auto flex items-center">
-                          {project.isFavorite && (
-                            <Star
-                              size={14}
-                              className="flex-shrink-0 fill-yellow-400 text-yellow-400"
-                            />
-                          )}
-                        </div>
-                      </Link>
-                    );
-                  })}
-                  <button
-                    onClick={() => setShowAddProjectModal(true)}
-                    className="group flex w-full items-center rounded-lg px-3 py-2 text-sm text-indigo-600 transition-colors hover:bg-indigo-50 dark:hover:bg-gray-800"
-                  >
-                    <FolderPlus size={16} className="mr-3 text-indigo-500 group-hover:text-indigo-600" />
-                    Adicionar projeto
-                  </button>
+                          <FolderPlus size={16} className="mr-3 text-indigo-500 group-hover:text-indigo-600 dark:text-indigo-400" />
+                          Adicionar projeto
+                        </button>
+                      }
+                    />
+                    {userProjects.map((project) => {
+                      const isActive = pathname === `/${workspaceSlug}/projects/${project.id}`;
+                      return (
+                        <Link
+                          key={project.id}
+                          href={`/${workspaceSlug}/projects/${project.id}`}
+                          onClick={closeMobileMenu}
+                          className={`group flex w-full items-center rounded-lg border px-2 py-1.5 text-left transition-colors ${isActive
+                              ? 'border-indigo-200 bg-indigo-50 dark:border-gray-700 dark:bg-gray-800'
+                              : 'border-transparent hover:bg-gray-50 dark:hover:bg-gray-800'
+                            }`}
+                        >
+                          <div
+                            className={`mr-3 h-2 w-2 flex-shrink-0 rounded-full ${isActive ? 'ring-2 ring-indigo-400' : ''}`}
+                            style={{ backgroundColor: project.color || '#3b82f6' }}
+                          ></div>
+                          <span
+                            className={`truncate ${isActive
+                                ? 'font-medium text-indigo-700 dark:text-indigo-300'
+                                : 'text-gray-700 dark:text-gray-200'
+                              }`}
+                          >
+                            {project.name}
+                          </span>
+                          <div className="ml-auto flex items-center">
+                            {project.isFavorite && (
+                              <Star
+                                size={14}
+                                className="flex-shrink-0 fill-yellow-400 text-yellow-400"
+                              />
+                            )}
+                          </div>
+                        </Link>
+                      );
+                    })}
+                  </div>
                 </>
               )}
             </nav>
-          </div>
 
-          {/* Configurações */}
-          <div className="mt-auto">
-            <div className="border-t border-gray-200 px-4 py-4 dark:border-gray-700">
-              <Link
-                href={settingsHref}
-                onClick={closeMobileMenu}
-                className={`flex items-center rounded-md px-3 py-2 text-sm ${
-                  pathname === settingsHref
-                    ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-900/20 dark:text-indigo-300'
-                    : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'
-                }`}
-              >
-                <Settings size={18} className="mr-3" />
-                Configurações
-              </Link>
+            {/* Settings Section */}
+            <div className="mt-auto">
+              <div className="border-t border-gray-200 px-4 py-4 dark:border-gray-700">
+                <Link
+                  href={settingsHref}
+                  onClick={closeMobileMenu}
+                  className={`flex items-center rounded-md px-3 py-2 text-sm ${pathname === settingsHref
+                      ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-900/20 dark:text-indigo-300'
+                      : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'
+                    }`}
+                >
+                  <Settings size={18} className="mr-3" />
+                  Configurações
+                </Link>
+              </div>
             </div>
 
-            <AddProjectModal
-              isOpen={showAddProjectModal}
-              onClose={() => {
-                setShowAddProjectModal(false);
-                setError(null);
-              }}
-            />
           </div>
         </div>
       </aside>

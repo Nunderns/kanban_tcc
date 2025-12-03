@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { Calendar, ArrowLeft, Settings, LayoutGrid, List } from "lucide-react";
+import { Calendar, ArrowLeft, Settings, LayoutGrid } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ProjectViewClient from "@/components/ProjectViewClient";
 import { ProjectSettings } from "@/components/ProjectSettings";
@@ -49,6 +49,7 @@ export default async function ProjectPage({
       description: true,
       createdAt: true,
       updatedAt: true,
+      workspaceId: true,
       tasks: {
         select: {
           id: true,
@@ -121,13 +122,6 @@ export default async function ProjectPage({
                 Visão Geral
               </TabsTrigger>
               <TabsTrigger
-                value="tasks"
-                className="data-[state=active]:border-b-2 data-[state=active]:border-blue-500 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400"
-              >
-                <List className="h-4 w-4 mr-2" />
-                Tarefas
-              </TabsTrigger>
-              <TabsTrigger
                 value="settings"
                 className="data-[state=active]:border-b-2 data-[state=active]:border-blue-500 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400"
               >
@@ -161,20 +155,18 @@ export default async function ProjectPage({
                 </div>
               </div>
             </div>
-          </TabsContent>
 
-          <TabsContent value="tasks">
             <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
-              <div className="flex justify-between items-center mb-6">
+              <div className="flex items-center justify-between mb-4">
                 <h2 className="text-lg font-medium text-gray-900 dark:text-white">Tarefas do Projeto</h2>
               </div>
               <ProjectViewClient
                 projectId={project.id}
                 projectName={project.name}
                 workspaceSlug={workspaceSlug}
-                onTaskCreated={async () => {
-                  'use server';
-                }}
+                workspaceId={project.workspaceId}
+                forceListView
+                defaultProjectId={project.id.toString()}
               />
             </div>
           </TabsContent>
