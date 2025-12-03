@@ -3,8 +3,6 @@
 import { useState } from "react";
 import { useSession } from "next-auth/react";
 import LoginForm from "./components/LoginForm";
-import GoogleLoginButton from "./components/GoogleLoginButton";
-import Divider from "./components/Divider";
 import LoginHero from "./components/LoginHero";
 import ForgotPasswordModal from "./components/ForgotPasswordModal";
 import TermsModal from "./components/TermsModal";
@@ -26,8 +24,6 @@ export default function LoginPage() {
         <h1 className="text-3xl sm:text-4xl font-semibold mb-6 text-black dark:text-white">
           TaskFlow
         </h1>
-        <GoogleLoginButton />
-        <Divider />
         <LoginForm
           onForgot={() => setShowForgot(true)}
           onTerms={() => setShowTerms(true)}
