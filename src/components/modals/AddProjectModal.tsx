@@ -9,9 +9,10 @@ import { CreateProjectForm } from "@/components/projects/CreateProjectForm";
 interface AddProjectModalProps {
   workspaceSlug: string;
   onProjectCreated?: () => void;
+  trigger?: React.ReactNode;
 }
 
-export function AddProjectModal({ workspaceSlug, onProjectCreated }: AddProjectModalProps) {
+export function AddProjectModal({ workspaceSlug, onProjectCreated, trigger }: AddProjectModalProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   const handleProjectCreated = () => {
@@ -24,13 +25,15 @@ export function AddProjectModal({ workspaceSlug, onProjectCreated }: AddProjectM
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button 
-          className="flex items-center gap-2"
-          onClick={() => setIsOpen(true)}
-        >
-          <FiPlus className="h-4 w-4" />
-          <span>Criar Projeto</span>
-        </Button>
+        {trigger || (
+          <Button 
+            className="flex items-center gap-2"
+            onClick={() => setIsOpen(true)}
+          >
+            <FiPlus className="h-4 w-4" />
+            <span>Criar Projeto</span>
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="sm:max-w-[500px] bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
         <DialogHeader>

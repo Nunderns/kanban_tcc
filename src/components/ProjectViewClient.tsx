@@ -19,12 +19,23 @@ interface ProjectViewClientProps {
   projectId: number;
   projectName: string;
   workspaceSlug: string;
+  workspaceId: number;
   onTaskCreated?: () => Promise<void>;
+  forceListView?: boolean;
+  defaultProjectId?: string;
 }
 
-export default function ProjectViewClient({ projectId, projectName, workspaceSlug, onTaskCreated }: ProjectViewClientProps) {
-  const [view, setView] = useState<View>("kanban");
-  const [statusFilter, setStatusFilter] = useState<Status | "ALL">("ALL");
+export default function ProjectViewClient({
+  projectId,
+  projectName,
+  workspaceSlug,
+  workspaceId,
+  onTaskCreated,
+  forceListView = false,
+  defaultProjectId
+}: ProjectViewClientProps) {
+  const [view] = useState<View>(forceListView ? "list" : "kanban");
+  const [statusFilter] = useState<Status | "ALL">("ALL");
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -36,6 +47,7 @@ export default function ProjectViewClient({ projectId, projectName, workspaceSlu
       setError(null);
       const url = new URL(`/api/tasks`, window.location.origin);
       url.searchParams.set("projectId", String(projectId));
+      if (workspaceId) url.searchParams.set("workspaceId", String(workspaceId));
       if (statusFilter !== "ALL") url.searchParams.set("status", statusFilter);
       const res = await fetch(url.toString(), { cache: "no-store" });
       if (!res.ok) {
@@ -66,7 +78,7 @@ export default function ProjectViewClient({ projectId, projectName, workspaceSlu
     } finally {
       setLoading(false);
     }
-  }, [projectId, statusFilter]);
+  }, [projectId, statusFilter, workspaceId]);
 
   useEffect(() => {
     fetchTasks();
@@ -83,6 +95,7 @@ export default function ProjectViewClient({ projectId, projectName, workspaceSlu
   }, [tasks]);
 
   const filtered = useMemo(() => tasks, [tasks]);
+  const effectiveView: View = forceListView ? "list" : view;
 
   const onCreate = async ({ title, description, assignedUserId, projectId: taskProjectId }: { title: string; description: string; assignedUserId?: string; projectId?: string }) => {
     const res = await fetch("/api/tasks", {
@@ -93,7 +106,8 @@ export default function ProjectViewClient({ projectId, projectName, workspaceSlu
         description, 
         projectId: taskProjectId || projectId, 
         status: "BACKLOG", 
-        assignedUserId 
+        assignedUserId,
+        workspaceId
       }),
     });
     if (!res.ok) {
@@ -154,46 +168,6 @@ export default function ProjectViewClient({ projectId, projectName, workspaceSlu
         </div>
 
         <div className="flex flex-wrap gap-2 items-center">
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as Status | "ALL")}
-            className="border border-gray-300 dark:border-gray-700 rounded px-2 py-1.5 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
-            aria-label="Filtro de status"
-          >
-            <option value="ALL">Todos os status</option>
-            <option value="BACKLOG">Backlog</option>
-            <option value="TODO">To do</option>
-            <option value="IN_PROGRESS">Em progresso</option>
-            <option value="DONE">Concluído</option>
-          </select>
-
-          <div className="flex items-center border border-gray-300 dark:border-gray-700 rounded-md overflow-hidden">
-            <button
-              type="button"
-              className={`px-3 py-1.5 text-sm ${view === "kanban" ? "bg-blue-600 text-white" : "text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"}`}
-              onClick={() => setView("kanban")}
-              aria-pressed={view === "kanban"}
-            >
-              Kanban
-            </button>
-            <button
-              type="button"
-              className={`px-3 py-1.5 text-sm border-l ${view === "list" ? "bg-blue-600 text-white" : "text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"}`}
-              onClick={() => setView("list")}
-              aria-pressed={view === "list"}
-            >
-              Lista
-            </button>
-            <button
-              type="button"
-              className={`px-3 py-1.5 text-sm border-l ${view === "table" ? "bg-blue-600 text-white" : "text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"}`}
-              onClick={() => setView("table")}
-              aria-pressed={view === "table"}
-            >
-              Tabela
-            </button>
-          </div>
-
           <button
             type="button"
             onClick={() => setIsCreateOpen(true)}
@@ -211,13 +185,13 @@ export default function ProjectViewClient({ projectId, projectName, workspaceSlu
 
       {!loading && !error && (
         <div>
-          {view === "kanban" && (
+          {effectiveView === "kanban" && !forceListView && (
             <ProjectBoard 
               tasks={filtered} 
               onTaskUpdate={handleTaskUpdate} 
             />
           )}
-          {view === "list" && (
+          {(effectiveView === "list" || forceListView) && (
             <div className="rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
               <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                 <thead className="bg-gray-50 dark:bg-gray-800">
@@ -291,7 +265,7 @@ export default function ProjectViewClient({ projectId, projectName, workspaceSlu
               </table>
             </div>
           )}
-          {view === "table" && (
+          {effectiveView === "table" && !forceListView && (
             <div className="rounded-lg border border-dashed border-gray-300 dark:border-gray-700 p-6 text-sm text-gray-500">
               Visualização de tabela avançada em desenvolvimento
             </div>
@@ -304,6 +278,7 @@ export default function ProjectViewClient({ projectId, projectName, workspaceSlu
         onClose={() => setIsCreateOpen(false)} 
         onSubmit={onCreate}
         workspaceSlug={workspaceSlug}
+        defaultProjectId={defaultProjectId || String(projectId)}
       />
     </div>
   );

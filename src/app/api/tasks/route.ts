@@ -86,20 +86,24 @@ export async function GET(req: NextRequest) {
       }, { status: 403 });
     }
 
+    const workspaceFilter = projectId
+      ? {}
+      : workspaceId
+        ? { workspaceId }
+        : { workspaceId: { in: workspaceIds } };
+
     const tasks = await prisma.task.findMany({
       where: {
         OR: [
           { userId },
           { assignedUserId: userId },
           {
-            workspaceId: workspaceId || { in: workspaceIds },
+            ...workspaceFilter,
             userId: { not: userId }
           }
         ],
         ...(status && { status }),
-        ...(workspaceId ? { workspaceId } : {
-          workspaceId: { in: workspaceIds }
-        }),
+        ...workspaceFilter,
         ...(projectId && { projectId })
       },
       include: {
