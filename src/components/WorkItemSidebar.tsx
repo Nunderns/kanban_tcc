@@ -98,6 +98,36 @@ export default function WorkItemSidebar({ item, onClose, onUpdate, workspaceSlug
     url: '',
     displayName: ''
   });
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDeleteTask = async () => {
+    if (!confirm('Tem certeza que deseja excluir esta tarefa? Esta ação não pode ser desfeita.')) {
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      const response = await fetch(`/api/tasks/${item.id}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        toast.success('Tarefa excluída com sucesso!');
+        onClose?.();
+        window.location.reload();
+      } else {
+        const error = await response.json();
+        throw new Error(error.message || 'Falha ao excluir a tarefa');
+      }
+    } catch (error: unknown) {
+      console.error('Error deleting task:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Erro ao excluir a tarefa';
+      toast.error(errorMessage);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   const [showSubtaskActionModal, setShowSubtaskActionModal] = useState(false);
   const [showCreateTaskModal, setShowCreateTaskModal] = useState(false);
   const [showAddExistingTaskModal, setShowAddExistingTaskModal] = useState(false);
@@ -1069,25 +1099,52 @@ export default function WorkItemSidebar({ item, onClose, onUpdate, workspaceSlug
                   </Link>
                 )}
                 {onClose && (
-                  <button
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      onClose();
-                    }}
-                    className={`inline-flex items-center justify-center rounded-full border border-gray-300 dark:border-white/10 ${isFullScreen ? "px-4 py-2 text-sm" : "p-2"
-                      } text-gray-600 dark:text-white/70 transition hover:bg-gray-50 dark:hover:bg-white/10`}
-                    aria-label="Fechar"
-                  >
-                    {isFullScreen ? (
-                      <span className="flex items-center gap-2">
-                        <XMarkIcon className="h-4 w-4" />
-                        Fechar
-                      </span>
-                    ) : (
-                      <XMarkIcon className="h-5 w-5" />
-                    )}
-                  </button>
+                  <>
+                    <button
+                      onClick={handleDeleteTask}
+                      disabled={isDeleting}
+                      className={`inline-flex items-center justify-center rounded-full border border-red-200 dark:border-red-500/30 ${isFullScreen ? "px-4 py-2 text-sm" : "p-2"
+                        } text-red-600 dark:text-red-400 transition hover:bg-red-50 dark:hover:bg-red-500/10 disabled:opacity-50 disabled:cursor-not-allowed`}
+                      aria-label="Excluir tarefa"
+                      title="Excluir tarefa"
+                    >
+                      {isFullScreen ? (
+                        <span className="flex items-center gap-2">
+                          {isDeleting ? (
+                            <ArrowPathIcon className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <TrashIcon className="h-4 w-4" />
+                          )}
+                          {isDeleting ? 'Excluindo...' : 'Excluir'}
+                        </span>
+                      ) : (
+                        isDeleting ? (
+                          <ArrowPathIcon className="h-5 w-5 animate-spin" />
+                        ) : (
+                          <TrashIcon className="h-5 w-5" />
+                        )
+                      )}
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        onClose();
+                      }}
+                      className={`inline-flex items-center justify-center rounded-full border border-gray-300 dark:border-white/10 ${isFullScreen ? "px-4 py-2 text-sm" : "p-2"
+                        } text-gray-600 dark:text-white/70 transition hover:bg-gray-50 dark:hover:bg-white/10`}
+                      aria-label="Fechar"
+                    >
+                      {isFullScreen ? (
+                        <span className="flex items-center gap-2">
+                          <XMarkIcon className="h-4 w-4" />
+                          Fechar
+                        </span>
+                      ) : (
+                        <XMarkIcon className="h-5 w-5" />
+                      )}
+                    </button>
+                  </>
                 )}
               </div>
             </div>
