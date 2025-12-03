@@ -674,7 +674,7 @@ function DashboardContent() {
                             <p className="font-medium text-gray-900 dark:text-white group-hover:text-gray-900 dark:group-hover:text-white truncate">{task.title}</p>
                             <p className="text-sm text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-300 mt-1 line-clamp-2">{task.description}</p>
                             {task.remainingDays !== null && task.remainingDays !== undefined && (
-                              <div className="flex items-center mt-2 text-xs text-gray-100">
+                              <div className="flex items-center mt-2 text-xs text-gray-600 dark:text-gray-300">
                                 <FiClock className="mr-1" />
                                 <span>
                                   {task.remainingDays} {task.remainingDays === 1 ? 'dia restante' : 'dias restantes'}

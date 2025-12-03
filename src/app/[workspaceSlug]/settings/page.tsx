@@ -20,7 +20,6 @@ import { useSession } from "next-auth/react";
 import { useParams } from "next/navigation";
 import { useTheme } from "next-themes";
 import { Menu, X } from "lucide-react";
-import { GoogleConnectButton } from "@/components/GoogleConnectButton";
 import { useUserPreferences } from "@/hooks/useUserPreferences";
 
 interface Activity {
@@ -34,19 +33,17 @@ interface Activity {
   newValue?: string;
 }
 
-type Section = 'profile' | 'preferences' | 'notifications' | 'security' | 'activity' | 'connections' | 'developer';
+type Section = 'profile' | 'preferences' | 'notifications' | 'security' | 'activity';
 
 export default function SettingsPage() {
+  const { data: session } = useSession();
+  const params = useParams();
   const [activeSection, setActiveSection] = useState<Section>('profile');
-  const [mounted, setMounted] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [isDisconnectGoogleDialogOpen, setIsDisconnectGoogleDialogOpen] = useState(false);
-  const [isDisconnectingGoogle, setIsDisconnectingGoogle] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const router = useRouter();
-  const { data: session } = useSession();
-  const params = useParams();
   const { theme, setTheme } = useTheme();
   const name = session?.user?.name || "Usuário";
   const email = session?.user?.email || "";
@@ -56,33 +53,6 @@ export default function SettingsPage() {
     const newValue = event.target.value as 'sunday' | 'monday';
     await setFirstDayOfWeek(newValue);
   };
-
-  const handleDisconnectGoogle = async () => {
-    setIsDisconnectingGoogle(true);
-    try {
-      const response = await fetch("/api/disconnect-google", {
-        method: "POST",
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Erro ao desconectar Google");
-      }
-
-      const { getSession } = await import('next-auth/react');
-      await getSession();
-      window.location.reload();
-
-    } catch (e) {
-      console.error(e);
-      alert("Falha ao desconectar Google. Por favor, tente novamente.");
-    } finally {
-      setIsDisconnectingGoogle(false);
-      setIsDisconnectGoogleDialogOpen(false);
-    }
-  };
-
-
   const handleSectionChange = (section: Section) => {
     setActiveSection(section);
     if (window.innerWidth < 768) {
@@ -195,8 +165,6 @@ export default function SettingsPage() {
     assigneduserid: 'responsável',
     title: 'título',
     description: 'descrição',
-    module: 'módulo',
-    cycle: 'ciclo',
     project: 'projeto',
     projectid: 'projeto',
     workspaceid: 'workspace',
@@ -360,7 +328,7 @@ export default function SettingsPage() {
 
     const normalizedField = normalizeFieldKey(field);
     const isAssignment = normalizedField === 'assignee' || normalizedField === 'assigneduserid' || normalizedField === 'assignedusername';
-    
+
     if (isAssignment) {
       if (hasNewValue && !hasOldValue) {
         return (
@@ -701,7 +669,7 @@ export default function SettingsPage() {
     }
   };
 
-  const renderSection = () => {
+  const renderSection = (activeSection: Section) => {
     switch (activeSection) {
       case 'profile':
         return (
@@ -1069,7 +1037,7 @@ export default function SettingsPage() {
                   )}
                   <form onSubmit={handlePasswordSubmit} className="space-y-4">
                     <div>
-                      <label htmlFor="current-password" className="block text-sm font-medium text-gray-700 mb-1">
+                      <label htmlFor="current-password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         Senha atual
                       </label>
                       <input
@@ -1084,7 +1052,7 @@ export default function SettingsPage() {
                     </div>
 
                     <div>
-                      <label htmlFor="new-password" className="block text-sm font-medium text-gray-700 mb-1">
+                      <label htmlFor="new-password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         Nova senha
                       </label>
                       <input
@@ -1097,13 +1065,13 @@ export default function SettingsPage() {
                         minLength={8}
                         required
                       />
-                      <p className="mt-1 text-xs text-gray-600">
+                      <p className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         A senha deve ter pelo menos 8 caracteres
                       </p>
                     </div>
 
                     <div>
-                      <label htmlFor="confirm-password" className="block text-sm font-medium text-gray-700 mb-1">
+                      <label htmlFor="confirm-password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         Confirmar nova senha
                       </label>
                       <input
@@ -1206,88 +1174,11 @@ export default function SettingsPage() {
           </div>
         );
 
-      case 'connections':
-        return (
-          <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Conexões de Conta</CardTitle>
-                <CardDescription>Gerencie suas conexões com serviços de terceiros</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
-                  <div className="p-4 flex items-center justify-between bg-gray-50 dark:bg-gray-800">
-                    <div className="flex items-center space-x-4">
-                      <div className="p-2 bg-white dark:bg-gray-700 rounded-lg">
-                        <svg className="w-6 h-6 text-red-500" viewBox="0 0 24 24" fill="currentColor">
-                          <path d="M12.545 10.239v3.821h5.445c-0.712 2.315-2.647 3.972-5.445 3.972-3.332 0-6.033-2.701-6.033-6.032s2.701-6.032 6.033-6.032c1.498 0 2.866 0.549 3.921 1.453l2.814-2.814c-1.88-1.757-4.382-2.832-6.735-2.832-5.522 0-10 4.479-10 10s4.478 10 10 10c8.396 0 10-7.496 10-9.634 0-0.996-0.102-1.277-0.201-1.491h-9.8z" />
-                        </svg>
-                      </div>
-                      <div>
-                        <h3 className="font-medium text-gray-900 dark:text-white">Google</h3>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Conecte sua conta do Google</p>
-                      </div>
-                    </div>
-                    {session?.user?.provider === 'google' ? (
-                      <div className="flex items-center space-x-3">
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100">
-                          Conectado
-                        </span>
-                        <button
-                          onClick={() => setIsDisconnectGoogleDialogOpen(true)}
-                          className="text-sm text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
-                        >
-                          Desconectar
-                        </button>
-                      </div>
-                    ) : (
-                      <GoogleConnectButton />
-                    )}
-                  </div>
-                  <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-                    <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2">Permissões</h4>
-                    <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-300">
-                      <li className="flex items-start">
-                        <svg className="h-5 w-5 text-green-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                        </svg>
-                        Acesso ao seu endereço de e-mail
-                      </li>
-                      <li className="flex items-start">
-                        <svg className="h-5 w-5 text-green-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                        </svg>
-                        Acesso ao seu nome e foto de perfil
-                      </li>
-                    </ul>
-                  </div>
-                </div>
-
-                <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
-                  <div className="flex">
-                    <div className="flex-shrink-0">
-                      <svg className="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h2a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                      </svg>
-                    </div>
-                    <div className="ml-3">
-                      <h3 className="text-sm font-medium text-blue-800 dark:text-blue-200">Por que conectar com o Google?</h3>
-                      <div className="mt-2 text-sm text-blue-700 dark:text-blue-300">
-                        <p>Conecte sua conta do Google para fazer login mais rapidamente e sincronizar suas preferências entre dispositivos.</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        );
-
       default:
         return (
           <Card>
             <CardHeader>
-              <CardTitle>{activeSection.charAt(0).toUpperCase() + activeSection.slice(1)}</CardTitle>
+              <CardTitle>{(activeSection as string).charAt(0).toUpperCase() + (activeSection as string).slice(1)}</CardTitle>
               <CardDescription>Esta seção está em desenvolvimento.</CardDescription>
             </CardHeader>
           </Card>
@@ -1298,10 +1189,8 @@ export default function SettingsPage() {
   const sections: { id: Section; name: string; ptName: string }[] = [
     { id: 'profile', name: 'Perfil', ptName: 'Perfil' },
     { id: 'preferences', name: 'Preferências', ptName: 'Preferências' },
-    { id: 'notifications', name: 'Notificações', ptName: 'Notificações' },
     { id: 'security', name: 'Segurança', ptName: 'Segurança' },
-    { id: 'activity', name: 'Atividade', ptName: 'Atividade' },
-    { id: 'connections', name: 'Conexões', ptName: 'Conexões' }
+    { id: 'activity', name: 'Atividade', ptName: 'Atividade' }
   ];
 
   return (
@@ -1332,7 +1221,7 @@ export default function SettingsPage() {
             <div className="flex items-center gap-3 mb-1 pr-2">
               <Avatar className="h-9 w-9 flex-shrink-0 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-100">
                 <AvatarImage src={session?.user?.image || ''} />
-                <AvatarFallback>{getInitials(name)}</AvatarFallback>
+                <AvatarFallback>{name ? getInitials(name) : 'U'}</AvatarFallback>
               </Avatar>
               <div className="min-w-0">
                 <p className="font-medium text-gray-900 dark:text-gray-100 truncate">{name}</p>
@@ -1374,29 +1263,9 @@ export default function SettingsPage() {
               Voltar para o Painel
             </a>
           </div>
-          {renderSection()}
+          {renderSection(activeSection)}
         </div>
       </div>
-      <AlertDialog open={isDisconnectGoogleDialogOpen} onOpenChange={setIsDisconnectGoogleDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Desconectar conta Google</AlertDialogTitle>
-            <AlertDialogDescription>
-              Tem certeza que deseja desconectar sua conta Google? Você precisará usar outro método de login na próxima vez.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isDisconnectingGoogle}>Cancelar</AlertDialogCancel>
-            <Button
-              variant="destructive"
-              onClick={handleDisconnectGoogle}
-              disabled={isDisconnectingGoogle}
-            >
-              {isDisconnectingGoogle ? 'Desconectando...' : 'Desconectar'}
-            </Button>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }

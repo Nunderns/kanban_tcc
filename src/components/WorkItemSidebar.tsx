@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSession } from "next-auth/react";
+import toast from 'react-hot-toast';
 import type { WorkItem } from "@/app/[workspaceSlug]/dashboard/my-tasks/page";
 import type { WorkItemRelation, RelationType } from "@/types";
 import Link from "next/link";
@@ -32,8 +33,6 @@ import {
   ListBulletIcon,
   ArrowPathIcon,
   ChevronDownIcon,
-  BellSlashIcon,
-  Cog6ToothIcon,
   SquaresPlusIcon,
   ArrowsRightLeftIcon,
   LinkIcon,
@@ -57,12 +56,16 @@ interface Activity {
 }
 
 interface WorkspaceMember {
-  id: string;
-  fullName: string;
-  displayName: string;
-  email: string;
+  userId: string;
   role: string;
+  user: {
+    id: string;
+    name: string | null;
+    email: string;
+    image: string | null;
+  };
 }
+
 
 interface Props {
   item: WorkItem;
@@ -95,6 +98,36 @@ export default function WorkItemSidebar({ item, onClose, onUpdate, workspaceSlug
     url: '',
     displayName: ''
   });
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDeleteTask = async () => {
+    if (!confirm('Tem certeza que deseja excluir esta tarefa? Esta ação não pode ser desfeita.')) {
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      const response = await fetch(`/api/tasks/${item.id}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        toast.success('Tarefa excluída com sucesso!');
+        onClose?.();
+        window.location.reload();
+      } else {
+        const error = await response.json();
+        throw new Error(error.message || 'Falha ao excluir a tarefa');
+      }
+    } catch (error: unknown) {
+      console.error('Error deleting task:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Erro ao excluir a tarefa';
+      toast.error(errorMessage);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   const [showSubtaskActionModal, setShowSubtaskActionModal] = useState(false);
   const [showCreateTaskModal, setShowCreateTaskModal] = useState(false);
   const [showAddExistingTaskModal, setShowAddExistingTaskModal] = useState(false);
@@ -124,8 +157,6 @@ export default function WorkItemSidebar({ item, onClose, onUpdate, workspaceSlug
       'description': 'descrição',
       'status': 'status',
       'priority': 'prioridade',
-      'module': 'módulo',
-      'cycle': 'ciclo',
       'assignees': 'responsáveis',
       'labels': 'etiquetas',
       'assignedUserId': 'responsável',
@@ -167,22 +198,20 @@ export default function WorkItemSidebar({ item, onClose, onUpdate, workspaceSlug
     if (action === 'commented') {
       return newValue?.trim() || 'Comentou na tarefa';
     }
-
-    // Special handling for assigned user changes
     if (field === 'assignedUserId' || field === 'assignedUserName') {
       if (newValue && (!oldValue || oldValue === 'null' || oldValue === 'undefined')) {
-        const assignedUser = workspaceMembers.find(member => member.id === newValue);
-        const userName = assignedUser?.displayName || assignedUser?.fullName || 'um usuário';
+        const assignedUser = workspaceMembers.find(member => member.user.id === newValue);
+        const userName = assignedUser?.user.name || 'um usuário';
         return `Atribuiu a tarefa para ${userName}`;
       } else if (!newValue || newValue === 'null' || newValue === 'undefined') {
-        const previousUser = workspaceMembers.find(member => member.id === oldValue);
-        const userName = previousUser?.displayName || previousUser?.fullName || 'um usuário';
+        const previousUser = workspaceMembers.find(member => member.user.id === oldValue);
+        const userName = previousUser?.user.name || 'um usuário';
         return `Removeu a atribuição de ${userName}`;
       } else {
-        const oldUser = workspaceMembers.find(member => member.id === oldValue);
-        const newUser = workspaceMembers.find(member => member.id === newValue);
-        const oldUserName = oldUser?.displayName || oldUser?.fullName || 'um usuário';
-        const newUserName = newUser?.displayName || newUser?.fullName || 'um usuário';
+        const oldUser = workspaceMembers.find(member => member.user.id === oldValue);
+        const newUser = workspaceMembers.find(member => member.user.id === newValue);
+        const oldUserName = oldUser?.user.name || 'um usuário';
+        const newUserName = newUser?.user.name || 'um usuário';
         return `Transferiu a tarefa de ${oldUserName} para ${newUserName}`;
       }
     }
@@ -191,18 +220,18 @@ export default function WorkItemSidebar({ item, onClose, onUpdate, workspaceSlug
       const fieldName = getFieldName(field);
       if (field === 'assignedUserId') {
         if (newValue && (!oldValue || oldValue === 'null' || oldValue === 'undefined')) {
-          const assignedUser = workspaceMembers.find(member => member.id === newValue);
-          const userName = assignedUser?.displayName || assignedUser?.fullName || 'um usuário';
+          const assignedUser = workspaceMembers.find(member => member.user.id === newValue);
+          const userName = assignedUser?.user.name || 'um usuário';
           return `Atribuiu a tarefa para ${userName}`;
         } else if (!newValue || newValue === 'null' || newValue === 'undefined') {
-          const previousUser = workspaceMembers.find(member => member.id === oldValue);
-          const userName = previousUser?.displayName || previousUser?.fullName || 'um usuário';
+          const previousUser = workspaceMembers.find(member => member.user.id === oldValue);
+          const userName = previousUser?.user.name || 'um usuário';
           return `Removeu a atribuição de ${userName}`;
         } else {
-          const oldUser = workspaceMembers.find(member => member.id === oldValue);
-          const newUser = workspaceMembers.find(member => member.id === newValue);
-          const oldUserName = oldUser?.displayName || oldUser?.fullName || 'um usuário';
-          const newUserName = newUser?.displayName || newUser?.fullName || 'um usuário';
+          const oldUser = workspaceMembers.find(member => member.user.id === oldValue);
+          const newUser = workspaceMembers.find(member => member.user.id === newValue);
+          const oldUserName = oldUser?.user.name || 'um usuário';
+          const newUserName = newUser?.user.name || 'um usuário';
           return `Transferiu a tarefa de ${oldUserName} para ${newUserName}`;
         }
       }
@@ -210,8 +239,8 @@ export default function WorkItemSidebar({ item, onClose, onUpdate, workspaceSlug
       const formatValue = (value: string, isUserField = false) => {
         if (isUserField) {
           if (!value || value === 'null' || value === 'undefined') return 'não definido';
-          const user = workspaceMembers.find(member => member.id === value);
-          return user?.displayName || user?.fullName || value;
+          const user = workspaceMembers.find(member => member.user.id === value);
+          return user?.user.name || value;
         }
         if (isDateField) return formatDate(value);
         if (!value || value === 'null' || value === 'undefined') return 'não definido';
@@ -255,10 +284,12 @@ export default function WorkItemSidebar({ item, onClose, onUpdate, workspaceSlug
       const response = await fetch(`/api/workspaces/${workspaceSlug}/members`);
       if (response.ok) {
         const data = await response.json();
-        setWorkspaceMembers(data.members || []);
+        const members = Array.isArray(data.members) ? data.members : [];
+        setWorkspaceMembers(members);
       }
     } catch (error) {
       console.error('Error fetching workspace members:', error);
+      toast.error('Falha ao carregar membros do workspace');
     } finally {
       setLoadingMembers(false);
     }
@@ -689,10 +720,8 @@ export default function WorkItemSidebar({ item, onClose, onUpdate, workspaceSlug
       };
 
       if (field === 'assignedUserId' && typeof value === 'string') {
-        const assignedUser = workspaceMembers.find(member => member.id === value);
-        updatedItem.assignedUserName = assignedUser
-          ? assignedUser.displayName || assignedUser.fullName || ''
-          : '';
+        const assignedUser = workspaceMembers.find(member => member.user.id === value);
+        updatedItem.assignedUserName = assignedUser?.user.name || '';
       }
 
       return updatedItem;
@@ -1051,65 +1080,88 @@ export default function WorkItemSidebar({ item, onClose, onUpdate, workspaceSlug
                 Criado por {formatUserName(item.creator || 'Usuário')}
               </p>
             </div>
-            <div className="flex flex-col items-stretch gap-3 sm:items-end">
-              {!isFullScreen && resolvedFullScreenHref && (
-                <Link
-                  href={resolvedFullScreenHref}
-                  className="inline-flex items-center gap-2 rounded-full border border-gray-300 dark:border-white/20 px-4 py-2 text-sm font-medium text-gray-900 dark:text-white transition hover:bg-gray-50 dark:hover:bg-white/10"
-                >
-                  Tela cheia
-                </Link>
-              )}
-              {isFullScreen && resolvedSidebarHref && (
-                <Link
-                  href={resolvedSidebarHref}
-                  className="inline-flex items-center gap-2 rounded-full border border-gray-300 dark:border-white/20 px-4 py-2 text-sm font-medium text-gray-900 dark:text-white transition hover:bg-gray-50 dark:hover:bg-white/10"
-                >
-                  Ver no dashboard
-                </Link>
-              )}
-              <button className="inline-flex items-center gap-2 rounded-full border border-gray-300 dark:border-white/20 px-4 py-2 text-sm font-medium text-gray-900 dark:text-white transition hover:bg-gray-50 dark:hover:bg-white/10">
-                <BellSlashIcon className="h-4 w-4 text-gray-600 dark:text-white/70" />
-                Cancelar inscrição
-              </button>
-              {onClose && (
-                <button
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    onClose();
-                  }}
-                  className={`inline-flex items-center justify-center rounded-full border border-gray-300 dark:border-white/10 ${isFullScreen ? "px-4 py-2 text-sm" : "p-2"
-                    } text-gray-600 dark:text-white/70 transition hover:bg-gray-50 dark:hover:bg-white/10`}
-                  aria-label="Fechar"
-                >
-                  {isFullScreen ? (
-                    <span className="flex items-center gap-2">
-                      <XMarkIcon className="h-4 w-4" />
-                      Fechar
-                    </span>
-                  ) : (
-                    <XMarkIcon className="h-5 w-5" />
-                  )}
-                </button>
-              )}
+            <div className="flex flex-row flex-wrap items-center justify-end gap-3">
+              <div className="flex flex-wrap items-center gap-3">
+                {!isFullScreen && resolvedFullScreenHref && (
+                  <Link
+                    href={resolvedFullScreenHref}
+                    className="inline-flex items-center gap-2 rounded-full border border-gray-300 dark:border-white/20 px-4 py-2 text-sm font-medium text-gray-900 dark:text-white transition hover:bg-gray-50 dark:hover:bg-white/10"
+                  >
+                    Tela cheia
+                  </Link>
+                )}
+                {isFullScreen && resolvedSidebarHref && (
+                  <Link
+                    href={resolvedSidebarHref}
+                    className="inline-flex items-center gap-2 rounded-full border border-gray-300 dark:border-white/20 px-4 py-2 text-sm font-medium text-gray-900 dark:text-white transition hover:bg-gray-50 dark:hover:bg-white/10"
+                  >
+                    Ver no dashboard
+                  </Link>
+                )}
+                {onClose && (
+                  <>
+                    <button
+                      onClick={handleDeleteTask}
+                      disabled={isDeleting}
+                      className={`inline-flex items-center justify-center rounded-full border border-red-200 dark:border-red-500/30 ${isFullScreen ? "px-4 py-2 text-sm" : "p-2"
+                        } text-red-600 dark:text-red-400 transition hover:bg-red-50 dark:hover:bg-red-500/10 disabled:opacity-50 disabled:cursor-not-allowed`}
+                      aria-label="Excluir tarefa"
+                      title="Excluir tarefa"
+                    >
+                      {isFullScreen ? (
+                        <span className="flex items-center gap-2">
+                          {isDeleting ? (
+                            <ArrowPathIcon className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <TrashIcon className="h-4 w-4" />
+                          )}
+                          {isDeleting ? 'Excluindo...' : 'Excluir'}
+                        </span>
+                      ) : (
+                        isDeleting ? (
+                          <ArrowPathIcon className="h-5 w-5 animate-spin" />
+                        ) : (
+                          <TrashIcon className="h-5 w-5" />
+                        )
+                      )}
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        onClose();
+                      }}
+                      className={`inline-flex items-center justify-center rounded-full border border-gray-300 dark:border-white/10 ${isFullScreen ? "px-4 py-2 text-sm" : "p-2"
+                        } text-gray-600 dark:text-white/70 transition hover:bg-gray-50 dark:hover:bg-white/10`}
+                      aria-label="Fechar"
+                    >
+                      {isFullScreen ? (
+                        <span className="flex items-center gap-2">
+                          <XMarkIcon className="h-4 w-4" />
+                          Fechar
+                        </span>
+                      ) : (
+                        <XMarkIcon className="h-5 w-5" />
+                      )}
+                    </button>
+                  </>
+                )}
+              </div>
             </div>
           </div>
 
           <div className="flex flex-col gap-8 overflow-y-auto p-4 sm:p-6">
             <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
-              <button className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 bg-gray-100 text-gray-600 transition hover:border-gray-300 dark:border-white/10 dark:bg-white/10 dark:text-white/70 dark:hover:border-white/40">
-                <Cog6ToothIcon className="h-5 w-5" />
-              </button>
-              {actionButtons.map(({ label, icon: Icon }) => (
-                <button
-                  key={label}
-                  onClick={() => handleActionClick(label)}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-gray-200 bg-gray-100 px-4 py-2 text-sm text-gray-700 transition hover:border-gray-300 hover:text-gray-900 dark:border-white/10 dark:bg-white/5 dark:text-white/80 dark:hover:border-white/40 dark:hover:text-white sm:w-auto"
-                >
-                  <Icon className="h-4 w-4" />
-                  {label}
-                </button>
+              {actionButtons.map(({ label, icon: Icon }, index) => (
+                <div key={`action-btn-${index}`} className="w-full sm:w-auto">
+                  <button
+                    onClick={() => handleActionClick(label)}
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-gray-200 bg-gray-100 px-4 py-2 text-sm text-gray-700 transition hover:border-gray-300 hover:text-gray-900 dark:border-white/10 dark:bg-white/5 dark:text-white/80 dark:hover:border-white/40 dark:hover:text-white sm:w-auto"
+                  >
+                    <Icon className="h-4 w-4" />
+                    {label}
+                  </button>
+                </div>
               ))}
             </div>
 
@@ -1149,16 +1201,15 @@ export default function WorkItemSidebar({ item, onClose, onUpdate, workspaceSlug
                         <UserCircleIcon className="h-5 w-5 text-gray-500 dark:text-white/50" />
                         <span className="truncate">
                           {localItem.assignedUserId
-                            ? formatUserName(
-                              workspaceMembers.find((m) => m.id === localItem.assignedUserId)?.fullName ||
-                              localItem.assignedUserName ||
-                              "Usuário"
-                            )
+                            ? workspaceMembers.find(m => m.userId === localItem.assignedUserId)?.user?.name ||
+                            localItem.assignedUserName ||
+                            "Usuário"
                             : "Adicionar responsáveis"}
                         </span>
                       </span>
                       <ChevronDownIcon className="h-4 w-4 text-gray-500 dark:text-white/50" />
                     </button>
+
                     {isUserDropdownOpen && (
                       <div className="absolute left-0 right-0 z-20 mt-2 rounded-2xl border border-gray-200 bg-white shadow-2xl dark:border-white/10 dark:bg-[#11131a]">
                         <div className="max-h-60 overflow-y-auto p-2">
@@ -1168,30 +1219,36 @@ export default function WorkItemSidebar({ item, onClose, onUpdate, workspaceSlug
                               handleChange("assignedUserId", "");
                               setIsUserDropdownOpen(false);
                             }}
-                            className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-white/70 dark:hover:bg-white/10"
+                            className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-white/90 dark:hover:bg-white/10 dark:hover:text-white"
                           >
-                            <UserCircleIcon className="h-4 w-4 text-gray-400 dark:text-white/40" />
+                            <UserCircleIcon className="h-4 w-4 text-gray-400 dark:text-white/60" />
                             Nenhum responsável
                           </button>
                           {loadingMembers ? (
-                            <div className="px-3 py-2 text-xs text-gray-500 dark:text-white/50">Carregando...</div>
+                            <div key="loading-members" className="px-3 py-2 text-xs text-gray-500 dark:text-white/50">Carregando...</div>
                           ) : (
                             workspaceMembers.map((member) => (
-                              <button
-                                key={member.id}
-                                type="button"
-                                onClick={() => {
-                                  handleChange("assignedUserId", member.id);
-                                  setIsUserDropdownOpen(false);
-                                }}
-                                className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-white/80 dark:hover:bg-white/10"
-                              >
-                                <UserCircleIcon className="h-5 w-5 text-gray-500 dark:text-white/50" />
-                                <div className="flex min-w-0 flex-col">
-                                  <p className="truncate font-medium text-gray-900 dark:text-white">{member.fullName}</p>
-                                  <p className="truncate text-xs text-gray-500 dark:text-white/50">{member.email}</p>
-                                </div>
-                              </button>
+                              <div key={`member-${member.userId}`} className="w-full">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    handleChange("assignedUserId", member.userId);
+                                    handleChange("assignedUserName", member.user?.name || member.user.email);
+                                    setIsUserDropdownOpen(false);
+                                  }}
+                                  className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-white/90 dark:hover:bg-white/10 dark:hover:text-white"
+                                >
+                                  <UserCircleIcon className="h-5 w-5 text-gray-500 dark:text-white/70" />
+                                  <div className="flex min-w-0 flex-col">
+                                    <p className="truncate font-medium text-gray-900 dark:text-white/90">
+                                      {member.user?.name || member.user.email}
+                                    </p>
+                                    <p className="truncate text-xs text-gray-500 dark:text-white/70">
+                                      {member.user.email}
+                                    </p>
+                                  </div>
+                                </button>
+                              </div>
                             ))
                           )}
                         </div>

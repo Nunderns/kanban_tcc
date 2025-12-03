@@ -6,7 +6,7 @@ import Link from "next/link";
 import { FiDownload, FiFileText, FiAlertTriangle, FiCheckCircle } from "react-icons/fi";
 import jsPDF from "jspdf";
 
-type ExportFormat = "csv" | "json" | "excel" | "pdf";
+type ExportFormat = "csv" | "pdf";
 type ExportStatus = "idle" | "processing" | "completed" | "error";
 
 interface ExportHistoryItem {
@@ -61,7 +61,6 @@ export default function ExportSettings() {
   const workspaceSlug = pathname.split('/')[1];
   const [selectedFormat, setSelectedFormat] = useState<ExportFormat>("csv");
   const [exportStatus, setExportStatus] = useState<ExportStatus>("idle");
-  const [includeAttachments, setIncludeAttachments] = useState(false);
   const [includeComments, setIncludeComments] = useState(true);
   const [history, setHistory] = useState<ExportHistoryItem[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -69,14 +68,11 @@ export default function ExportSettings() {
   const links = [
     { href: `/${workspaceSlug}/settings/general`, label: "Geral" },
     { href: `/${workspaceSlug}/settings/members`, label: "Membros" },
-    { href: `/${workspaceSlug}/settings/imports`, label: "Importações" },
     { href: `/${workspaceSlug}/settings/exports`, label: "Exportações" }
   ];
 
   const formatOptions = [
     { value: "csv", label: "CSV (Excel, Google Sheets, etc.)" },
-    { value: "json", label: "JSON (Dados estruturados)" },
-    { value: "excel", label: "Excel (.xlsx)" },
     { value: "pdf", label: "PDF (Documento)" },
   ];
 
@@ -87,13 +83,13 @@ export default function ExportSettings() {
 
     try {
       const response = await fetch('/api/export');
-      
+
       if (!response.ok) {
         throw new Error(`Failed to fetch export data: ${response.status}`);
       }
-      
+
       const exportData = await response.json();
-      
+
       let content = "";
       let mimeType = "";
       let fileExtension = "";
@@ -102,13 +98,13 @@ export default function ExportSettings() {
       switch (selectedFormat) {
         case "csv": {
           const csvSections = [];
-          
+
           const taskHeaders = [
-            "ID", "Título", "Descrição", "Status", "Prioridade", 
-            "Data de Início", "Data de Vencimento", "Módulo", "Ciclo",
-            "Responsáveis", "Etiquetas", "Projeto", "Criador", "Data de Criação", "Data de Atualização"
+            "ID", "Título", "Descrição", "Status", "Prioridade",
+            "Data de Início", "Data de Vencimento", "Responsáveis",
+            "Etiquetas", "Projeto", "Criador", "Data de Criação", "Data de Atualização"
           ];
-          
+
           const taskRows = exportData.tasks.map((task: ExportTask) => [
             task.id,
             `"${task.title.replace(/"/g, '""')}"`,
@@ -126,7 +122,7 @@ export default function ExportSettings() {
             new Date(task.createdAt).toLocaleDateString('pt-BR'),
             new Date(task.updatedAt).toLocaleDateString('pt-BR')
           ].join(","));
-          
+
           csvSections.push("--- TAREFAS ---");
           csvSections.push(taskHeaders.join(","));
           csvSections.push(...taskRows);
@@ -136,7 +132,7 @@ export default function ExportSettings() {
             const projectHeaders = [
               "ID", "Nome", "Descrição", "Quantidade de Tarefas", "Data de Criação", "Data de Atualização"
             ];
-            
+
             const projectRows = exportData.projects.map((project: ExportProject) => [
               project.id,
               `"${project.name.replace(/"/g, '""')}"`,
@@ -145,18 +141,18 @@ export default function ExportSettings() {
               new Date(project.createdAt).toLocaleDateString('pt-BR'),
               new Date(project.updatedAt).toLocaleDateString('pt-BR')
             ].join(","));
-            
+
             csvSections.push("--- PROJETOS ---");
             csvSections.push(projectHeaders.join(","));
             csvSections.push(...projectRows);
             csvSections.push("");
           }
-          
+
           if (exportData.workspaces.length > 0) {
             const workspaceHeaders = [
               "ID", "Nome", "Descrição", "Dono", "Quantidade de Membros", "Quantidade de Tarefas", "Data de Criação", "Data de Atualização"
             ];
-            
+
             const workspaceRows = exportData.workspaces.map((workspace: ExportWorkspace) => [
               workspace.id,
               `"${workspace.name.replace(/"/g, '""')}"`,
@@ -167,12 +163,12 @@ export default function ExportSettings() {
               new Date(workspace.createdAt).toLocaleDateString('pt-BR'),
               new Date(workspace.updatedAt).toLocaleDateString('pt-BR')
             ].join(","));
-            
+
             csvSections.push("--- WORKSPACES ---");
             csvSections.push(workspaceHeaders.join(","));
             csvSections.push(...workspaceRows);
           }
-          
+
           csvSections.push("--- RESUMO ---");
           csvSections.push(`"Data da Exportação","${new Date(exportData.exportDate).toLocaleString('pt-BR')}"`);
           csvSections.push(`"Usuário","${exportData.user.name || exportData.user.email}"`);
@@ -180,36 +176,10 @@ export default function ExportSettings() {
           csvSections.push(`"Total de Tarefas",${exportData.tasks.length}`);
           csvSections.push(`"Total de Projetos",${exportData.projects.length}`);
           csvSections.push(`"Total de Workspaces",${exportData.workspaces.length}`);
-          
+
           content = "\uFEFF" + csvSections.join("\n");
           mimeType = "text/csv;charset=utf-8;";
           fileExtension = "csv";
-          break;
-        }
-        case "json": {
-          content = JSON.stringify(exportData, null, 2);
-          mimeType = "application/json;charset=utf-8;";
-          fileExtension = "json";
-          break;
-        }
-        case "excel": {
-          const excelHeaders = ["ID", "Título", "Descrição", "Status", "Prioridade", "Data de Vencimento", "Projeto", "Criador"];
-          const excelRows = [
-            excelHeaders.join("\t"),
-            ...exportData.tasks.map((task: ExportTask) => [
-              task.id,
-              task.title,
-              task.description || '',
-              task.status,
-              task.priority,
-              task.dueDate || '',
-              task.project || '',
-              task.creator
-            ].join("\t")),
-          ];
-          content = excelRows.join("\n");
-          mimeType = "application/vnd.ms-excel;charset=utf-8;";
-          fileExtension = "xls";
           break;
         }
         case "pdf": {
@@ -230,12 +200,12 @@ export default function ExportSettings() {
           let yPosition = 80;
           doc.setFillColor(248, 250, 252);
           doc.rect(15, yPosition - 5, 180, 35, 'F');
-          
+
           doc.setFontSize(16);
           doc.setTextColor(31, 41, 55);
           doc.text("Resumo", 20, yPosition);
           yPosition += 10;
-          
+
           doc.setFontSize(12);
           doc.setTextColor(0, 0, 0);
           doc.text(`Total de Tarefas: ${exportData.tasks.length}`, 25, yPosition);
@@ -244,28 +214,28 @@ export default function ExportSettings() {
           yPosition += 8;
           doc.text(`Total de Workspaces: ${exportData.workspaces.length}`, 25, yPosition);
           yPosition += 15;
-          
+
           if (exportData.tasks.length > 0) {
             if (yPosition > 250) {
               doc.addPage();
               yPosition = 30;
             }
-            
+
             doc.setFontSize(16);
             doc.setTextColor(31, 41, 55);
             doc.text("Tarefas", 20, yPosition);
             yPosition += 10;
-            
+
             doc.setFontSize(10);
             doc.setTextColor(0, 0, 0);
-            
+
             doc.setFillColor(241, 245, 249);
             doc.rect(15, yPosition - 5, 180, 10, 'F');
-            
+
             const headers = ["ID", "Titulo", "Status", "Prioridade", "Vencimento", "Projeto"];
             const colWidths = [15, 60, 25, 20, 25, 35];
             let xPosition = 20;
-            
+
             headers.forEach((header, index) => {
               doc.setFont('helvetica', 'bold');
               doc.text(header, xPosition, yPosition);
@@ -273,16 +243,16 @@ export default function ExportSettings() {
             });
             doc.setFont('helvetica', 'normal');
             yPosition += 8;
-            
+
             doc.setDrawColor(59, 130, 246);
             doc.line(15, yPosition - 2, 195, yPosition - 2);
             yPosition += 3;
-            
+
             exportData.tasks.forEach((task: ExportTask, index: number) => {
               if (yPosition > 270) {
                 doc.addPage();
                 yPosition = 30;
-                
+
                 doc.setFillColor(241, 245, 249);
                 doc.rect(15, yPosition - 5, 180, 10, 'F');
                 doc.setFontSize(10);
@@ -298,17 +268,17 @@ export default function ExportSettings() {
                 doc.line(15, yPosition - 2, 195, yPosition - 2);
                 yPosition += 3;
               }
-              
+
               if (index % 2 === 0) {
                 doc.setFillColor(249, 250, 251);
                 doc.rect(15, yPosition - 3, 180, 8, 'F');
               }
-              
+
               xPosition = 20;
-              
+
               const truncatedTitle = task.title.length > 35 ? task.title.substring(0, 32) + "..." : task.title;
               const truncatedProject = (task.project || "").length > 20 ? (task.project || "").substring(0, 17) + "..." : task.project || "";
-              
+
               if (task.status === "DONE") {
                 doc.setTextColor(34, 197, 94);
               } else if (task.status === "IN_PROGRESS") {
@@ -318,14 +288,14 @@ export default function ExportSettings() {
               } else {
                 doc.setTextColor(107, 114, 128);
               }
-              
+
               doc.text(String(task.id), xPosition, yPosition);
               xPosition += colWidths[0];
-              
+
               doc.setTextColor(0, 0, 0);
               doc.text(truncatedTitle, xPosition, yPosition);
               xPosition += colWidths[1];
-              
+
               if (task.status === "DONE") {
                 doc.setTextColor(34, 197, 94);
               } else if (task.status === "IN_PROGRESS") {
@@ -337,7 +307,7 @@ export default function ExportSettings() {
               }
               doc.text(task.status, xPosition, yPosition);
               xPosition += colWidths[2];
-              
+
               doc.setTextColor(0, 0, 0);
               if (task.priority === "HIGH") {
                 doc.setTextColor(239, 68, 68);
@@ -348,95 +318,95 @@ export default function ExportSettings() {
               }
               doc.text(task.priority, xPosition, yPosition);
               xPosition += colWidths[3];
-              
+
               doc.setTextColor(0, 0, 0);
               doc.text(task.dueDate ? new Date(task.dueDate).toLocaleDateString('pt-BR') : "", xPosition, yPosition);
               xPosition += colWidths[4];
-              
+
               doc.text(truncatedProject, xPosition, yPosition);
               yPosition += 8;
             });
-            
+
             yPosition += 10;
           }
-          
+
           if (exportData.projects.length > 0) {
             doc.addPage();
             yPosition = 30;
-            
+
             doc.setFillColor(59, 130, 246);
             doc.rect(0, 0, 210, 40, 'F');
             doc.setFontSize(18);
             doc.setTextColor(255, 255, 255);
             doc.text("Projetos", 20, 25);
-            
+
             doc.setTextColor(0, 0, 0);
             yPosition = 50;
-            
+
             exportData.projects.forEach((project: ExportProject) => {
               if (yPosition > 270) {
                 doc.addPage();
                 yPosition = 30;
               }
-              
+
               doc.setFillColor(248, 250, 252);
               doc.rect(15, yPosition - 5, 180, 25, 'F');
-              
+
               doc.setFontSize(14);
               doc.setFont('helvetica', 'bold');
               doc.text(`${project.name}`, 20, yPosition);
               doc.setFont('helvetica', 'normal');
               yPosition += 8;
-              
+
               if (project.description) {
                 const truncatedDesc = project.description.length > 80 ? project.description.substring(0, 77) + "..." : project.description;
                 doc.setFontSize(10);
                 doc.text(`Descricao: ${truncatedDesc}`, 20, yPosition);
                 yPosition += 8;
               }
-              
+
               doc.setFontSize(10);
               doc.text(`Tarefas: ${project.taskCount}`, 20, yPosition);
               doc.text(`Criado em: ${new Date(project.createdAt).toLocaleDateString('pt-BR')}`, 80, yPosition);
               yPosition += 15;
             });
           }
-          
+
           if (exportData.workspaces.length > 0) {
             doc.addPage();
             yPosition = 30;
-            
+
             doc.setFillColor(59, 130, 246);
             doc.rect(0, 0, 210, 40, 'F');
             doc.setFontSize(18);
             doc.setTextColor(255, 255, 255);
             doc.text("Workspaces", 20, 25);
-            
+
             doc.setTextColor(0, 0, 0);
             yPosition = 50;
-            
+
             exportData.workspaces.forEach((workspace: ExportWorkspace) => {
               if (yPosition > 270) {
                 doc.addPage();
                 yPosition = 30;
               }
-              
+
               doc.setFillColor(248, 250, 252);
               doc.rect(15, yPosition - 5, 180, 30, 'F');
-              
+
               doc.setFontSize(14);
               doc.setFont('helvetica', 'bold');
               doc.text(`${workspace.name}`, 20, yPosition);
               doc.setFont('helvetica', 'normal');
               yPosition += 8;
-              
+
               if (workspace.description) {
                 const truncatedDesc = workspace.description.length > 80 ? workspace.description.substring(0, 77) + "..." : workspace.description;
                 doc.setFontSize(10);
                 doc.text(`Descricao: ${truncatedDesc}`, 20, yPosition);
                 yPosition += 8;
               }
-              
+
               doc.setFontSize(10);
               doc.text(`Dono: ${workspace.owner}`, 20, yPosition);
               yPosition += 8;
@@ -445,7 +415,7 @@ export default function ExportSettings() {
               yPosition += 15;
             });
           }
-          
+
           const pageCount = doc.getNumberOfPages();
           for (let i = 1; i <= pageCount; i++) {
             doc.setPage(i);
@@ -454,7 +424,7 @@ export default function ExportSettings() {
             doc.text(`Pagina ${i} de ${pageCount}`, 170, 285);
             doc.text(`Gerado por Kanban TCC`, 20, 285);
           }
-          
+
           blob = doc.output('blob');
           mimeType = "application/pdf";
           fileExtension = "pdf";
@@ -513,11 +483,10 @@ export default function ExportSettings() {
             <Link
               key={link.href}
               href={link.href}
-              className={`flex items-center px-3 py-2 rounded-md text-sm font-medium ${
-                pathname === link.href
-                  ? "bg-blue-50 dark:bg-blue-900 text-blue-700 dark:text-blue-300"
-                  : "text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-50"
-              }`}
+              className={`flex items-center px-3 py-2 rounded-md text-sm font-medium ${pathname === link.href
+                ? "bg-blue-50 dark:bg-blue-900 text-blue-700 dark:text-blue-300"
+                : "text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-50"
+                }`}
             >
               {link.label}
             </Link>
@@ -571,26 +540,6 @@ export default function ExportSettings() {
                     </div>
                   </div>
                 </div>
-
-                <div className="sm:col-span-6 pt-2">
-                  <div className="flex items-start">
-                    <div className="flex items-center h-5">
-                      <input
-                        id="include-attachments"
-                        name="include-attachments"
-                        type="checkbox"
-                        checked={includeAttachments}
-                        onChange={(e) => setIncludeAttachments(e.target.checked)}
-                        className="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300 dark:border-gray-700 rounded"
-                      />
-                    </div>
-                    <div className="ml-3 text-sm">
-                      <label htmlFor="include-attachments" className="font-medium text-gray-700 dark:text-gray-300">Incluir anexos</label>
-                      <p className="text-gray-500 dark:text-gray-400">Inclui arquivos anexados nas tarefas. Isso pode aumentar significativamente o tamanho do arquivo.</p>
-                    </div>
-                  </div>
-                </div>
-
                 {error && (
                   <div className="sm:col-span-6">
                     <div className="rounded-md bg-red-50 dark:bg-red-900/30 p-4 border border-red-200 dark:border-red-700">
@@ -614,11 +563,10 @@ export default function ExportSettings() {
                     type="button"
                     onClick={handleExport}
                     disabled={exportStatus === "processing"}
-                    className={`inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white ${
-                      exportStatus === "processing"
-                        ? "bg-blue-400 cursor-not-allowed"
-                        : "bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                    }`}
+                    className={`inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white ${exportStatus === "processing"
+                      ? "bg-blue-400 cursor-not-allowed"
+                      : "bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                      }`}
                   >
                     {exportStatus === "processing" ? (
                       <>
@@ -667,9 +615,8 @@ export default function ExportSettings() {
                         <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500 dark:text-gray-300">{item.format.toUpperCase()}</td>
                         <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500 dark:text-gray-300">{item.size}</td>
                         <td className="whitespace-nowrap px-3 py-4">
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            item.status === "completed" ? "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300" : "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300"
-                          }`}>{item.status === "completed" ? "Concluído" : "Falhou"}</span>
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${item.status === "completed" ? "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300" : "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300"
+                            }`}>{item.status === "completed" ? "Concluído" : "Falhou"}</span>
                         </td>
                         <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
                           {item.status === "completed" && item.downloadUrl && (

@@ -1,4 +1,3 @@
-// src/app/post-login/PostLoginRedirect.tsx
 "use client";
 
 import { useEffect } from "react";
