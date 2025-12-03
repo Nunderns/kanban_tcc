@@ -108,7 +108,7 @@ export default function AddExistingTaskModal({ isOpen, onClose, onAddTasks, work
       <div className="w-full max-w-2xl rounded-2xl bg-white p-6 shadow-2xl dark:bg-[#0d0f14] max-h-[80vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
-          <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Work Items</h3>
+          <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Tarefas Existentes</h3>
           <button
             type="button"
             onClick={onClose}
